@@ -1,22 +1,37 @@
 # Horizon Engine
+3D real-time rendering engine.
+Features:
+* Fiber-based Job System
+* Bindless
+* Render Graph
 
-# 开发环境
+## Screenshots
+![image](/Screenshots/screenshot01.png)
 
-Windows 10
+## Requirements
+* Windows 10, untested on other development environments
+* Visual Studio 2022
+* C++20
 
-Vulkan SDK 1.3
+## Getting Started
 
-VS2022
+1. Clone this repository: git clone https://github.com/harukumo/HorizonEngine
 
-C++20
+2. Run "GenerateProjects.bat"
 
-# 快速构建
+## Debug Tool
+[RenderDoc](https://renderdoc.org/)
 
-1. git clone https://github.com/harukumo/HorizonEngine
+## Third Party
+* [imgui](https://github.com/ocornut/imgui)
+* [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
+* [entt](https://github.com/skypjack/entt)
+* [glfw](https://github.com/glfw/glfw)
+* [stb](https://github.com/nothings/stb)
+* [spdlog](https://github.com/gabime/spdlog)
+* [glm](https://github.com/g-truc/glm)
+* [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
+* [Vulkan](https://www.khronos.org/vulkan)
 
-2. 双击运行脚本： GenerateProjects.bat
-
-# 贡献
-
-
-# 第三方库
+## Contributing
+* Contributions are welcome.
