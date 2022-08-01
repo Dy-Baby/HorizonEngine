@@ -10,17 +10,14 @@ Build/
 !*.cpp
 !*.h
 !*.hpp
+!*.inl
+!*.hsf
 
 !*.txt
 !*.md
 
 !*.bat
 !*.lua
-
-!*.exe
-
-!*.ini
-!*.inl
 
 !.git*
 

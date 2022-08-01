@@ -1,0 +1,199 @@
+[numthreads(16, 8, 1)]
+void GTAOSpatialFilterCS(int GroupIndex: SV_GroupIndex, uint2 GroupId : SV_GroupID, uint2 DispatchThreadId : SV_DispatchThreadID, uint2 GroupThreadId : SV_GroupThreadID) 
+{
+	int2 GTId = int2(GroupThreadId);
+
+	// Position on the screen We care about
+	int2   PixelPos				= DispatchThreadId; 
+
+	// Firstly get the origin in the screen of the 16x8 inner box
+	int2   FullGroupOrigin		= int2(GroupId.x * 16, GroupId.y * 8); 
+	int2   FullGroupOriginM2	= FullGroupOrigin.xy - int2(2,2);
+
+	uint pixIdx = (GroupIndex * 2);
+
+	float DownsampleFactor =  GTAOSpatialFilterParams.x;
+
+	// Downsampled version. Note that the Z is double the res of the Z
+	if(pixIdx < (20*12) )
+	{
+		uint XPos = pixIdx%20;
+		uint YPos = pixIdx/20;
+
+		int LDSPos = (YPos*LDS_WIDTH) + XPos;
+
+		int2 ReadXYAO = FullGroupOriginM2 + int2(XPos,YPos);
+		int2 ReadXYZ  = ReadXYAO*DownsampleFactor;
+
+		float AO = GTAOSpatialFilterTexture.Load(int3(ReadXYAO, 0)).r;
+		float  Z = GTAOSpatialFilterDepthTexture.Load(     int3(ReadXYZ, 0)).r;
+		AOData[ LDSPos ] = AO;
+		ZData[  LDSPos ] = Z;
+
+		// Next pixel
+		LDSPos++;
+
+		ReadXYAO.x	+=1;
+		ReadXYZ.x	+=DownsampleFactor;
+
+		AO = GTAOSpatialFilterTexture.Load(int3(ReadXYAO, 0)).r;
+		Z  = GTAOSpatialFilterDepthTexture.Load(int3(ReadXYZ, 0)).r;
+		AOData[ LDSPos ] = AO;
+		ZData[  LDSPos ] = Z;
+	}
+	GroupMemoryBarrierWithGroupSync();
+
+	// Get the differences in Z at this pixel. This is needed for the bilateral filter
+	float ThisZ		= GetZ(GTId.x, GTId.y);
+	float ThisZLin	=ConvertFromDeviceZ( ThisZ);
+
+	float2 ZDiff;
+
+	// Kernel size
+	int FilterMin = -2;
+	int FilterMax = GTAOBilateralFilterSize / 2;
+
+	int LDSBase = GetLDSLocation(GTId.x + FilterMin, GTId.y + FilterMin);
+
+	//Get X Delta
+	int LDSCentre = GetLDSLocation(GTId.x , GTId.y);
+	{
+
+		float XM2Z	= GetZLin(LDSCentre-2);
+		float XM1Z	= GetZLin(LDSCentre-1);
+		float XP1Z	= GetZLin(LDSCentre+1);
+		float XP2Z	= GetZLin(LDSCentre+2);
+
+		// Get extrapolated point either side
+		float C1 = abs((XM1Z + (XM1Z - XM2Z)) - ThisZ);
+		float C2 = abs((XP1Z + (XP1Z - XP2Z)) - ThisZ);
+
+		if(C1 < C2)
+		{
+			ZDiff.x = XM1Z - XM2Z;
+		}
+		else
+		{
+			ZDiff.x = XP2Z - XP1Z;
+		}
+	}
+
+
+	//Get Y Delta
+	{
+		float YM2Z	= GetZLin(LDSCentre-(2*LDS_WIDTH));
+		float YM1Z	= GetZLin(LDSCentre-(1*LDS_WIDTH));
+		float YP1Z	= GetZLin(LDSCentre+(1*LDS_WIDTH));
+		float YP2Z	= GetZLin(LDSCentre+(2*LDS_WIDTH));
+										 
+		// Get extrapolated point either side
+		float C1 = abs((YM1Z + (YM1Z - YM2Z)) - ThisZ);
+		float C2 = abs((YP1Z + (YP1Z - YP2Z)) - ThisZ);
+
+		if(C1 < C2)
+		{
+			ZDiff.y = YM1Z - YM2Z;
+		}
+		else
+		{
+			ZDiff.y = YP2Z - YP1Z;
+		}
+	}
+
+	// Do the blur
+	float SumAO		= 0;
+	float SumWeight = 0;
+
+	// Get the Z Value to compare against 
+
+	float DepthBase = ThisZ  +(ZDiff.x*FilterMin) + (ZDiff.y*FilterMin);
+
+	float SimpleBlur=0.0;
+
+	for(int y = -2; y <= 2; y++)
+	{
+		float PlaneZ = DepthBase;
+		for(int x = -2; x <= 2; x++)
+		{
+			int SamplePosition = Thread ;
+			float Sample_AO = GetAOLin(LDSLineBase);
+			float SampleZ   = GetZLin( LDSLineBase);
+
+			// Get the bilateral weight. This is a function of the difference in height between the plane equation and the base depth
+			// Compare the Z at this sample with the gradients 
+			float SampleZDiff = abs(PlaneZ - SampleZ);
+			
+			const float SpatialFilterWeight = 20000;
+			float Weight =  1.0f  - saturate(SampleZDiff*SpatialFilterWeight );
+
+
+			SumAO += Sample_AO * Weight;
+			//SimpleBlur += Sample_AO;
+			SumWeight += Weight;
+		
+			PlaneZ += ZDiff.x;
+		}
+		DepthBase += ZDiff.y;
+	}
+	SumAO /= SumWeight;
+
+	SumAO *= (PI/2.0) ;
+	OutTexture[PixelPos] = abs(SumAO);
+}
+
+[numthreads(THREADGROUP_SIZEX, THREADGROUP_SIZEY, 1)]
+void GTAOTemporalFilterCS(uint2 GroupId : SV_GroupID, uint2 DispatchThreadId : SV_DispatchThreadID, uint2 GroupThreadId : SV_GroupThreadID)
+{
+	float OutColor     = 0;
+
+	uint2  PixelCoord  = DispatchThreadId; 
+	float2 PixelCenter = (float2)PixelCoord + float2(0.5, 0.5);
+
+	float BlendWeight = GTAOParams[4].x;
+
+	float2 QuarterOffset = AOSceneViewport_ExtentInverse * 0.125;
+	UV = UV + QuarterOffset;
+
+	// Latest AO value
+	float NewAO					= Texture2DSample(GTAOTemporalInput, GTAOTemporalSampler, UV).r;
+
+	// Current depth of the rendered Scene
+	float CurrDepthDeviceZ		= Texture2DSample(ZCurrTexture, ZCurrTextureSampler, UV).r;
+	float CurrDepth				= ConvertFromDeviceZ( CurrDepthDeviceZ);
+
+	// Previous UV value
+	float3 PrevUVDepth			= ReprojectPos( UV,  CurrDepthDeviceZ);
+	float  CurrDepthReproject	= ConvertFromDeviceZ(PrevUVDepth.z);
+	float2 PrevUV				= PrevUVDepth.xy;
+
+	float2 PixVelocity			= UV - PrevUV;
+	float  VelocityMag			= saturate(length(PixVelocity)*100);
+	
+	// Compare velocities 
+	float2 DestVeloc=0;
+	{
+		float DestDeviceZ		= Texture2DSample(ZCurrTexture, ZCurrTextureSampler, PrevUVDepth.xy).r;
+		float3 Reproj			= ReprojectPos( PrevUVDepth.xy,  DestDeviceZ); 
+		DestVeloc				= PrevUVDepth.xy - Reproj.xy;
+	}
+
+	float VelocCompare			= CompareVeloc(PixVelocity, DestVeloc);
+
+	// Get an acceptable range of values we care about from the current AO
+	float RangeVal	   = lerp(0.1, 0.00, VelocityMag);
+	float MinAO = saturate(NewAO - RangeVal);
+	float MaxAO = saturate(NewAO + RangeVal);
+
+	// Simple history value
+	float HistoryPrevUV				= ReadHistoryClamp(PrevUV, MinAO, MaxAO);
+	float HistoryThisUV				= Texture2DSample(HistoryTexture, HistoryTextureSampler, UV ).r;
+	HistoryThisUV = clamp(HistoryThisUV, MinAO, MaxAO);
+
+	float HistoryAO = HistoryPrevUV;
+
+	HistoryAO = lerp(HistoryThisUV, HistoryPrevUV, VelocCompare);
+
+	OutAO				= lerp(HistoryAO, NewAO, BlendWeight);
+
+	OutTexture[PixelPos]			= OutColor;
+}
