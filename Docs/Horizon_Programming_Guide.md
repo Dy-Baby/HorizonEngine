@@ -1,10 +1,4 @@
-## HORIZON-API-12: Create(), Destroy()
-
-Functions for creating objects that allocate the object's memory should be called `create_xxx()`.
-The corresponding function for destroying the object should be called `destroy_xxx()`.
-
-If the functions don't allocate memory, but just initialize an object that already exists, they
-should be called `init_xxx()` and `shutdown_xxx()` instead.
+## 命名规范
 
 ## 内存分配
 
@@ -26,12 +20,10 @@ should be called `init_xxx()` and `shutdown_xxx()` instead.
 
 ### 避免无效数据夹杂在连续内存区域
 
-## #频繁调用的函数尽可能不要做成虚函数
+### 频繁调用的函数尽可能不要做成虚函数
 
-C++的虚函数机制，简单来说是两次地址跳转的函数调用，这对CPU缓存十分不友好，往往命中失败。
+C++的虚函数机制，简单来说是两次地址跳转的函数调用，这对 CPU 缓存十分不友好，往往命中失败。
 
 实际上虚函数可以优雅解决很多面向对象的问题，然而在游戏程序如果有很多虚函数都要频繁调用（例如每帧调用），很容易引发性能问题。
 
-解决方法是，把这些频繁调用的虚函数尽可能去除virtual特性（即做成普通成员函数），并避免调用基类对象的成员函数，代价是这样一改得改很多与之牵连代码。
-
-所以最好一开始设计程序时，需要先想好哪些最好不要写成virtual函数。
+解决方法是，把这些频繁调用的虚函数尽可能去除 virtual 特性（即做成普通成员函数），并避免调用基类对象的成员函数。最好一开始设计程序时，需要先想好哪些最好不要写成 virtual 函数。

@@ -1,35 +1,10 @@
 #include "DefaultRenderPipeline.h"
-#include "PostProcessing.h"
+#include "PostProcessCommon.h"
 #include "RenderEngine/RenderEngine.h"
+#include "ECS/ECS.h"
 
 namespace HE
 {
-
-struct PerFrameData
-{
-	float time;
-
-	float gamma;
-	float exposure;
-
-	Vector3 sunDirection;
-	Vector3 solarIrradiance;
-	float solarAngularRadius;
-	Vector3 sunIlluminanceScale;
-
-	Vector3 cameraPosition;
-	Matrix4x4 viewMatrix;
-	Matrix4x4 invViewMatrix;
-	Matrix4x4 projectionMatrix;
-	Matrix4x4 invProjectionMatrix;
-	Matrix4x4 viewProjectionMatrix;
-	Matrix4x4 invViewProjectionMatrix;
-
-	uint32 renderResolutioWidth;
-	uint32 renderResolutioHeight;
-	uint32 targetResolutioWidth;
-	uint32 targetResolutioHeight;
-};
 
 static const DefaultRenderPipelineSettings defaultRenderPipelineSettings = {
 
@@ -47,15 +22,15 @@ DefaultRenderPipeline::DefaultRenderPipeline(RenderContext* context)
 void DefaultRenderPipeline::Init()
 {
 	RenderBackendSamplerDesc samplerLinearClampDesc = RenderBackendSamplerDesc::CreateLinearClamp(0.0f, -FLOAT_MAX, FLOAT_MAX, 1);
-	samplerLinearClamp = CreateSampler(renderBackend, deviceMask, &samplerLinearClampDesc, "SamplerLinearClamp");
+	samplerLinearClamp = RenderBackendCreateSampler(renderBackend, deviceMask, &samplerLinearClampDesc, "SamplerLinearClamp");
 	RenderBackendSamplerDesc samplerLinearWarpDesc = RenderBackendSamplerDesc::CreateLinearWarp(0.0f, -FLOAT_MAX, FLOAT_MAX, 1);
-	samplerLinearWarp = CreateSampler(renderBackend, deviceMask, &samplerLinearWarpDesc, "SamplerLinearWarp");
+	samplerLinearWarp = RenderBackendCreateSampler(renderBackend, deviceMask, &samplerLinearWarpDesc, "SamplerLinearWarp");
 
 	RenderBackendTextureDesc brdfLutDesc = RenderBackendTextureDesc::Create2D(brdfLutSize, brdfLutSize, PixelFormat::RG16Float, TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource);
-	brdfLut = CreateTexture(renderBackend, deviceMask, &brdfLutDesc, nullptr, "BRDFLut");
+	brdfLut = RenderBackendCreateTexture(renderBackend, deviceMask, &brdfLutDesc, nullptr, "BRDFLut");
 
 	RenderBackendBufferDesc perFrameDataBufferDesc = RenderBackendBufferDesc::CreateByteAddress(sizeof(PerFrameData));
-	perFrameDataBuffer = CreateBuffer(renderBackend, deviceMask, &perFrameDataBufferDesc, "PerFrameDataBuffer");
+	perFrameDataBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &perFrameDataBufferDesc, "PerFrameDataBuffer");
 
 	RenderBackendShaderDesc gbufferShaderDesc;
 	gbufferShaderDesc.rasterizationState.cullMode = RasterizationCullMode::None;
@@ -85,7 +60,7 @@ void DefaultRenderPipeline::Init()
 		defines,
 		&brdfLutShaderDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
 	brdfLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "BRDFLutCS";
-	brdfLutShader = CreateShader(renderBackend, deviceMask, &brdfLutShaderDesc, "BRDFLutShader");
+	brdfLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &brdfLutShaderDesc, "BRDFLutShader");
 
 	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/GBuffer.hsf", source);
 	CompileShader(
@@ -108,7 +83,7 @@ void DefaultRenderPipeline::Init()
 		defines,
 		&gbufferShaderDesc.stages[(uint32)RenderBackendShaderStage::Pixel]);
 	gbufferShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Pixel] = "GBufferPS";
-	gbufferShader = CreateShader(renderBackend, deviceMask, &gbufferShaderDesc, "GBufferShader");
+	gbufferShader = RenderBackendCreateShader(renderBackend, deviceMask, &gbufferShaderDesc, "GBufferShader");
 
 	RenderBackendShaderDesc lightingShaderDesc;
 	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/Lighting.hsf", source);
@@ -122,7 +97,7 @@ void DefaultRenderPipeline::Init()
 		defines,
 		&lightingShaderDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
 	lightingShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "LightingCS";
-	lightingShader = CreateShader(renderBackend, deviceMask, &lightingShaderDesc, "LightingShader");
+	lightingShader = RenderBackendCreateShader(renderBackend, deviceMask, &lightingShaderDesc, "LightingShader");
 
 	RenderBackendShaderDesc tonemappingShaderDesc;
 	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/Tonemapping.hsf", source);
@@ -136,7 +111,10 @@ void DefaultRenderPipeline::Init()
 		defines,
 		&tonemappingShaderDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
 	tonemappingShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "TonemappingCS";
-	tonemappingShader = CreateShader(renderBackend, deviceMask, &tonemappingShaderDesc, "TonemappingShader");
+	tonemappingShader = RenderBackendCreateShader(renderBackend, deviceMask, &tonemappingShaderDesc, "TonemappingShader");
+
+	SkyAtmosphereConfig config;
+	skyAtmosphere = CreateSkyAtmosphere(renderBackend, shaderCompiler, &config);
 }
 
 void CooyRenderGraphFinalTextureToCameraTarget(RenderGraph* renderGraph)
@@ -146,7 +124,7 @@ void CooyRenderGraphFinalTextureToCameraTarget(RenderGraph* renderGraph)
 	renderGraph->AddPass("Present Pass", RenderGraphPassFlags::NeverGetCulled,
 	[&](RenderGraphBuilder& builder)
 	{
-		const auto& viewData = blackboard.Get<RenderGraphViewData>();
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		const auto& finalTextureData = blackboard.Get<RenderGraphFinalTexture>();
 		auto& outputTextureData = blackboard.Get<RenderGraphOutputTexture>();
 
@@ -156,7 +134,7 @@ void CooyRenderGraphFinalTextureToCameraTarget(RenderGraph* renderGraph)
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
 			Offset2D offset = {};
-			Extent2D extent = { viewData.viewWidth, viewData.viewHeight };
+			Extent2D extent = { perFrameData.data.targetResolutionWidth, perFrameData.data.targetResolutionHeight };
 			commandList.CopyTexture2D(
 				registry.GetRenderBackendTexture(finalTexture),
 				offset, 0,
@@ -171,9 +149,19 @@ void CooyRenderGraphFinalTextureToCameraTarget(RenderGraph* renderGraph)
 
 void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* renderGraph)
 {
-	PerFrameData perFrameData = {
+	RenderGraphBlackboard& blackboard = renderGraph->blackboard;
+	auto& perFrameData = blackboard.CreateSingleton<RenderGraphPerFrameData>();
+	auto& gbufferData = blackboard.CreateSingleton<RenderGraphGBuffer>();
+	auto& depthBufferData = blackboard.CreateSingleton<RenderGraphDepthBuffer>();
+	auto& sceneColorData = blackboard.CreateSingleton<RenderGraphSceneColor>();
+	auto& finalTextureData = blackboard.CreateSingleton<RenderGraphFinalTexture>();
+	auto& ouptutTextureData = blackboard.CreateSingleton<RenderGraphOutputTexture>();
+
+	perFrameData.data = {
 		.gamma = 2.2,
 		.exposure = 1.4,
+		.solarIrradiance = { 1.474000f, 1.850400f, 1.911980f },
+		.solarAngularRadius = 0.004675f,
 		.cameraPosition = view->camera.position,
 		.viewMatrix = view->camera.viewMatrix,
 		.invViewMatrix = view->camera.invViewMatrix,
@@ -181,24 +169,13 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		.invProjectionMatrix = view->camera.invProjectionMatrix,
 		.viewProjectionMatrix = view->camera.projectionMatrix * view->camera.viewMatrix,
 		.invViewProjectionMatrix = view->camera.invViewMatrix * view->camera.invProjectionMatrix,
-		.renderResolutioWidth = view->targetWidth,
-		.renderResolutioHeight = view->targetHeight,
-		.targetResolutioWidth = view->targetWidth,
-		.targetResolutioHeight = view->targetHeight,
+		.renderResolutionWidth = view->targetWidth,
+		.renderResolutionHeight = view->targetHeight,
+		.targetResolutionWidth = view->targetWidth,
+		.targetResolutionHeight = view->targetHeight,
 	};
-	WriteBuffer(renderBackend, perFrameDataBuffer, 0, &perFrameData, sizeof(PerFrameData));
-
-	RenderGraphBlackboard& blackboard = renderGraph->blackboard;
-	auto& viewData = blackboard.CreateSingleton<RenderGraphViewData>();
-	auto& gbufferData = blackboard.CreateSingleton<RenderGraphGBuffer>();
-	auto& depthBufferData = blackboard.CreateSingleton<RenderGraphDepthBuffer>();
-	auto& sceneColorData = blackboard.CreateSingleton<RenderGraphSceneColor>();
-	auto& finalTextureData = blackboard.CreateSingleton<RenderGraphFinalTexture>();
-	auto& ouptutTextureData = blackboard.CreateSingleton<RenderGraphOutputTexture>();
-
-	viewData.viewWidth = view->targetWidth;
-	viewData.viewHeight = view->targetHeight;
-	viewData.renderResolution = { .width = view->targetWidth, .height = view->targetHeight };
+	perFrameData.buffer = perFrameDataBuffer;
+	RenderBackendWriteBuffer(renderBackend, perFrameDataBuffer, 0, &perFrameData, sizeof(PerFrameData));
 
 	ouptutTextureData.outputTexture = renderGraph->ImportExternalTexture(view->target, view->targetDesc, RenderBackendResourceState::Undefined, "Camera Target");
 	ouptutTextureData.outputTextureDesc = view->targetDesc;
@@ -207,43 +184,43 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 	RenderTargetClearValue clearDepth = { .depthStencil = { .depth = 1.0f } };
 
 	RenderGraphTextureDesc vbuffer0Desc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::R32Uint,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
 	RenderGraphTextureDesc gbuffer0Desc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
 	RenderGraphTextureDesc gbuffer1Desc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
 	RenderGraphTextureDesc gbuffer2Desc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
 	RenderGraphTextureDesc depthBufferDesc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::D32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::DepthStencil,
 		clearDepth);
 	RenderGraphTextureDesc sceneColorDesc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA16Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
 	RenderGraphTextureDesc finalTextureDesc = RenderGraphTextureDesc::Create2D(
-		viewData.renderResolution.width,
-		viewData.renderResolution.height,
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
 		PixelFormat::BGRA8Unorm,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget | TextureCreateFlags::UnorderedAccess);
 
@@ -280,6 +257,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		});
 		renderBRDFLut = false;
 	}
+/*
 
 	if ()
 	{
@@ -352,10 +330,11 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		});
 	}
 
+	*/
 	renderGraph->AddPass("GBuffer Pass", RenderGraphPassFlags::Raster,
 	[&](RenderGraphBuilder& builder)
 	{
-		const auto& viewData = blackboard.Get<RenderGraphViewData>();
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		auto& gbufferData = blackboard.Get<RenderGraphGBuffer>();
 		auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
 		
@@ -374,8 +353,8 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 			RenderBackendViewport viewport = {
 				.x = 0.0f,
 				.y = 0.0f,
-				.width = (float)viewData.renderResolution.width,
-				.height = (float)viewData.renderResolution.height,
+				.width = (float)perFrameData.data.renderResolutionWidth,
+				.height = (float)perFrameData.data.renderResolutionHeight,
 				.minDepth = 0.0f,
 				.maxDepth = 1.0f,
 			};
@@ -383,8 +362,8 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 			RenderBackendScissor scissor = {
 				.left = 0,
 				.top = 0,
-				.width = viewData.renderResolution.width,
-				.height = viewData.renderResolution.height,
+				.width = perFrameData.data.renderResolutionWidth,
+				.height = perFrameData.data.renderResolutionHeight,
 			};
 			commandList.SetScissors(&scissor, 1);
 
@@ -429,7 +408,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 	renderGraph->AddPass("Lighting Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
-		const auto& viewData = blackboard.Get<RenderGraphViewData>();
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		const auto& gbufferData = blackboard.Get<RenderGraphGBuffer>();
 		// const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
 		auto& sceneColorData = blackboard.Get<RenderGraphSceneColor>();
@@ -442,8 +421,8 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
-			uint32 dispatchWidth = CEIL_DIV(viewData.renderResolution.width, 8);
-			uint32 dispatchHeight = CEIL_DIV(viewData.renderResolution.height, 8);
+			uint32 dispatchWidth = CEIL_DIV(perFrameData.data.renderResolutionWidth, 8);
+			uint32 dispatchHeight = CEIL_DIV(perFrameData.data.renderResolutionHeight, 8);
 
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
@@ -461,11 +440,17 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		};
 	});
 	
-	/*const bool renderSkyAtmosphere = ShouldRenderSkyAtmosphere(scene);
+	// const bool renderSkyAtmosphere = ShouldRenderSkyAtmosphere();
+	const bool renderSkyAtmosphere = true;
 	if (renderSkyAtmosphere)
 	{
-		RenderSkyAtmosphereLookUpTables(renderGraph);
-	}*/
+		const auto& entities = view->scene->GetEntityManager()->GetView<SkyAtmosphereComponent>();
+		for (const auto& entity : entities)
+		{
+			RenderSky(*renderGraph, *skyAtmosphere, view->scene->GetEntityManager()->GetComponent<SkyAtmosphereComponent>(entity));
+			break;
+		}
+	}
 
 #if HE_EDITOR
 	RenderGizmo();
@@ -474,7 +459,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 	renderGraph->AddPass("Final Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
-		const auto& viewData = blackboard.Get<RenderGraphViewData>();
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		const auto& sceneColorData = blackboard.Get<RenderGraphSceneColor>();
 		auto& finalTextureData = blackboard.Get<RenderGraphFinalTexture>();
 
@@ -483,8 +468,8 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
-			uint32 dispatchWidth = CEIL_DIV(viewData.viewWidth, POST_PROCESSING_THREAD_GROUP_SIZE);
-			uint32 dispatchHeight = CEIL_DIV(viewData.viewHeight, POST_PROCESSING_THREAD_GROUP_SIZE);
+			uint32 dispatchWidth = CEIL_DIV(perFrameData.data.targetResolutionWidth, POST_PROCESS_THREAD_GROUP_SIZE);
+			uint32 dispatchHeight = CEIL_DIV(perFrameData.data.targetResolutionHeight, POST_PROCESS_THREAD_GROUP_SIZE);
 
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);

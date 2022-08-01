@@ -32,7 +32,7 @@ RenderBackendTextureHandle RenderGraphResourcePool::FindOrCreateTexture(RenderBa
 	}
 
 	uint32 deviceMask = ~0u;
-	RenderBackendTextureHandle texture = CreateTexture(backend, deviceMask, desc, nullptr, name);
+	RenderBackendTextureHandle texture = RenderBackendCreateTexture(backend, deviceMask, desc, nullptr, name);
 	RenderBackendResourceState initialState = RenderBackendResourceState::Undefined;
 
 	RenderGraphPooledTexture pooledTexture = {

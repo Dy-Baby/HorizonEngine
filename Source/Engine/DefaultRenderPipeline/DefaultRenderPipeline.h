@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DefaultRenderPipelineCommon.h"
+#include "SkyAtmosphere.h"
 
 #define HE_DEFUALT_RENDER_PIPELINE_NAME "Horizon Engine Default Render Pipeline"
 
@@ -46,6 +47,8 @@ private:
 	RenderBackendShaderHandle gbufferShader;
 	RenderBackendShaderHandle lightingShader;
 	RenderBackendShaderHandle tonemappingShader;
+
+	SkyAtmosphere* skyAtmosphere;
 };
 
 }

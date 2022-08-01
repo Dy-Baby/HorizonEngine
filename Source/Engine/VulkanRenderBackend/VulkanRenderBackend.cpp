@@ -4027,7 +4027,7 @@ static void DestroyRenderDevices(void* instance)
 	}
 }
 
-static void Tick(void* instance)
+static void RenderBackendTick(void* instance)
 {
 	VulkanRenderBackend* backend = (VulkanRenderBackend*)instance;
 	for (uint32 deviceIndex = 0; deviceIndex < backend->numDevices; deviceIndex++)
@@ -4576,7 +4576,7 @@ namespace HE
 		RenderBackend* backend = new RenderBackend();
 		*backend = {
 			.instance = vulkanBackend,
-			.Tick = Tick,
+			.Tick = RenderBackendTick,
 			.CreateRenderDevices = CreateRenderDevices,
 			.DestroyRenderDevices = DestroyRenderDevices,
 			.CreateSwapChain = CreateSwapChain,
@@ -4608,7 +4608,7 @@ namespace HE
 
 	void VulkanRenderBackendDestroyBackend(RenderBackend* backend)
 	{
-		DestroyRenderDevices(backend);
+		RenderBackendDestroyRenderDevices(backend);
 		VulkanRenderBackend* vulkanBackend = (VulkanRenderBackend*)backend->instance;
 		vulkanBackend->Exit();
 		delete vulkanBackend;

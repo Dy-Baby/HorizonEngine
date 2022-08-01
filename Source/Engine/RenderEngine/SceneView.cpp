@@ -42,7 +42,7 @@ void RenderSceneView(
 
     uint32 numCommandLists = (uint32)renderContext->commandLists.size();
     RenderCommandList** commandLists = renderContext->commandLists.data();
-    SubmitRenderCommandLists(renderBackend, commandLists, numCommandLists);
+    RenderBackendSubmitRenderCommandLists(renderBackend, commandLists, numCommandLists);
 }
 
 }

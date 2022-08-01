@@ -38,8 +38,6 @@ public:
 
 	bool HasEntity(EntityHandle entity);
 
-	EntityHandle GetEntity(EntityHandle entity);
-
 	template<typename... Components>
 	auto GetGroup() 
 	{ 

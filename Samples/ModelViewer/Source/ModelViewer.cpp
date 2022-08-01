@@ -1,5 +1,6 @@
 #include "ModelViewer.h"
 #include "MainWindow.h"
+#include "DefaultRenderPipeline/DefaultRenderPipeline.h"
 
 ModelViewerApp* ModelViewerApp::Instance = nullptr;
 
@@ -15,6 +16,38 @@ ModelViewerApp::~ModelViewerApp()
 {
 	ASSERT(Instance);
 	Instance = nullptr;
+}
+
+void SetupEarthAtmosphere(HE::AtmosphereParameters* outAtmosphere)
+{
+	// Values shown here are the result of integration over wavelength power spectrum integrated with paricular function.
+	// Refer to https://github.com/ebruneton/precomputed_atmospheric_scattering for details.
+
+	// All units in kilometers
+	const float EarthBottomRadius = 6360.0f;
+	const float EarthTopRadius = 6460.0f;   // 100km atmosphere radius, less edge visible and it contain 99.99% of the atmosphere medium https://en.wikipedia.org/wiki/K%C3%A1rm%C3%A1n_line
+	const float EarthRayleighScaleHeight = 8.0f;
+	const float EarthMieScaleHeight = 1.2f;
+
+	const double maxSunZenithAngle = M_PI * 120.0 / 180.0;
+	*outAtmosphere = HE::AtmosphereParameters{
+		// Earth
+		.bottomRadius = EarthBottomRadius,
+		.topRadius = EarthTopRadius,
+		.groundAlbedo = { 0.0f, 0.0f, 0.0f },
+		// Raleigh scattering
+		.rayleighDensity = { { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, -1.0f / EarthRayleighScaleHeight, 0.0f, 0.0f } },
+		.rayleighScattering = { 0.005802f, 0.013558f, 0.033100f }, // 1/km
+		// Mie scattering
+		.mieDensity = { { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, -1.0f / EarthMieScaleHeight, 0.0f, 0.0f } },
+		.mieScattering = { 0.003996f, 0.003996f, 0.003996f }, // 1/km
+		.mieExtinction = { 0.004440f, 0.004440f, 0.004440f }, // 1/km
+		.miePhaseFunctionG = 0.8f,
+		// Ozone absorption
+		.absorptionDensity = { { 25.0f, 0.0f, 0.0f, 1.0f / 15.0f, -2.0f / 3.0f }, { 0.0f, 0.0f, 0.0f, -1.0f / 15.0f, 8.0f / 3.0f } },
+		.absorptionExtinction = { 0.000650f, 0.001881f, 0.000085f }, // 1/km
+		.cosMaxSunZenithAngle = (float)HE::Math::Cos(maxSunZenithAngle),
+	};
 }
 
 bool ModelViewerApp::Init()
@@ -43,9 +76,9 @@ bool ModelViewerApp::Init()
 	
 	uint32 deviceMask;
 	uint32 physicalDeviceID = 0;
-	CreateRenderDevices(renderBackend, &physicalDeviceID, 1, &deviceMask);
+	RenderBackendCreateRenderDevices(renderBackend, &physicalDeviceID, 1, &deviceMask);
 	
-	swapChain = CreateSwapChain(renderBackend, deviceMask, (uint64)window->GetNativeHandle());
+	swapChain = RenderBackendCreateSwapChain(renderBackend, deviceMask, (uint64)window->GetNativeHandle());
 	swapChainWidth = window->GetWidth();
 	swapChainHeight = window->GetHeight();
 
@@ -89,6 +122,15 @@ bool ModelViewerApp::Init()
 	entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 	entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
 	entityManager->AddComponent<HierarchyComponent>(mainCamera);
+
+	auto sky = entityManager->CreateEntity("Sky");
+	entityManager->AddComponent<TransformComponent>(sky);
+	entityManager->AddComponent<HierarchyComponent>(sky);
+	auto& skyAtmosphereComponent = entityManager->AddComponent<SkyAtmosphereComponent>(sky);
+	SetupEarthAtmosphere(&skyAtmosphereComponent.atmosphere);
+	skyAtmosphereComponent.viewRayMarchMinSPP = 4;
+	skyAtmosphereComponent.viewRayMarchMaxSPP = 16;
+	skyAtmosphereComponent.multipleScatteringFactor = 1.0;
 
 	renderContext = new RenderContext();
 	renderContext->arena = arena;
@@ -135,7 +177,7 @@ void ModelViewerApp::Render()
 	camera.aspectRatio = (float)swapChainWidth / (float)swapChainHeight;
 	auto& cameraTransform = scene->GetEntityManager()->GetComponent<HE::TransformComponent>(mainCamera);
 	sceneView->renderPipeline = renderPipeline;
-	sceneView->target = HE::GetActiveSwapChainBuffer(renderBackend, swapChain);
+	sceneView->target = HE::RenderBackendGetActiveSwapChainBuffer(renderBackend, swapChain);
 	sceneView->targetDesc = HE::RenderBackendTextureDesc::Create2D(swapChainWidth, swapChainHeight, HE::PixelFormat::BGRA8Unorm, HE::TextureCreateFlags::Present);
 	sceneView->targetWidth = swapChainWidth;
 	sceneView->targetHeight = swapChainHeight;
@@ -186,14 +228,14 @@ int ModelViewerApp::Run()
 		uint32 height = window->GetHeight();
 		if (width != swapChainWidth || height != swapChainHeight)
 		{
-			HE::ResizeSwapChain(renderBackend, swapChain, &width, &height);
+			HE::RenderBackendResizeSwapChain(renderBackend, swapChain, &width, &height);
 			swapChainWidth = width;
 			swapChainHeight = height;
 		}
 
 		Render();
 
-		HE::PresentSwapChain(renderBackend, swapChain);
+		HE::RenderBackendPresentSwapChain(renderBackend, swapChain);
 
 		((HE::LinearArena*)arena)->Reset();
 

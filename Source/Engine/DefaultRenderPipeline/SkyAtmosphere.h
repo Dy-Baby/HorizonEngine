@@ -1,15 +1,34 @@
 #pragma once
 
-#include <HorizonEngine.h>
+#include "DefaultRenderPipelineCommon.h"
 
 namespace HE
 {
 
-#ifdef HIGHT_QUALITY_SKY_ATMOSPHERE
+#ifdef HIGH_QUALITY_SKY_ATMOSPHERE
 #define SKY_ATMOSPHERE_DEFAULT_LUT_FORMAT PixelFormat::RGBA32Float
 #else
 #define SKY_ATMOSPHERE_DEFAULT_LUT_FORMAT PixelFormat::RGBA16Float
 #endif
+
+struct RenderGraphSkyAtmosphereData
+{
+    RenderGraphTextureHandle transmittanceLut;
+    RenderGraphTextureHandle multipleScatteringLut;
+    RenderGraphTextureHandle skyViewLut;
+    RenderGraphTextureHandle aerialPerspectiveVolume;
+};
+RENDER_GRAPH_BLACKBOARD_REGISTER_STRUCT(RenderGraphSkyAtmosphereData);
+
+struct SkyAtmosphereConfig
+{
+    uint32 transmittanceLutWidth = 256;
+    uint32 transmittanceLutHeight = 64;
+    uint32 multipleScatteringLutSize = 32;
+    uint32 skyViewLutWidth = 192;
+    uint32 skyViewLutHeight = 108;
+    uint32 aerialPerspectiveVolumeSize = 32;
+};
 
 struct AtmosphereEditorProperties
 {
@@ -86,46 +105,32 @@ struct AtmosphereParameters
     float cosMaxSunZenithAngle;
 };
 
-//struct AtmosphereParameters
-//{
-//    /// Radius of the planet (center to ground)
-//    float bottomRadius;
-//    /// Maximum considered atmosphere height (center to atmosphere top)
-//    float topRadius;
-//    /// Rayleigh scattering exponential distribution scale in the atmosphere
-//    float rayleighDensityExpScale;
-//    /// Rayleigh scattering coefficients
-//    Vector3 rayleighScattering;
-//    /// Mie scattering exponential distribution scale in the atmosphere
-//    float mieDensityExpScale;
-//    /// Mie scattering coefficients
-//    Vector3 mieScattering;
-//    /// Mie extinction coefficients
-//    Vector3 mieExtinction;
-//    /// Mie absorption coefficients
-//    Vector3 mieAbsorption;
-//    /// Mie phase function excentricity
-//    float miePhaseG;
-//    /// Another medium type in the atmosphere
-//    float absorptionDensity0LayerWidth;
-//    float absorptionDensity0ConstantTerm;
-//    float absorptionDensity0LinearTerm;
-//    float absorptionDensity1ConstantTerm;
-//    float absorptionDensity1LinearTerm;
-//    /// This other medium only absorb light, e.g. useful to represent ozone in the earth atmosphere
-//    Vector3 absorptionExtinction;
-//    /// The albedo of the ground.
-//    Vector3 groundAlbedo;
-//};
-
 struct SkyAtmosphereComponent
 {
 	AtmosphereParameters atmosphere;
-    EntityHandle sun;
+    float multipleScatteringFactor;
+    //EntityHandle sun;
     float viewRayMarchMinSPP;
     float viewRayMarchMaxSPP;
 };
 
-void RenderSky(RenderGraph& renderGraph, SkyAtmosphere, );
+struct SkyAtmosphere
+{
+    SkyAtmosphereConfig config;
+    RenderBackend* renderBackend;
+
+    RenderBackendShaderHandle transmittanceLutShader;
+    RenderBackendShaderHandle multipleScatteringLutShader;
+    RenderBackendShaderHandle skyViewLutShader;
+    RenderBackendShaderHandle aerialPerspectiveVolumeShader;
+    RenderBackendShaderHandle renderSkyShader;
+
+    RenderBackendBufferHandle skyAtmosphereConstants;
+};
+
+SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler* compiler, SkyAtmosphereConfig* config);
+void DestroySkyAtmosphere(SkyAtmosphere* skyAtmosphere);
+
+void RenderSky(RenderGraph& renderGraph, const SkyAtmosphere& skyAtmosphere, const SkyAtmosphereComponent& component);
 
 }

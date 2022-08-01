@@ -1,5 +1,5 @@
 #include "DefaultRenderPipelineCommon.h"
-#include "PostProcessing.h"
+#include "PostProcessCommon.h"
 #include "DepthOfField.h"
 
 namespace HE

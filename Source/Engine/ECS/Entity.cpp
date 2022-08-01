@@ -20,11 +20,6 @@ namespace HE
 
 	bool EntityManager::HasEntity(EntityHandle entity)
 	{
-		return GetEntity(entity);
-	}
-
-	EntityHandle EntityManager::GetEntity(EntityHandle entity)
-	{
-		return registry.entity(entity);
+		return registry.has(entity);
 	}
 }

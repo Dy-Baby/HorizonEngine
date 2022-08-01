@@ -75,7 +75,7 @@ namespace HE
 		stbi_image_free(data);
 
 		RenderBackendTextureDesc desc = RenderBackendTextureDesc::Create2D(iw, ih, PixelFormat::RGBA8Unorm, TextureCreateFlags::ShaderResource);
-		RenderBackendTextureHandle texture = CreateTexture(renderBackend, ~0u, &desc, buffer, filename);
+		RenderBackendTextureHandle texture = RenderBackendCreateTexture(renderBackend, ~0u, &desc, buffer, filename);
 
 		_aligned_free(buffer);
 		
@@ -89,24 +89,24 @@ namespace HE
 		for (uint32 i = 0; i < numMeshes; i++)
 		{
 			RenderBackendBufferDesc vertexBuffer0Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector3));
-			meshes[i].vertexBuffers[0] = CreateBuffer(renderBackend, deviceMask, &vertexBuffer0Desc, "VertexPosition");
-			WriteBuffer(renderBackend, meshes[i].vertexBuffers[0], 0, meshes[i].positions.data(), meshes[i].numVertices * sizeof(Vector3));
+			meshes[i].vertexBuffers[0] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer0Desc, "VertexPosition");
+			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[0], 0, meshes[i].positions.data(), meshes[i].numVertices * sizeof(Vector3));
 
 			RenderBackendBufferDesc vertexBuffer1Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector3));
-			meshes[i].vertexBuffers[1] = CreateBuffer(renderBackend, deviceMask, &vertexBuffer1Desc, "VertexNormal");
-			WriteBuffer(renderBackend, meshes[i].vertexBuffers[1], 0, meshes[i].normals.data(), meshes[i].numVertices * sizeof(Vector3));
+			meshes[i].vertexBuffers[1] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer1Desc, "VertexNormal");
+			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[1], 0, meshes[i].normals.data(), meshes[i].numVertices * sizeof(Vector3));
 
 			RenderBackendBufferDesc vertexBuffer2Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector4));
-			meshes[i].vertexBuffers[2] = CreateBuffer(renderBackend, deviceMask, &vertexBuffer2Desc, "VertexTangent");
-			WriteBuffer(renderBackend, meshes[i].vertexBuffers[2], 0, meshes[i].tangents.data(), meshes[i].numVertices * sizeof(Vector4));
+			meshes[i].vertexBuffers[2] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer2Desc, "VertexTangent");
+			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[2], 0, meshes[i].tangents.data(), meshes[i].numVertices * sizeof(Vector4));
 
 			RenderBackendBufferDesc vertexBuffer3Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector2));
-			meshes[i].vertexBuffers[3] = CreateBuffer(renderBackend, deviceMask, &vertexBuffer3Desc, "VertexTexcoord");
-			WriteBuffer(renderBackend, meshes[i].vertexBuffers[3], 0, meshes[i].texCoords.data(), meshes[i].numVertices * sizeof(Vector2));
+			meshes[i].vertexBuffers[3] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer3Desc, "VertexTexcoord");
+			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[3], 0, meshes[i].texCoords.data(), meshes[i].numVertices * sizeof(Vector2));
 
 			RenderBackendBufferDesc indexBufferDesc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numIndices * sizeof(uint32));
-			meshes[i].indexBuffer = CreateBuffer(renderBackend, deviceMask, &indexBufferDesc, "IndexBuffer");
-			WriteBuffer(renderBackend, meshes[i].indexBuffer, 0, meshes[i].indices.data(), meshes[i].numIndices * sizeof(uint32));
+			meshes[i].indexBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &indexBufferDesc, "IndexBuffer");
+			RenderBackendWriteBuffer(renderBackend, meshes[i].indexBuffer, 0, meshes[i].indices.data(), meshes[i].numIndices * sizeof(uint32));
 		}
 
 		textures.resize(numTextures);
@@ -116,7 +116,7 @@ namespace HE
 		}
 
 		RenderBackendBufferDesc materialBufferDesc = RenderBackendBufferDesc::CreateByteAddress(materials.size() * sizeof(MaterialInstanceData));
-		materialBuffer = CreateBuffer(renderBackend, deviceMask, &materialBufferDesc, "MaterialBuffer");
+		materialBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &materialBufferDesc, "MaterialBuffer");
 
 		std::vector<MaterialInstanceData> materialInstances(numMaterials);
 		for (uint32 i = 0; i < (uint32)materials.size(); i++)
@@ -133,7 +133,7 @@ namespace HE
 			}
 			else
 			{
-				materialInstances[i].baseColorMapIndex = GetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.baseColorMapIndex]);
+				materialInstances[i].baseColorMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.baseColorMapIndex]);
 			}
 			if (material.normalMapIndex < 0)
 			{
@@ -141,7 +141,7 @@ namespace HE
 			}
 			else
 			{
-				materialInstances[i].normalMapIndex = GetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.normalMapIndex]);
+				materialInstances[i].normalMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.normalMapIndex]);
 			}
 			if (material.metallicRoughnessMapIndex < 0)
 			{
@@ -149,23 +149,23 @@ namespace HE
 			}
 			else
 			{
-				materialInstances[i].metallicRoughnessMapIndex = GetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.metallicRoughnessMapIndex]);
+				materialInstances[i].metallicRoughnessMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.metallicRoughnessMapIndex]);
 			}
 			//RenderBackendTextureSRVHandle baseColorMapSRV = CreateTextureSRV(renderBackend, deviceMask, &RenderBackendTextureSRVDesc::Create(textures[material.baseColorMapIndex]), "BaseColorMapSRV");
 			//RenderBackendTextureSRVHandle normalMapSRV = CreateTextureSRV(renderBackend, deviceMask, &RenderBackendTextureSRVDesc::Create(textures[material.normalMapIndex]), "NormalMapSRV");
 			//RenderBackendTextureSRVHandle metallicRoughnessMapSRV = CreateTextureSRV(renderBackend, deviceMask, &RenderBackendTextureSRVDesc::Create(textures[material.metallicRoughnessMapIndex]), "metallicRoughnessMapSRV");
 		}
-		WriteBuffer(renderBackend, materialBuffer, 0, materialInstances.data(), numMaterials * sizeof(MaterialInstanceData));
+		RenderBackendWriteBuffer(renderBackend, materialBuffer, 0, materialInstances.data(), numMaterials * sizeof(MaterialInstanceData));
 
 		RenderBackendBufferDesc worldMatrixBufferDesc = RenderBackendBufferDesc::CreateByteAddress(numMeshes * sizeof(Matrix4x4));
-		worldMatrixBuffer = CreateBuffer(renderBackend, deviceMask, &worldMatrixBufferDesc, "WorldMatrixBuffer");
+		worldMatrixBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &worldMatrixBufferDesc, "WorldMatrixBuffer");
 		
 		worldMatrices.resize(numMeshes);
 		for (uint32 i = 0; i < numMeshes; i++)
 		{
 			worldMatrices[i] = HE::Math::Compose(HE::Vector3(0.0f, 0.0f, 0.0f), HE::Quaternion(HE::Math::DegreesToRadians(HE::Vector3(180.0f, 0.0f, 0.0f))), HE::Vector3(1.0f, 1.0f, 1.0f));
 		}
-		WriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), numMeshes * sizeof(Matrix4x4));
+		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), numMeshes * sizeof(Matrix4x4));
 	}
 
 	void Scene::Update()

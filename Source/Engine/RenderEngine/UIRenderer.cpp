@@ -94,7 +94,7 @@ bool UIRenderer::Init()
             height,
             PixelFormat::RGBA8Unorm,
             TextureCreateFlags::ShaderResource);
-        defaultFontTexture = CreateTexture(renderBackend, deviceMask, &defaultFontTextureDesc, pixels, "DefaultFont");
+        defaultFontTexture = RenderBackendCreateTexture(renderBackend, deviceMask, &defaultFontTextureDesc, pixels, "DefaultFont");
         io.Fonts->SetTexID((ImTextureID)(uint64)defaultFontTexture);
     }
 
@@ -142,11 +142,11 @@ bool UIRenderer::Init()
         &imguiShaderDesc.stages[(uint32)RenderBackendShaderStage::Pixel]);
 
     imguiShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Pixel] = "ImGuiPS";
-    imguiShader = CreateShader(renderBackend, deviceMask, &imguiShaderDesc, "ImGuiPS");
+    imguiShader = RenderBackendCreateShader(renderBackend, deviceMask, &imguiShaderDesc, "ImGuiPS");
 
     RenderBackendBufferDesc bufferDesc = RenderBackendBufferDesc::CreateByteAddress(100);
-    vertexBuffer = CreateBuffer(renderBackend, deviceMask, &bufferDesc, "ImGuiVertexBuffer");
-    indexBuffer = CreateBuffer(renderBackend, deviceMask, &bufferDesc, "ImGuiIndexBuffer");
+    vertexBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &bufferDesc, "ImGuiVertexBuffer");
+    indexBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &bufferDesc, "ImGuiIndexBuffer");
     return true;
 }
 
@@ -182,12 +182,12 @@ void UIRenderer::EndFrame()
         uint64 newIndexBufferSize = drawData->TotalIdxCount * sizeof(ImDrawIdx);
         if (vertexBufferSize < newVertexBufferSize)
         {
-            ResizeBuffer(renderBackend, vertexBuffer, newVertexBufferSize);
+            RenderBackendResizeBuffer(renderBackend, vertexBuffer, newVertexBufferSize);
             vertexBufferSize = newVertexBufferSize;
         }
         if (indexBufferSize < newIndexBufferSize)
         {
-            ResizeBuffer(renderBackend, indexBuffer, newIndexBufferSize);
+            RenderBackendResizeBuffer(renderBackend, indexBuffer, newIndexBufferSize);
             indexBufferSize = newIndexBufferSize;
         }
         vertices.reserve(drawData->TotalVtxCount);
@@ -202,8 +202,8 @@ void UIRenderer::EndFrame()
             vertexOffset += cmdList->VtxBuffer.Size;
             indexOffset += cmdList->IdxBuffer.Size;
         }
-        WriteBuffer(renderBackend, vertexBuffer, 0, vertices.data(), vertexBufferSize);
-        WriteBuffer(renderBackend, indexBuffer, 0, indices.data(), indexBufferSize);
+        RenderBackendWriteBuffer(renderBackend, vertexBuffer, 0, vertices.data(), vertexBufferSize);
+        RenderBackendWriteBuffer(renderBackend, indexBuffer, 0, indices.data(), indexBufferSize);
     }
 }
 

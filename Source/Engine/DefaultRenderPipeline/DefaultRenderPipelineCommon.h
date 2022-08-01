@@ -6,13 +6,38 @@
 namespace HE
 {
 
-struct RenderGraphViewData
+struct PerFrameData
 {
-	uint32 viewWidth;
-	uint32 viewHeight;
-	Extent2D renderResolution;
+	float time;
+
+	float gamma;
+	float exposure;
+
+	Vector3 sunDirection;
+	Vector3 solarIrradiance;
+	float solarAngularRadius;
+	Vector3 sunIlluminanceScale;
+
+	Vector3 cameraPosition;
+	Matrix4x4 viewMatrix;
+	Matrix4x4 invViewMatrix;
+	Matrix4x4 projectionMatrix;
+	Matrix4x4 invProjectionMatrix;
+	Matrix4x4 viewProjectionMatrix;
+	Matrix4x4 invViewProjectionMatrix;
+
+	uint32 renderResolutionWidth;
+	uint32 renderResolutionHeight;
+	uint32 targetResolutionWidth;
+	uint32 targetResolutionHeight;
 };
-RENDER_GRAPH_BLACKBOARD_REGISTER_STRUCT(RenderGraphViewData);
+
+struct RenderGraphPerFrameData
+{
+	PerFrameData data;
+	RenderBackendBufferHandle buffer;
+};
+RENDER_GRAPH_BLACKBOARD_REGISTER_STRUCT(RenderGraphPerFrameData);
 
 struct RenderGraphGBuffer
 {
