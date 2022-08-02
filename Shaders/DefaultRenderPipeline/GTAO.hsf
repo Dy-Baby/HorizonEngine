@@ -1,3 +1,34 @@
+const uint NUM_STEPS = 12;
+
+
+{
+	[unroll]
+	for (uint i = 0;  i < NUM_STEPS; i++)
+	{
+		
+	}
+}
+
+float IntegrateArc(float h1, float h2)
+{
+
+}
+
+[numthreads(8, 8, 1)]
+void SearchForHorizonsCS(uint2 GroupId : SV_GroupID, uint2 DispatchThreadId : SV_DispatchThreadID, uint2 GroupThreadId : SV_GroupThreadID)
+{
+	Vd = IntegrateArc(h1, h2);
+
+	for (uint sliceIndex = 0; sliceIndex < numSlices; sliceIndex++)
+	{
+		lpfloat phi = sliceK * XE_GTAO_PI;
+		lpfloat cosPhi = cos(phi);
+		lpfloat sinPhi = sin(phi);
+	}
+
+	return OutHorizons;
+}
+
 [numthreads(16, 8, 1)]
 void GTAOSpatialFilterCS(int GroupIndex: SV_GroupIndex, uint2 GroupId : SV_GroupID, uint2 DispatchThreadId : SV_DispatchThreadID, uint2 GroupThreadId : SV_GroupThreadID) 
 {
@@ -124,8 +155,7 @@ void GTAOSpatialFilterCS(int GroupIndex: SV_GroupIndex, uint2 GroupId : SV_Group
 			float SampleZDiff = abs(PlaneZ - SampleZ);
 			
 			const float SpatialFilterWeight = 20000;
-			float Weight =  1.0f  - saturate(SampleZDiff*SpatialFilterWeight );
-
+			float Weight =  1.0f  - saturate(SampleZDiff * SpatialFilterWeight);
 
 			SumAO += Sample_AO * Weight;
 			//SimpleBlur += Sample_AO;
