@@ -1,6 +1,5 @@
 *
 
-Build/
 !Screenshots/*
 
 !*/
@@ -28,3 +27,5 @@ Build/
 
 !README
 !LICENSE
+
+Build/
