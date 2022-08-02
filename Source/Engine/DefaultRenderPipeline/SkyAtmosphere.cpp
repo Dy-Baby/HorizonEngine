@@ -95,6 +95,8 @@ static void UpdateSkyAtmosphereConstants(const SkyAtmosphere& skyAtmosphere, con
     constants.skyViewLutWidth = config.skyViewLutWidth;
     constants.skyViewLutHeight = config.skyViewLutHeight;
     constants.aerialPerspectiveVolumeSize = config.aerialPerspectiveVolumeSize;
+    constants.rayMarchMinSPP = component.viewRayMarchMinSPP;
+    constants.rayMarchMaxSPP = component.viewRayMarchMaxSPP;
 
     RenderBackendWriteBuffer(skyAtmosphere.renderBackend, skyAtmosphere.skyAtmosphereConstants, 0, &constants, sizeof(constants));
 }
@@ -127,10 +129,10 @@ static void Update(RenderGraph& renderGraph, const SkyAtmosphere& skyAtmosphere,
         SKY_ATMOSPHERE_DEFAULT_LUT_FORMAT,
         TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource);
 
-    skyAtmosphereData.transmittanceLut = renderGraph.CreateTexture(transmittanceLutDesc, "Sky Atmosphere Transmittance Lut");
-    skyAtmosphereData.multipleScatteringLut = renderGraph.CreateTexture(transmittanceLutDesc, "Sky Atmosphere Multiple Scattering Lut");
-    skyAtmosphereData.skyViewLut = renderGraph.CreateTexture(transmittanceLutDesc, "Sky Atmosphere Sky View Lut");
-    skyAtmosphereData.aerialPerspectiveVolume = renderGraph.CreateTexture(transmittanceLutDesc, "Sky Atmosphere Aerial Perspective Volume");
+    skyAtmosphereData.transmittanceLut        = renderGraph.CreateTexture(transmittanceLutDesc, "Sky Atmosphere Transmittance Lut");
+    skyAtmosphereData.multipleScatteringLut   = renderGraph.CreateTexture(multipleScatteringLutDesc, "Sky Atmosphere Multiple Scattering Lut");
+    skyAtmosphereData.skyViewLut              = renderGraph.CreateTexture(skyViewLutDesc, "Sky Atmosphere Sky View Lut");
+    skyAtmosphereData.aerialPerspectiveVolume = renderGraph.CreateTexture(aerialPerspectiveVolumeDesc, "Sky Atmosphere Aerial Perspective Volume");
 }
 
 static void RenderTransmittanceLut(RenderGraph& renderGraph, const SkyAtmosphere& skyAtmosphere)
@@ -166,7 +168,7 @@ static void RenderTransmittanceLut(RenderGraph& renderGraph, const SkyAtmosphere
 static void RenderMultipleScatteringLut(RenderGraph& renderGraph, const SkyAtmosphere& skyAtmosphere)
 {
     RenderGraphBlackboard& blackboard = renderGraph.blackboard;
-    renderGraph.AddPass("Render Multilpe Scattering Lut Pass", RenderGraphPassFlags::AsyncCompute,
+    renderGraph.AddPass("Render Multilpe Scattering Lut Pass", RenderGraphPassFlags::Compute,
     [&](RenderGraphBuilder& builder)
     { 
         const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -177,8 +179,9 @@ static void RenderMultipleScatteringLut(RenderGraph& renderGraph, const SkyAtmos
 
         return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
         {
-            uint32 dispatchWidth = CEIL_DIV(skyAtmosphere.config.multipleScatteringLutSize, 8);
-            uint32 dispatchHeight = CEIL_DIV(skyAtmosphere.config.multipleScatteringLutSize, 8);
+            uint32 dispatchX = skyAtmosphere.config.multipleScatteringLutSize;
+            uint32 dispatchY = skyAtmosphere.config.multipleScatteringLutSize;
+            uint32 dispatchZ = 1;
 
             ShaderArguments shaderArguments = {};
             shaderArguments.BindBuffer(0, perFrameData.buffer, 0);
@@ -186,11 +189,12 @@ static void RenderMultipleScatteringLut(RenderGraph& renderGraph, const SkyAtmos
             shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(transmittanceLut)));
             shaderArguments.BindTextureUAV(4, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(multipleScatteringLut)));
 
-            commandList.Dispatch2D(
+            commandList.Dispatch(
                 skyAtmosphere.multipleScatteringLutShader,
                 shaderArguments,
-                dispatchWidth,
-                dispatchHeight);
+                dispatchX,
+                dispatchY,
+                dispatchZ);
         };
     });
 }
@@ -245,9 +249,9 @@ static void RenderAerialPerspectiveVolume(RenderGraph& renderGraph, const SkyAtm
 
         return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
         {
-            uint32 dispatchX = skyAtmosphere.config.aerialPerspectiveVolumeSize;
-            uint32 dispatchY = skyAtmosphere.config.aerialPerspectiveVolumeSize;
-            uint32 dispatchZ = 1;
+            uint32 dispatchX = skyAtmosphere.config.aerialPerspectiveVolumeSize / 8;
+            uint32 dispatchY = skyAtmosphere.config.aerialPerspectiveVolumeSize / 8;
+            uint32 dispatchZ = skyAtmosphere.config.aerialPerspectiveVolumeSize / 4;
 
             ShaderArguments shaderArguments = {};
             shaderArguments.BindBuffer(0, perFrameData.buffer, 0);
@@ -269,7 +273,7 @@ static void RenderAerialPerspectiveVolume(RenderGraph& renderGraph, const SkyAtm
 static void RenderSkyRayMarching(RenderGraph& renderGraph, const SkyAtmosphere& skyAtmosphere)
 {
     RenderGraphBlackboard& blackboard = renderGraph.blackboard;
-    renderGraph.AddPass("Render Sky Ray Marching Pass", RenderGraphPassFlags::AsyncCompute,
+    renderGraph.AddPass("Render Sky Ray Marching Pass", RenderGraphPassFlags::Compute,
     [&](RenderGraphBuilder& builder)
     { 
         const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -328,9 +332,9 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     std::vector<uint8> source;
     std::vector<const wchar*> includeDirs;
     std::vector<const wchar*> defines;
-    includeDirs.push_back(TEXT("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline"));
+    includeDirs.push_back(TEXT("D:/Programming/HorizonEngine/Shaders/DefaultRenderPipeline"));
 
-    LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/SkyAtmosphereTransmittanceLut.hsf", source);
+    LoadShaderSourceFromFile("D:/Programming/HorizonEngine/Shaders/DefaultRenderPipeline/SkyAtmosphereTransmittanceLut.hsf", source);
     RenderBackendShaderDesc transmittanceLutShaderDesc;
     CompileShader(
         compiler,
@@ -344,7 +348,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     transmittanceLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereTransmittanceLutCS";
     skyAtmosphere->transmittanceLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &transmittanceLutShaderDesc, "SkyAtmosphereTransmittanceLutCS");
 
-    LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/SkyAtmosphereMultipleScatteringLut.hsf", source);
+    LoadShaderSourceFromFile("D:/Programming/HorizonEngine/Shaders/DefaultRenderPipeline/SkyAtmosphereMultipleScatteringLut.hsf", source);
     RenderBackendShaderDesc multipleScatteringLutShaderDesc;
     CompileShader(
         compiler,
@@ -358,7 +362,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     multipleScatteringLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereMultipleScatteringLutCS";
     skyAtmosphere->multipleScatteringLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &multipleScatteringLutShaderDesc, "SkyAtmosphereMultipleScatteringLutCS");
 
-    LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/SkyAtmosphereSkyViewLut.hsf", source);
+    LoadShaderSourceFromFile("D:/Programming/HorizonEngine/Shaders/DefaultRenderPipeline/SkyAtmosphereSkyViewLut.hsf", source);
     RenderBackendShaderDesc skyViewLutShaderDesc;
     CompileShader(
         compiler,
@@ -372,7 +376,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     skyViewLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereSkyViewLutCS";
     skyAtmosphere->skyViewLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &skyViewLutShaderDesc, "SkyAtmosphereSkyViewLutCS");
 
-    LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/SkyAtmosphereAerialPerspectiveVolume.hsf", source);
+    LoadShaderSourceFromFile("D:/Programming/HorizonEngine/Shaders/DefaultRenderPipeline/SkyAtmosphereAerialPerspectiveVolume.hsf", source);
     RenderBackendShaderDesc aerialPerspectiveVolumeShaderDesc;
     CompileShader(
         compiler,
@@ -386,7 +390,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     aerialPerspectiveVolumeShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereAerialPerspectiveVolumeCS";
     skyAtmosphere->aerialPerspectiveVolumeShader = RenderBackendCreateShader(renderBackend, deviceMask, &aerialPerspectiveVolumeShaderDesc, "SkyAtmosphereAerialPerspectiveVolumeCS");
 
-    LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/SkyAtmosphereRenderSky.hsf", source);
+    LoadShaderSourceFromFile("D:/Programming/HorizonEngine/Shaders/DefaultRenderPipeline/SkyAtmosphereRenderSky.hsf", source);
     RenderBackendShaderDesc renderSkyShaderDesc;
     CompileShader(
         compiler,

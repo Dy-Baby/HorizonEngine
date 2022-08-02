@@ -40,9 +40,9 @@ void SkyAtmosphereSkyViewLutCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		return;
 	}
 	
-    RWTexture2D<float4> skyViewLut = GetSkyViewLutUAV();
     AtmosphereParameters atmosphere = GetAtmosphereParameters(constants);
 	PerFrameData frameData = GetPerFrameData();
+    RWTexture2D<float4> skyViewLut = GetSkyViewLutUAV();
     float4x4 invViewProjectionMatrix = frameData.invViewProjectionMatrix;
     float3 cameraPosition = frameData.cameraPosition;
 
@@ -100,7 +100,7 @@ void SkyAtmosphereSkyViewLutCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 			variableSampleCount,
 			mieRayPhase,
 			multiScatApprox);
-		L = result.L;
+		L += result.L;
     }
     skyViewLut[coord] = float4(L, 1.0f);
 }
