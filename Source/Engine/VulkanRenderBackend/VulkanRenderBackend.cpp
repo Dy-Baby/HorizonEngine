@@ -856,7 +856,7 @@ void VulkanRenderBackend::EnumeratePhysicalDevices()
 
 bool VulkanRenderBackend::Init(int flags)
 {
-	bool enableValidationLayers = flags & VULKAN_RENDER_BACKEND_CREATE_VALIDATION_LAYERS_BIT;
+	bool enableValidationLayers = flags & VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS;
 
 	std::vector<const char*> requiredInstanceLayers;
 	if (enableValidationLayers)
@@ -913,7 +913,7 @@ bool VulkanRenderBackend::Init(int flags)
 	{
 		requiredInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
-	if (flags & VULKAN_RENDER_BACKEND_CREATE_SURFACE_BIT)
+	if (flags & VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE)
 	{
 		requiredInstanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #if defined(VK_USE_PLATFORM_WIN32_KHR)

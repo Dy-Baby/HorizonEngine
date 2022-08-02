@@ -71,7 +71,7 @@ bool ModelViewerApp::Init()
 
 	shaderCompiler = CreateDxcShaderCompiler();
 
-	int flags = VULKAN_RENDER_BACKEND_CREATE_VALIDATION_LAYERS_BIT | VULKAN_RENDER_BACKEND_CREATE_SURFACE_BIT;
+	int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
 	renderBackend = VulkanRenderBackendCreateBackend(flags);
 	
 	uint32 deviceMask;
