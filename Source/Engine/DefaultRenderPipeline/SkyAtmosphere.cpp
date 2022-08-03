@@ -298,9 +298,9 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     std::vector<uint8> source;
     std::vector<const wchar*> includeDirs;
     std::vector<const wchar*> defines;
-    includeDirs.push_back(TEXT("../../Shaders/DefaultRenderPipeline"));
+    includeDirs.push_back(TEXT("../../../Shaders/DefaultRenderPipeline"));
 
-    LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/SkyAtmosphereTransmittanceLut.hsf", source);
+    LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/SkyAtmosphereTransmittanceLut.hsf", source);
     RenderBackendShaderDesc transmittanceLutShaderDesc;
     CompileShader(
         compiler,
@@ -314,7 +314,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     transmittanceLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereTransmittanceLutCS";
     skyAtmosphere->transmittanceLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &transmittanceLutShaderDesc, "SkyAtmosphereTransmittanceLutCS");
 
-    LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/SkyAtmosphereMultipleScatteringLut.hsf", source);
+    LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/SkyAtmosphereMultipleScatteringLut.hsf", source);
     RenderBackendShaderDesc multipleScatteringLutShaderDesc;
     CompileShader(
         compiler,
@@ -328,7 +328,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     multipleScatteringLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereMultipleScatteringLutCS";
     skyAtmosphere->multipleScatteringLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &multipleScatteringLutShaderDesc, "SkyAtmosphereMultipleScatteringLutCS");
 
-    LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/SkyAtmosphereSkyViewLut.hsf", source);
+    LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/SkyAtmosphereSkyViewLut.hsf", source);
     RenderBackendShaderDesc skyViewLutShaderDesc;
     CompileShader(
         compiler,
@@ -342,7 +342,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     skyViewLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereSkyViewLutCS";
     skyAtmosphere->skyViewLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &skyViewLutShaderDesc, "SkyAtmosphereSkyViewLutCS");
 
-    LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/SkyAtmosphereAerialPerspectiveVolume.hsf", source);
+    LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/SkyAtmosphereAerialPerspectiveVolume.hsf", source);
     RenderBackendShaderDesc aerialPerspectiveVolumeShaderDesc;
     CompileShader(
         compiler,
@@ -356,7 +356,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     aerialPerspectiveVolumeShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SkyAtmosphereAerialPerspectiveVolumeCS";
     skyAtmosphere->aerialPerspectiveVolumeShader = RenderBackendCreateShader(renderBackend, deviceMask, &aerialPerspectiveVolumeShaderDesc, "SkyAtmosphereAerialPerspectiveVolumeCS");
 
-    LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/SkyAtmosphereRenderSky.hsf", source);
+    LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/SkyAtmosphereRenderSky.hsf", source);
     RenderBackendShaderDesc renderSkyShaderDesc;
     CompileShader(
         compiler,

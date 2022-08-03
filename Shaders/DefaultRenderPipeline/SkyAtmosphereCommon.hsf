@@ -544,10 +544,10 @@ SingleScatteringResult IntegrateScatteredLuminance(
 		}
 
 		float shadow = 1.0f;
-#if SHADOWMAP_ENABLED
-		// First evaluate opaque shadow
-		shadow = GetShadow(atmosphere, P);
-#endif
+// #if SHADOWMAP_ENABLED
+// 		// First evaluate opaque shadow
+// 		shadow = GetShadow(atmosphere, P);
+// #endif
 
 		float3 S = globalL * (earthShadow * shadow * transmittanceToSun * phaseTimesScattering + multiScatteredLuminance * medium.scattering);
 

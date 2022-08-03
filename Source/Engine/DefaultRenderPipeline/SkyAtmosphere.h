@@ -30,7 +30,7 @@ struct SkyAtmosphereConfig
     uint32 aerialPerspectiveVolumeSize = 32;
 
     float rayMarchMinSPP = 4;
-    float rayMarchMaxSPP = 14;
+    float rayMarchMaxSPP = 16;
 };
 
 struct DensityProfileLayer

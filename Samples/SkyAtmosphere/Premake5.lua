@@ -5,6 +5,7 @@ project "SkyAtmoshere"
     staticruntime "on"
     location "%{wks.location}/%{prj.name}"
     targetdir "%{wks.location}/Bin/%{cfg.buildcfg}"
+    debugdir "%{cfg.targetdir}"
 
     files {
         "**.h",

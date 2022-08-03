@@ -46,10 +46,10 @@ void DefaultRenderPipeline::Init()
 	std::vector<uint8> source;
 	std::vector<const wchar*> includeDirs;
 	std::vector<const wchar*> defines;
-	includeDirs.push_back(TEXT("../../Shaders/DefaultRenderPipeline"));
+	includeDirs.push_back(TEXT("../../../Shaders/DefaultRenderPipeline"));
 
 	RenderBackendShaderDesc brdfLutShaderDesc;
-	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/BRDFLut.hsf", source);
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/BRDFLut.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -62,7 +62,7 @@ void DefaultRenderPipeline::Init()
 	brdfLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "BRDFLutCS";
 	brdfLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &brdfLutShaderDesc, "BRDFLutShader");
 
-	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/GBuffer.hsf", source);
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/GBuffer.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -86,7 +86,7 @@ void DefaultRenderPipeline::Init()
 	gbufferShader = RenderBackendCreateShader(renderBackend, deviceMask, &gbufferShaderDesc, "GBufferShader");
 
 	RenderBackendShaderDesc lightingShaderDesc;
-	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/Lighting.hsf", source);
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/Lighting.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -100,7 +100,7 @@ void DefaultRenderPipeline::Init()
 	lightingShader = RenderBackendCreateShader(renderBackend, deviceMask, &lightingShaderDesc, "LightingShader");
 
 	RenderBackendShaderDesc tonemappingShaderDesc;
-	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/Tonemapping.hsf", source);
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/Tonemapping.hsf", source);
 	CompileShader(
 		shaderCompiler, 
 		source,
@@ -161,9 +161,9 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		.gamma = 2.2,
 		.exposure = 1.2,
 		.sunDirection = { 0.00, 0.90045, 0.43497 },
-		.solarIrradiance = { 180.0f, 180.0f, 180.0f },
+		.solarIrradiance = { 10.0f, 10.0f, 10.0f },
 		.solarAngularRadius = 0.004675f,
-		.sunIlluminanceScale = {1.0, 1.0, 1.0},
+		.sunIlluminanceScale = { 10.0, 10.0, 10.0},
 		.cameraPosition = view->camera.position,
 		.viewMatrix = view->camera.viewMatrix,
 		.invViewMatrix = view->camera.invViewMatrix,
@@ -176,22 +176,20 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		.targetResolutionWidth = view->targetWidth,
 		.targetResolutionHeight = view->targetHeight,
 	};
-	perFrameData.data.cameraPosition = {0.00, -1.00, 0.50};
-	perFrameData.data.viewProjectionMatrix = {
-		{ -0.85633, 0.00, 0.00, 0.00 },
-		{ 0.00, 0.00, 1.52236, -0.76118 },
-		{ 0.00, 1.00001, 0.00, 0.90 },
-		{ 0.00, 1.00, 0.00, 1.00 }
-	};
-	//perFrameData.data.viewProjectionMatrix = glm::transpose(perFrameData.data.viewProjectionMatrix);
+	//perFrameData.data.cameraPosition = {0.00, -1.00, 0.50};
+	//perFrameData.data.viewProjectionMatrix = {
+	//	{ -0.85633, 0.00, 0.00, 0.00 },
+	//	{ 0.00, 0.00, 1.52236, -0.76118 },
+	//	{ 0.00, 1.00001, 0.00, 0.90 },
+	//	{ 0.00, 1.00, 0.00, 1.00 }
+	//};
 
-	perFrameData.data.invViewProjectionMatrix = {
-		{ -1.16778, 0.00, 0.00, 0.00 },
-		{0.00, 0.00, 9.99995, -9.00},
-		{0.00, 0.65688, -4.99997, 5.00},
-		{0.00, 0.00, -9.99995, 10.00}
-	};
-	//perFrameData.data.invViewProjectionMatrix = glm::transpose(perFrameData.data.invViewProjectionMatrix);
+	//perFrameData.data.invViewProjectionMatrix = {
+	//	{ -1.16778, 0.00, 0.00, 0.00 },
+	//	{0.00, 0.00, 9.99995, -9.00},
+	//	{0.00, 0.65688, -4.99997, 5.00},
+	//	{0.00, 0.00, -9.99995, 10.00}
+	//};
 
 	perFrameData.buffer = perFrameDataBuffer;
 	RenderBackendWriteBuffer(renderBackend, perFrameDataBuffer, 0, &perFrameData, sizeof(PerFrameData));

@@ -1,14 +1,16 @@
 #include "SkyAtmosphereCommon.hsf"
 
-void SkyViewLutParamsToUv(in uint width, in uint height, in AtmosphereParameters atmosphere, in bool intersectGround, in float viewZenithCosAngle, in float lightViewCosAngle, in float viewHeight, out float2 uv)
+void SkyViewLutParamsToUv(in uint width, in uint height, in AtmosphereParameters atmosphere, in bool intersectGround, in float viewZenithCosAngle, in float3 viewDir, in float viewHeight, out float2 uv)
 {
 	float Vhorizon = sqrt(viewHeight * viewHeight - atmosphere.bottomRadius * atmosphere.bottomRadius);
 	float cosBeta = Vhorizon / viewHeight;
 	float beta = acos(cosBeta);
 	float zenithHorizonAngle = PI - beta;
+	float viewZenithAngle = acos(viewZenithCosAngle);
+
 	if (!intersectGround)
 	{
-		float coord = acos(viewZenithCosAngle) / zenithHorizonAngle;
+		float coord = viewZenithAngle / zenithHorizonAngle;
 		coord = 1.0f - coord;
 		coord = sqrt(coord);
 		coord = 1.0f - coord;
@@ -16,16 +18,18 @@ void SkyViewLutParamsToUv(in uint width, in uint height, in AtmosphereParameters
 	}
 	else
 	{
-		float coord = (acos(viewZenithCosAngle) - zenithHorizonAngle) / beta;
+		float coord = (viewZenithAngle - zenithHorizonAngle) / beta;
 		coord = sqrt(coord);
 		uv.y = coord * 0.5f + 0.5f;
 	}
 
 	{
-		float coord = -lightViewCosAngle * 0.5f + 0.5f;
-		coord = sqrt(coord);
-		uv.x = coord;
+		//float coord = -lightViewCosAngle * 0.5f + 0.5f;
+		//coord = sqrt(coord);
+		//uv.x = coord;
+		uv.x = (atan2(-viewDir.y, -viewDir.x) + PI) / (2.0f * PI);
 	}
+
 	// Constrain uvs to valid sub texel range (avoid zenith derivative issue making LUT usage visible)
 	uv = float2(FromSubUvsToUnit(uv.x, float(width)), FromSubUvsToUnit(uv.y, float(height)));
 }
@@ -52,7 +56,7 @@ void SkyAtmosphereRenderSkyCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float2 uv = pixelPos / float2(width, height);
 	float4x4 invViewProjectionMatrix = frameData.invViewProjectionMatrix;
 	float3 ClipSpace = float3(uv * float2(2.0f, -2.0f) - float2(1.0f, -1.0f), 1.0f);
-	float4 HPos = mul(invViewProjectionMatrix, float4(ClipSpace, 1.0f));
+	float4 HPos = mul(float4(ClipSpace, 1.0f), invViewProjectionMatrix);
 	float3 rayOrigin = frameData.cameraPosition + float3(0.0f, 0.0f, atmosphere.bottomRadius);
 	float3 rayDirection = normalize(HPos.xyz / HPos.w - frameData.cameraPosition);
 	float depthBufferValue = -1.0f;
@@ -73,7 +77,7 @@ void SkyAtmosphereRenderSkyCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		float lightViewCosAngle = lightOnPlane.x;
 		bool intersectGround = RaySphereIntersectNearest(rayOrigin, rayDirection, float3(0.0f, 0.0f, 0.0f), atmosphere.bottomRadius) >= 0.0f;
 		float2 texCoord;
-		SkyViewLutParamsToUv(width, height, atmosphere, intersectGround, viewZenithCosAngle, lightViewCosAngle, viewHeight, texCoord);
+		SkyViewLutParamsToUv(width, height, atmosphere, intersectGround, viewZenithCosAngle, rayDirection, viewHeight, texCoord);
 		float4 luminance = float4(skyViewLut.SampleLevel(SAMPLER_LINEAR_CLAMP, texCoord, 0).rgb + GetSunLuminance(sunDirection, rayOrigin, rayDirection, atmosphere.bottomRadius), 1.0f);
 		colorBuffer[coord] = luminance;
 		return;

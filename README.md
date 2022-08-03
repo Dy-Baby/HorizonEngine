@@ -24,9 +24,6 @@ Features:
 
 2. Run "GenerateProjects.bat"
 
-## Debug Tool
-[RenderDoc](https://renderdoc.org/)
-
 ## Third Party
 * [assimp](https://github.com/assimp/assimp)
 * [imgui](https://github.com/ocornut/imgui)
@@ -42,6 +39,9 @@ Features:
 * [D3D12MemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
 * [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 * [premake](https://github.com/premake/premake-core)
+
+## Debug Tool
+[RenderDoc](https://renderdoc.org/)
 
 ## Contributing
 * Contributions are welcome.

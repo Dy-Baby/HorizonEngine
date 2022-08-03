@@ -85,7 +85,7 @@ bool UIRenderer::Init()
 
     // Upload Fonts
     {
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("../../Assets/Fonts/OpenSans/OpenSans-Regular.ttf", 16.0f);
+        io.FontDefault = io.Fonts->AddFontFromFileTTF("../../../Assets/Fonts/OpenSans/OpenSans-Regular.ttf", 16.0f);
         unsigned char* pixels;
         int width, height;
         io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
@@ -119,8 +119,8 @@ bool UIRenderer::Init()
     std::vector<uint8> source;
     std::vector<const wchar*> includeDirs;
     std::vector<const wchar*> defines;
-    includeDirs.push_back(TEXT("../../Shaders"));
-    LoadShaderSourceFromFile("../../Shaders/ImGui.hsf", source);
+    includeDirs.push_back(TEXT("../../../Shaders"));
+    LoadShaderSourceFromFile("../../../Shaders/ImGui.hsf", source);
     CompileShader(
         shaderCompiler,
         source,
