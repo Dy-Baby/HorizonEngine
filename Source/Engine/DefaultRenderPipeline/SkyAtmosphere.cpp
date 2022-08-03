@@ -30,64 +30,29 @@ struct SkyAtmosphereConstants
     uint32 aerialPerspectiveVolumeSize;
 };
 
-static void SetupEarthAtmosphere(AtmosphereParameters* outAtmosphere)
-{
-    // Values shown here are the result of integration over wavelength power spectrum integrated with paricular function.
-    // Refer to https://github.com/ebruneton/precomputed_atmospheric_scattering for details.
-
-    // All units in kilometers
-    const float EarthBottomRadius = 6360.0f;
-    const float EarthTopRadius = 6460.0f;   // 100km atmosphere radius, less edge visible and it contain 99.99% of the atmosphere medium https://en.wikipedia.org/wiki/K%C3%A1rm%C3%A1n_line
-    const float EarthRayleighScaleHeight = 8.0f;
-    const float EarthMieScaleHeight = 1.2f;
-
-    const double maxSunZenithAngle = M_PI * 120.0 / 180.0;
-    *outAtmosphere = AtmosphereParameters {
-        // Earth
-        .bottomRadius = EarthBottomRadius,
-        .topRadius = EarthTopRadius,
-        .groundAlbedo = { 0.0f, 0.0f, 0.0f },
-        // Raleigh scattering
-        .rayleighDensity = { { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, -1.0f / EarthRayleighScaleHeight, 0.0f, 0.0f } },
-        .rayleighScattering = { 0.005802f, 0.013558f, 0.033100f }, // 1/km
-        // Mie scattering
-        .mieDensity = { { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, -1.0f / EarthMieScaleHeight, 0.0f, 0.0f } },
-        .mieScattering = { 0.003996f, 0.003996f, 0.003996f }, // 1/km
-        .mieExtinction = { 0.004440f, 0.004440f, 0.004440f }, // 1/km
-        .miePhaseFunctionG = 0.8f,
-        // Ozone absorption
-        .absorptionDensity = { { 25.0f, 0.0f, 0.0f, 1.0f / 15.0f, -2.0f / 3.0f }, { 0.0f, 0.0f, 0.0f, -1.0f / 15.0f, 8.0f / 3.0f } },
-        .absorptionExtinction = { 0.000650f, 0.001881f, 0.000085f }, // 1/km
-        .cosMaxSunZenithAngle = (float)Math::Cos(maxSunZenithAngle),
-    };
-}
-
 static void UpdateSkyAtmosphereConstants(const SkyAtmosphere& skyAtmosphere, const SkyAtmosphereComponent& component)
 {
     const SkyAtmosphereConfig& config = skyAtmosphere.config;
-    const AtmosphereParameters& atmosphere = component.atmosphere;
     const float rayleighScatteringScale = 1.0f;
 
     SkyAtmosphereConstants constants;
     memset(&constants, 0xBA, sizeof(SkyAtmosphereConstants));
-    //constants.solarIrradiance = { 1.474000f, 1.850400f, 1.911980f };
-    //constants.solarAngularRadius = 0.004675f;
-    constants.bottomRadius = atmosphere.bottomRadius;
-    constants.topRadius = atmosphere.topRadius;
-    constants.groundAlbedo = atmosphere.groundAlbedo;
-    constants.rayleighScattering = rayleighScatteringScale * atmosphere.rayleighScattering;
-    constants.mieScattering = atmosphere.mieScattering;
-    constants.mieExtinction = atmosphere.mieExtinction;
-    constants.mieAbsorption = atmosphere.mieExtinction - atmosphere.mieScattering;
+    constants.bottomRadius = component.groundRadius;
+    constants.topRadius = component.groundRadius + component.atmosphereHeight;
+    constants.groundAlbedo = component.groundAlbedo;
+    constants.rayleighScattering = rayleighScatteringScale * component.rayleighScattering;
+    constants.mieScattering = component.mieScattering;
+    constants.mieExtinction = component.mieExtinction;
+    constants.mieAbsorption = component.mieExtinction - component.mieScattering;
     constants.mieAbsorption.x = Math::Max(constants.mieAbsorption.x, 0.0f);
     constants.mieAbsorption.y = Math::Max(constants.mieAbsorption.y, 0.0f);
     constants.mieAbsorption.z = Math::Max(constants.mieAbsorption.z, 0.0f);
-    constants.miePhaseFunctionG = atmosphere.miePhaseFunctionG;
-    constants.absorptionExtinction = atmosphere.absorptionExtinction;
-    memcpy(constants.rayleighDensity, &atmosphere.rayleighDensity, sizeof(atmosphere.rayleighDensity));
-    memcpy(constants.mieDensity, &atmosphere.mieDensity, sizeof(atmosphere.mieDensity));
-    memcpy(constants.absorptionDensity, &atmosphere.absorptionDensity, sizeof(atmosphere.absorptionDensity));
-    constants.cosMaxSunZenithAngle = atmosphere.cosMaxSunZenithAngle;
+    constants.miePhaseFunctionG = component.mieAnisotropy;
+    constants.absorptionExtinction = component.absorptionExtinction;
+    constants.rayleighDensity[7] = -1.0f / component.rayleighScaleHeight;
+    constants.mieDensity[7] = -1.0f / component.mieScaleHeight;
+    memcpy(constants.absorptionDensity, &component.absorptionDensity, sizeof(component.absorptionDensity));
+    constants.cosMaxSunZenithAngle = component.cosMaxSunZenithAngle;
     constants.multipleScatteringFactor = component.multipleScatteringFactor;
     constants.transmittanceLutWidth = config.transmittanceLutWidth;
     constants.transmittanceLutHeight = config.transmittanceLutHeight;
@@ -95,8 +60,8 @@ static void UpdateSkyAtmosphereConstants(const SkyAtmosphere& skyAtmosphere, con
     constants.skyViewLutWidth = config.skyViewLutWidth;
     constants.skyViewLutHeight = config.skyViewLutHeight;
     constants.aerialPerspectiveVolumeSize = config.aerialPerspectiveVolumeSize;
-    constants.rayMarchMinSPP = component.viewRayMarchMinSPP;
-    constants.rayMarchMaxSPP = component.viewRayMarchMaxSPP;
+    constants.rayMarchMinSPP = config.rayMarchMinSPP;
+    constants.rayMarchMaxSPP = config.rayMarchMaxSPP;
 
     RenderBackendWriteBuffer(skyAtmosphere.renderBackend, skyAtmosphere.skyAtmosphereConstants, 0, &constants, sizeof(constants));
 }
@@ -324,6 +289,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     SkyAtmosphere* skyAtmosphere = new SkyAtmosphere();
     skyAtmosphere->renderBackend = renderBackend;
     skyAtmosphere->config = *config;
+
     uint32 deviceMask = ~0u;
 
     RenderBackendBufferDesc skyAtmosphereConstantBufferDesc = RenderBackendBufferDesc::CreateByteAddress(sizeof(SkyAtmosphereConstants));

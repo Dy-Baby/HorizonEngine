@@ -159,9 +159,9 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 
 	perFrameData.data = {
 		.gamma = 2.2,
-		.exposure = 1.4,
+		.exposure = 1.2,
 		.sunDirection = { 0.00, 0.90045, 0.43497 },
-		.solarIrradiance = { 1.0f, 1.0f, 1.0f },
+		.solarIrradiance = { 180.0f, 180.0f, 180.0f },
 		.solarAngularRadius = 0.004675f,
 		.sunIlluminanceScale = {1.0, 1.0, 1.0},
 		.cameraPosition = view->camera.position,

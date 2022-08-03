@@ -1,12 +1,15 @@
 # Horizon Engine
-3D real-time rendering engine.
+Horizon Engine is a 3D real-time rendering engine.
+
 Features:
 * Fiber-based Job System
 * Bindless
 * Render Graph
+* ECS (Entity-Component-System)
 
 ## Screenshots
-![image](/Screenshots/screenshot01.png)
+![image](/Screenshots/screenshot_editor.png)
+![image](/Screenshots/screenshot_sky_atmosphere.png)
 
 ## Requirements
 * Windows 10, untested on other development environments
@@ -25,6 +28,7 @@ Features:
 [RenderDoc](https://renderdoc.org/)
 
 ## Third Party
+* [assimp](https://github.com/assimp/assimp)
 * [imgui](https://github.com/ocornut/imgui)
 * [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
 * [entt](https://github.com/skypjack/entt)
@@ -34,6 +38,10 @@ Features:
 * [glm](https://github.com/g-truc/glm)
 * [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 * [Vulkan](https://www.khronos.org/vulkan)
+* [DirectX-Headers](https://github.com/microsoft/DirectX-Headers)
+* [D3D12MemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
+* [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
+* [premake](https://github.com/premake/premake-core)
 
 ## Contributing
 * Contributions are welcome.
