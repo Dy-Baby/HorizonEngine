@@ -14,7 +14,7 @@ void SkyAtmosphereAerialPerspectiveVolumeCS(uint3 GlobalInvocationID : SV_Dispat
     float2 uv = pixelPos / size;
 	float4x4 invViewProjectionMatrix = frameData.invViewProjectionMatrix;
 	float3 ClipSpace = float3(uv * float2(2.0f, -2.0f) - float2(1.0f, -1.0f), 0.5f);
-	float4 HPos = mul(invViewProjectionMatrix, float4(ClipSpace, 1.0f));
+	float4 HPos = mul(float4(ClipSpace, 1.0f), invViewProjectionMatrix);
 	float3 rayDirection = normalize(HPos.xyz / HPos.w - frameData.cameraPosition);
 	float earthR = atmosphere.bottomRadius;
 	float3 earthO = float3(0.0f, 0.0f, -earthR);

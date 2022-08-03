@@ -83,7 +83,7 @@ void SkyAtmosphereRenderSkyCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		return;
 	}
 	ClipSpace.z = depthBufferValue;
-	float4 depthBufferWorldPos = mul(invViewProjectionMatrix, float4(ClipSpace, 1.0f));
+	float4 depthBufferWorldPos = mul(float4(ClipSpace, 1.0f), invViewProjectionMatrix);
 	depthBufferWorldPos /= depthBufferWorldPos.w;
 	float tDepth = length(depthBufferWorldPos.xyz - (rayOrigin + float3(0.0f, 0.0f, -atmosphere.bottomRadius)));
 	float slice = AerialPerspectiveDepthToSlice(tDepth);
