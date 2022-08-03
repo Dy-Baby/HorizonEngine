@@ -1,31 +1,54 @@
 *
-
 !*/
-!Assets/*
-!Screenshots/*
 
+# C/C++ source files
 !*.c
 !*.cc
 !*.cpp
 !*.h
 !*.hpp
 !*.inl
+!*.inc
+
+# Shader files
 !*.hsf
 
+# Text files
 !*.txt
 !*.md
 
+# Script files
 !*.bat
+!*.sh
 !*.lua
+!*.py
 
-!*.dll
-!*.pbd
-!*.lib
-!*.exe
-
+# Git files
 !.git*
+
+# ThirdParty libraries
+!*.dll
+!*.lib
+
+# Assets
+!*.ttf
+!*.bin
+!*.glb
+!*.gltf
+!*.obj
+!*.mtl
+!*.fbx
+!*.png
+!*.jpg
+!*.tga
+!*.hdr
 
 !README
 !LICENSE
 
+.vs
+.vscode
+
 Build/
+
+!Screenshots/*
