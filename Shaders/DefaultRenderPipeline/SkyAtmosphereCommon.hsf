@@ -437,7 +437,7 @@ SingleScatteringResult IntegrateScatteredLuminance(
 		float3 clipSpacePos = float3(uv * float2(2.0f, -2.0f) - float2(1.0f, -1.0f), depth);
 		if (clipSpacePos.z < 1.0f)
 		{
-			float4 depthBufferWorldPos = mul(float4(ClipSpace, 1.0f), invViewProjectionMatrix);
+			float4 depthBufferWorldPos = mul(float4(clipSpacePos, 1.0f), invViewProjectionMatrix);
 			depthBufferWorldPos /= depthBufferWorldPos.w;
 			// Apply earth offset to go back to origin as top of earth mode. 
 			float tDepth = length(depthBufferWorldPos.xyz - (rayOrigin + float3(0.0f, 0.0f, -atmosphere.bottomRadius))); 
