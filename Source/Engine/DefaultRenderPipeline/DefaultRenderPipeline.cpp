@@ -46,10 +46,10 @@ void DefaultRenderPipeline::Init()
 	std::vector<uint8> source;
 	std::vector<const wchar*> includeDirs;
 	std::vector<const wchar*> defines;
-	includeDirs.push_back(TEXT("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline"));
+	includeDirs.push_back(TEXT("../../Shaders/DefaultRenderPipeline"));
 
 	RenderBackendShaderDesc brdfLutShaderDesc;
-	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/BRDFLut.hsf", source);
+	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/BRDFLut.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -62,7 +62,7 @@ void DefaultRenderPipeline::Init()
 	brdfLutShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "BRDFLutCS";
 	brdfLutShader = RenderBackendCreateShader(renderBackend, deviceMask, &brdfLutShaderDesc, "BRDFLutShader");
 
-	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/GBuffer.hsf", source);
+	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/GBuffer.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -86,7 +86,7 @@ void DefaultRenderPipeline::Init()
 	gbufferShader = RenderBackendCreateShader(renderBackend, deviceMask, &gbufferShaderDesc, "GBufferShader");
 
 	RenderBackendShaderDesc lightingShaderDesc;
-	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/Lighting.hsf", source);
+	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/Lighting.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -100,7 +100,7 @@ void DefaultRenderPipeline::Init()
 	lightingShader = RenderBackendCreateShader(renderBackend, deviceMask, &lightingShaderDesc, "LightingShader");
 
 	RenderBackendShaderDesc tonemappingShaderDesc;
-	LoadShaderSourceFromFile("D:/Programming/Projects/Horizon/Shaders/DefaultRenderPipeline/Tonemapping.hsf", source);
+	LoadShaderSourceFromFile("../../Shaders/DefaultRenderPipeline/Tonemapping.hsf", source);
 	CompileShader(
 		shaderCompiler, 
 		source,

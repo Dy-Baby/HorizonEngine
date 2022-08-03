@@ -35,3 +35,5 @@
 
 // Std exception
 #include <stdexcept>
+
+#include <optional>

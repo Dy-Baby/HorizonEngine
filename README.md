@@ -10,8 +10,10 @@ Features:
 
 ## Requirements
 * Windows 10, untested on other development environments
+* NIVIDIA Graphics Cards (Geforce RTX 20-series or 30-series), and keep your graphics drivers up to date
 * Visual Studio 2022
 * C++20
+* Vulkan SDK 1.3.216.0
 
 ## Getting Started
 

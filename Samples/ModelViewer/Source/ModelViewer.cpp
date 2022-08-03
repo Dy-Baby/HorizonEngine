@@ -88,8 +88,8 @@ bool ModelViewerApp::Init()
 	scene = new Scene();
 
 	GLTF2ImportSettings settings;
-	ImportGLTF2("D:/Programming/HorizonTest/Assets/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
-	//ImportGLTF2("D:/Programming/HorizonTest/Assets/Sponza/glTF/Sponza.gltf", settings, scene);
+	ImportGLTF2("../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
+	//ImportGLTF2("../../Assets/Sponza/glTF/Sponza.gltf", settings, scene);
 	scene->renderBackend = renderBackend;
 	scene->UploadResources();
 
