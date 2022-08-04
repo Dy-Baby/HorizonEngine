@@ -65,7 +65,6 @@ void SkyAtmosphereRenderSkyCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 L = 0.0f;
 	Texture2D depthBuffer = GetDepthBufferSRV();
 	depthBufferValue = depthBuffer[coord].r;
-	depthBufferValue = 1.0f;
 	if (viewHeight < atmosphere.topRadius && depthBufferValue == 1.0f)
 	{
 		float3 UpVector = normalize(rayOrigin);

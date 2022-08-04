@@ -6,11 +6,7 @@ void SkyAtmosphereTransmittanceLutCS(uint3 GlobalInvocationID : SV_DispatchThrea
     SkyAtmosphereConstants constants = GetSkyAtmosphereConstants();
     uint width = constants.transmittanceLutWidth;
     uint height = constants.transmittanceLutHeight;
-	if (GlobalInvocationID.x >= width || GlobalInvocationID.y >= height) 
-	{
-		return;
-	}
-
+	
 	PerFrameData perFrameData = GetPerFrameData();
     RWTexture2D<float4> transmittanceLut = GetTransmittanceLutUAV();
     AtmosphereParameters atmosphere = GetAtmosphereParameters(constants);
