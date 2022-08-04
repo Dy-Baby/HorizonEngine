@@ -10,6 +10,7 @@ Features:
 ## Screenshots
 ![image](/Screenshots/screenshot_editor.png)
 ![image](/Screenshots/screenshot_sky_atmosphere.png)
+![image](/Screenshots/screenshot_particle_system.png)
 
 ## Requirements
 * Windows 10, untested on other development environments
