@@ -3,6 +3,8 @@
 #include "Core/Core.h"
 #include "RenderEngine/RenderEngine.h"
 
+#define DEBUG_ONLY_RAY_TRACING_ENBALE 1
+
 namespace HE
 {
 	extern "C"

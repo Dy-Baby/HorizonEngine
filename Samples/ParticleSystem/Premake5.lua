@@ -1,4 +1,4 @@
-project "RealTimeRayTracing"
+project "ParticleSystem"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
@@ -38,10 +38,6 @@ project "RealTimeRayTracing"
     
     postbuildcommands {
         "{COPY} %{wks.location}/../ThirdParty/assimp/bin/assimp-vc143-mt.dll %{cfg.targetdir}",
-    }
-
-    defines {
-        "HE_EXPERIMENTAL_ENABLE_RAY_TRACING=1",
     }
 
     includedirs {

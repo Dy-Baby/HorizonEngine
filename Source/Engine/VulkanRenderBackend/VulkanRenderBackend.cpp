@@ -776,10 +776,11 @@ void VulkanRenderBackend::EnumeratePhysicalDevices()
 			.pNext = nullptr
 		};
 
-#if defined(DEBUG_ONLY_RAY_TRACING_ENBALE)
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
 		physicalDevice.featuresEntry = (void*)&physicalDevice.accelerationStructureFeatures;
-#endif
+#else
 		physicalDevice.featuresEntry = (void*)&physicalDevice.bufferDeviceAddressFeatures;
+#endif
 
 		VkPhysicalDeviceFeatures2 deviceFeatures2 = {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
@@ -2828,12 +2829,13 @@ bool VulkanDevice::Init(VulkanRenderBackend* backend, VulkanPhysicalDevice* phys
 		requiredDeviceExtensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_EXT_PIPELINE_CREATION_FEEDBACK_EXTENSION_NAME);
-#if defined(DEBUG_ONLY_RAY_TRACING_ENBALE)
-		{
-			requiredDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-			requiredDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-			requiredDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-		}
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
+		requiredDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
 #endif
 		// requiredDeviceExtensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
 
@@ -2981,7 +2983,7 @@ bool VulkanDevice::CreateBindlessManager(const VulkanBindlessConfig& bindlessCon
 		{ VK_DESCRIPTOR_TYPE_SAMPLER,                    numSamplers               },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              numStorageImages          },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             numStorageBuffers         },
-#if defined(DEBUG_ONLY_RAY_TRACING_ENBALE) 
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
 		{ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, numAccelerationStructures }, 
 #endif
 	};
@@ -3008,7 +3010,7 @@ bool VulkanDevice::CreateBindlessManager(const VulkanBindlessConfig& bindlessCon
 		{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,                    .descriptorCount = numSamplers,               .stageFlags = VK_SHADER_STAGE_ALL },
 		{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .descriptorCount = numStorageImages,          .stageFlags = VK_SHADER_STAGE_ALL },
 		{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .descriptorCount = numStorageBuffers,         .stageFlags = VK_SHADER_STAGE_ALL },
-#if defined(DEBUG_ONLY_RAY_TRACING_ENBALE) 
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
 		{.binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .descriptorCount = numAccelerationStructures, .stageFlags = VK_SHADER_STAGE_ALL },
 #endif		
 	};
@@ -3019,7 +3021,7 @@ bool VulkanDevice::CreateBindlessManager(const VulkanBindlessConfig& bindlessCon
 		VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,
 		VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,
 		VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,
-#if defined(DEBUG_ONLY_RAY_TRACING_ENBALE)
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
 		VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,
 #endif		
 	};

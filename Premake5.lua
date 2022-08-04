@@ -101,6 +101,7 @@ group "ThirdParty"
 group ""
 
 group "Samples"
+    include "Samples/ParticleSystem"
     include "Samples/SkyAtmosphere"
     include "Samples/ModelViewer"
     include "Samples/PathTracing"

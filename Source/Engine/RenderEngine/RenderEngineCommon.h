@@ -6,6 +6,7 @@
 
 namespace HE
 {
+
 /**
  * @see: https://pcisig.com/membership/member-companies
  */
