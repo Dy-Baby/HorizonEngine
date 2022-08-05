@@ -61,7 +61,7 @@ public:
 	void BuildBottomLevelAS();
 	void UpdateTopLevelAS();
 	void UpdateBottomLevelAS(); */
-	void TraceRay(RenderBackendShaderHandle shader, const ShaderArguments& shaderArguments, RenderBackendBufferHandle rgenSBT, RenderBackendBufferHandle rmissSBT, RenderBackendBufferHandle rchitSBT, uint32 x, uint32 y, uint32 z);
+	void TraceRays(RenderBackendShaderHandle shader, const ShaderArguments& shaderArguments, RenderBackendBufferHandle rgenSBT, RenderBackendBufferHandle rmissSBT, RenderBackendBufferHandle rchitSBT, uint32 x, uint32 y, uint32 z);
 	// Graphics commands
 	void SetViewports(RenderBackendViewport* viewports, uint32 numViewports);
 	void SetScissors(RenderBackendScissor* scissors, uint32 numScissors);

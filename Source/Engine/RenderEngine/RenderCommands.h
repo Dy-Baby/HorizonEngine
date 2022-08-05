@@ -26,7 +26,7 @@ enum class RenderCommandType
 	ResolveTimings,
 	Dispatch,
 	DispatchIndirect,
-	TraceRay,
+	TraceRays,
 	UpdateTopLevelAS,
 	UpdateBottomLevelAS,
 	SetViewport,
@@ -112,7 +112,7 @@ struct RenderCommandDispatchIndirect : RenderCommand<RenderCommandType::Dispatch
 	uint64 argumentOffset;
 };
 
-struct RenderCommandTraceRay : RenderCommand<RenderCommandType::TraceRay, RenderCommandQueueType::Graphics>
+struct RenderCommandTraceRays : RenderCommand<RenderCommandType::TraceRays, RenderCommandQueueType::Graphics>
 {
 	RenderBackendShaderHandle shader;
 	ShaderArguments shaderArguments;

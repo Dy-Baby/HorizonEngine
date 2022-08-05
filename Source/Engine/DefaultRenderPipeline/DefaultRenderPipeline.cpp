@@ -206,46 +206,58 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		PixelFormat::R32Uint,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
+
 	RenderGraphTextureDesc gbuffer0Desc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
+	gbufferData.gbuffer0 = renderGraph->CreateTexture(gbuffer0Desc, "GBuffer 0");
+
 	RenderGraphTextureDesc gbuffer1Desc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
+	gbufferData.gbuffer1 = renderGraph->CreateTexture(gbuffer1Desc, "GBuffer 1");
+
 	RenderGraphTextureDesc gbuffer2Desc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
+	gbufferData.gbuffer2 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer 2");
+
 	RenderGraphTextureDesc depthBufferDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::D32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::DepthStencil,
 		clearDepth);
+	depthBufferData.depthBuffer = renderGraph->CreateTexture(depthBufferDesc, "Depth Buffer");
+
+	RenderGraphTextureDesc shadowBufferDesc = RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::R32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
+	auto shadowBuffer = renderGraph->CreateTexture(shadowBufferDesc, "Shadow Buffer");
+
 	RenderGraphTextureDesc sceneColorDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA16Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
+	sceneColorData.sceneColor = renderGraph->CreateTexture(sceneColorDesc, "Scene Color");
+
 	RenderGraphTextureDesc finalTextureDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::BGRA8Unorm,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget | TextureCreateFlags::UnorderedAccess);
-
-	gbufferData.gbuffer0 = renderGraph->CreateTexture(gbuffer0Desc, "GBuffer 0");
-	gbufferData.gbuffer1 = renderGraph->CreateTexture(gbuffer1Desc, "GBuffer 1");
-	gbufferData.gbuffer2 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer 2");
-	depthBufferData.depthBuffer = renderGraph->CreateTexture(depthBufferDesc, "Depth Buffer");
-	sceneColorData.sceneColor = renderGraph->CreateTexture(sceneColorDesc, "Scene Color");
 	finalTextureData.finalTexture = renderGraph->CreateTexture(finalTextureDesc, "Final Texture");
 
 	if (renderBRDFLut)
@@ -419,6 +431,35 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 					0,
 					PrimitiveTopology::TriangleList);
 			}
+		};
+	});
+
+	renderGraph->AddPass("Ray Traced Shadows Pass", RenderGraphPassFlags::RayTracing,
+	[&](RenderGraphBuilder& builder)
+	{
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
+		const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
+
+		auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+
+		shadowBuffer = builder.WriteTexture(shadowBuffer, RenderBackendResourceState::UnorderedAccess);
+
+		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
+		{
+			uint32 width = perFrameData.data.renderResolutionWidth;
+			uint32 height = perFrameData.data.renderResolutionHeight;
+
+			ShaderArguments shaderArguments = {};
+			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
+			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
+			shaderArguments.BindTextureUAV(4, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowBuffer), 0));
+			
+			commandList.TraceRays(
+				rayTracedShadowsShader,
+				shaderArguments,
+				width,
+				height,
+				1);
 		};
 	});
 

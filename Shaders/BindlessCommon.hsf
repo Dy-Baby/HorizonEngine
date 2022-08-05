@@ -20,6 +20,8 @@ RWTexture1DArray<float4> BindlessRWTexture1DArrays[];
 RWTexture2DArray<float4> BindlessRWTexture2DArrays[];
 [[vk::binding(3, 0)]]
 ByteAddressBuffer BindlessBuffers[];
+[[vk::binding(4, 0)]]
+RaytracingAccelerationStructure BindlessASs[];
 
 [[vk::push_constant]] 
 struct ShaderArguments

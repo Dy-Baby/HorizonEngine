@@ -6,6 +6,7 @@ Features:
 * Bindless
 * Render Graph
 * ECS (Entity-Component-System)
+* Hybrid Render Pipeline
 
 ## Screenshots
 ![image](/Screenshots/screenshot_editor.png)
@@ -13,11 +14,11 @@ Features:
 ![image](/Screenshots/screenshot_particle_system.png)
 
 ## Requirements
-* Windows 10, untested on other development environments
-* NIVIDIA Graphics Cards (Geforce RTX 20-series or 30-series), and keep your graphics drivers up to date
+* Windows 10
+* NIVIDIA Graphics Cards (Geforce RTX 20-series or 30-series) and keep your graphics drivers up to date (https://www.nvidia.com/Download/index.aspx)
+* Vulkan SDK 1.3.216.0, this repository tries to always be up to date with the latest Vulkan SDK (https://vulkan.lunarg.com/sdk/home)
 * Visual Studio 2022
-* C++20
-* Vulkan SDK 1.3.216.0
+* C++ 20
 
 ## Getting Started
 
@@ -42,7 +43,8 @@ Features:
 * [premake](https://github.com/premake/premake-core)
 
 ## Debug Tool
+[Nsight Graphics](https://developer.nvidia.com/nsight-graphics)
 [RenderDoc](https://renderdoc.org/)
 
 ## Contributing
-* Contributions are welcome.
+Contributions are welcome.

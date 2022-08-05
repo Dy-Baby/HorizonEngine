@@ -33,7 +33,7 @@ namespace HE
 		bool CompileRenderCommand(const RenderCommandDispatchIndirect& command);
 		bool CompileRenderCommand(const RenderCommandUpdateBottomLevelAS& command);
 		bool CompileRenderCommand(const RenderCommandUpdateTopLevelAS& command);
-		bool CompileRenderCommand(const RenderCommandTraceRay& command);
+		bool CompileRenderCommand(const RenderCommandTraceRays& command);
 		bool CompileRenderCommand(const RenderCommandSetViewport& command);
 		bool CompileRenderCommand(const RenderCommandSetScissor& command);
 		bool CompileRenderCommand(const RenderCommandBeginRenderPass& command);

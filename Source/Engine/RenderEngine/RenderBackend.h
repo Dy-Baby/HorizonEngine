@@ -307,10 +307,10 @@ enum class RenderBackendGeometryInstanceFlags
 struct RenderBackendGeometryInstance
 {
 	Matrix4x4 transformMatrix;
-	uint32 instanceID : 24;
-	uint32 instanceMask : 8;
-	uint32 instanceContributionToHitGroupIndex : 24;
-	RenderBackendGeometryInstanceFlags flags : 8;
+	uint32 instanceID;
+	uint32 instanceMask;
+	uint32 instanceContributionToHitGroupIndex;
+	RenderBackendGeometryInstanceFlags flags;
 	RenderBackendAccelerationStructureHandle blas;
 };
 
@@ -350,11 +350,11 @@ struct RenderBackendGeometryDesc
 {
 	RenderBackendGeometryType type;
 	RenderBackendGeometryFlags flags;
-	union
-	{
+	//union
+	//{
 		RenderBackendGeometryTriangleDesc triangleDesc;
 		RenderBackendGeometryAABBDesc aabbDesc;
-	};
+	//};
 };
 
 struct RenderBackendBottomLevelASDesc

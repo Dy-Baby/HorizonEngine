@@ -153,6 +153,12 @@ struct VulkanPhysicalDevice
 	VkPhysicalDeviceSynchronization2Features synchronization2Features;
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
 	VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures;
+	VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
+	VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures shaderDemoteToHelperInvocationFeatures;
+	// requiredDeviceExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+	/*VkPhysicalDeviceDeferredHostOperationsFeaturesKHR das;
+	VkPhysicalDevicePipelineLibraryFeaturesKHR dasda;
+	VkPhysicalDeviceMaintenance3FeaturesKHR synchronization2Features;*/
 	void* featuresEntry;
 	VkPhysicalDeviceFeatures enabledFeatures;
 	std::vector<VkLayerProperties> layerProperties;
@@ -760,9 +766,16 @@ void VulkanRenderBackend::EnumeratePhysicalDevices()
 		};
 		physicalDevice.rayTracingPipelineFeatures = {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+			.pNext = &physicalDevice.rayQueryFeatures
+		};
+		physicalDevice.rayQueryFeatures = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
+			.pNext = &physicalDevice.shaderDemoteToHelperInvocationFeatures
+		};
+		physicalDevice.shaderDemoteToHelperInvocationFeatures = {
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES,
 			.pNext = &physicalDevice.bufferDeviceAddressFeatures
 		};
-		// 
 		physicalDevice.bufferDeviceAddressFeatures = {
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
 			.pNext = &physicalDevice.descriptorIndexingFeatures
@@ -2014,7 +2027,7 @@ uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* d
 
 uint32 VulkanDevice::CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, const char* name)
 {
-	VulkanAccelerationStructure accelerationStructure;
+	VulkanAccelerationStructure accelerationStructure = {};
 	accelerationStructure.buildFlags = ToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
 	accelerationStructure.tlasDesc = *desc;
 
@@ -2833,9 +2846,10 @@ bool VulkanDevice::Init(VulkanRenderBackend* backend, VulkanPhysicalDevice* phys
 		requiredDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
-		requiredDeviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+		requiredDeviceExtensions.push_back(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
 #endif
 		// requiredDeviceExtensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
 
@@ -3283,7 +3297,7 @@ public:
 	bool CompileRenderCommand(const RenderCommandDispatchIndirect& command);
 	bool CompileRenderCommand(const RenderCommandUpdateBottomLevelAS& command);
 	bool CompileRenderCommand(const RenderCommandUpdateTopLevelAS& command);
-	bool CompileRenderCommand(const RenderCommandTraceRay& command);
+	bool CompileRenderCommand(const RenderCommandTraceRays& command);
 	bool CompileRenderCommand(const RenderCommandSetViewport& command);
 	bool CompileRenderCommand(const RenderCommandSetScissor& command);
 	bool CompileRenderCommand(const RenderCommandBeginRenderPass& command);
@@ -3659,15 +3673,33 @@ bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandUpdateT
 	return true;
 }
 
-bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandTraceRay& command)
+bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandTraceRays& command)
 {
 	if (!command.rgenSBT || !command.rmissSBT || command.rchitSBT)
 	{
 		return false;
 	}
 
+	uint32 pushConstantsSize = sizeof(VulkanPushConstants);
+	const void* pushConstantsValue = &command.shaderArguments;
+
+	VulkanPipeline* pipeline = device->FindOrCreateRayTracingPipeline(device->GetShader(command.shader), pushConstantsSize);
+	if (pipeline->handle != activeComputePipeline)
+	{
+		VkDescriptorSet set = device->GetBindlessGlobalSet();
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline->layout, 0, 1, &set, 0, nullptr);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline->handle);
+		activeComputePipeline = pipeline->handle;
+		statistics.pipelines++;
+	}
+
+	if (pushConstantsSize)
+	{
+		vkCmdPushConstants(commandBuffer, pipeline->layout, VK_SHADER_STAGE_ALL, 0, pushConstantsSize, pushConstantsValue);
+	}
+
 	const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rayTracingPipelineProperties = device->GetRayTracingPipelineProperties();
-	const uint32 handleSizeAligned = GetHandleSizeAligned(rayTracingPipelineProperties.shaderGroupHandleSize, rayTracingPipelineProperties.shaderGroupHandleAlignment);
+	const uint32 handleSizeAligned = GetShaderHandleSizeAligned(rayTracingPipelineProperties.shaderGroupHandleSize, rayTracingPipelineProperties.shaderGroupHandleAlignment);
 
 	VkStridedDeviceAddressRegionKHR raygenShaderBindingTable = {
 		.deviceAddress = device->GetBufferDeviceAddress(command.rgenSBT),
@@ -3685,22 +3717,6 @@ bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandTraceRa
 		.size = handleSizeAligned
 	};
 	VkStridedDeviceAddressRegionKHR callableShaderBindingTable = {};
-	
-	uint32 pushConstantsSize = sizeof(VulkanPushConstants);
-	const void* pushConstantsValue = &command.shaderArguments;
-	VulkanPipeline* pipeline = device->FindOrCreateRayTracingPipeline(device->GetShader(command.shader), pushConstantsSize);
-	if (pipeline->handle != activeComputePipeline)
-	{
-		VkDescriptorSet set = device->GetBindlessGlobalSet();
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline->layout, 0, 1, &set, 0, nullptr);
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline->handle);
-		activeComputePipeline = pipeline->handle;
-		statistics.pipelines++;
-	}
-	if (pushConstantsSize)
-	{
-		vkCmdPushConstants(commandBuffer, pipeline->layout, VK_SHADER_STAGE_RAYGEN_BIT_KHR, 0, pushConstantsSize, pushConstantsValue);
-	}
 
 	device->GetBackend()->functions.vkCmdTraceRaysKHR(
 		commandBuffer,
@@ -3711,7 +3727,9 @@ bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandTraceRa
 		command.width,
 		command.height,
 		command.depth);
+
 	statistics.traceRayDispatches++;
+	
 	return true;
 }
 
@@ -3945,7 +3963,7 @@ COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandDispatch);
 COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandDispatchIndirect);
 COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandUpdateBottomLevelAS);
 COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandUpdateTopLevelAS);
-COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandTraceRay);
+COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandTraceRays);
 COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandSetViewport);
 COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandSetScissor);
 COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandBeginRenderPass);
@@ -3968,7 +3986,7 @@ bool (*gCompileRenderCommandFunctions[])(VulkanRenderCompileContext*, void*) = {
 	CompileRenderCommandDispatchIndirect,
 	CompileRenderCommandUpdateBottomLevelAS,
 	CompileRenderCommandUpdateTopLevelAS,
-	CompileRenderCommandTraceRay,
+	CompileRenderCommandTraceRays,
 	CompileRenderCommandSetViewport,
 	CompileRenderCommandSetScissor,
 	CompileRenderCommandBeginRenderPass,

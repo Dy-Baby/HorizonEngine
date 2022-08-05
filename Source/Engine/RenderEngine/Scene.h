@@ -34,6 +34,9 @@ public:
 	RenderBackendBufferHandle prevWorldMatrixBuffer;
 	RenderBackendBufferHandle materialBuffer;
 
+	RenderBackendAccelerationStructureHandle bottomLevelAS;
+	RenderBackendAccelerationStructureHandle topLevelAS;
+
 	void Update();
 	void UploadResources();
 

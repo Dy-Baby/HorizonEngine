@@ -1,0 +1,108 @@
+#include "../BindlessCommon.hsf"
+#include "DefaultRenderPipelineCommon.hsf"
+
+#define RAY_TRACED_SHADOWS_SHADER_PER_FRAME_DATA_SLOT       0
+#define RAY_TRACED_SHADOWS_SHADER_DEPTH_BUFFER_SRV_SLOT     1
+#define RAY_TRACED_SHADOWS_SHADER_SHADOW_BUFFER_UAV_SLOT    2
+#define RAY_TRACED_SHADOWS_SHADER_TOP_LEVEL_AS_SLOT         3
+
+PerFrameData GetPerFrameData()
+{
+    uint bufferIndex = SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_PER_FRAME_DATA_SLOT);
+    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<PerFrameData>(bufferIndex & 0xffff);
+}
+
+Texture2D GetDepthBufferSRV()
+{
+	return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_DEPTH_BUFFER_SRV_SLOT)];
+}
+
+RWTexture2D<float4> GetSceneColorUAV()
+{
+	return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_SHADOW_BUFFER_UAV_SLOT)];
+}
+
+RaytracingAccelerationStructure GetTopLevelAS()
+{
+	return BindlessASs[SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_TOP_LEVEL_AS_SLOT)];
+}
+
+struct ShadowPayload
+{
+	bool miss;
+};
+
+[shader("raygeneration")]
+void RayTracedShadowsRayGen()
+{
+    uint2 launchIndex = DispatchRaysIndex();
+    uint2 launchSize = DispatchRaysDimensions();
+    uint2 pixelCoord = launchIndex;
+
+    PerFrameData perFrameData = GetPerFrameData();
+    Texture2D depthBuffer = GetDepthBuffer();
+    RWTexture2D<float4> shadowBuffer = GetShadowBuffer();
+
+    const float depth = depthBuffer[pixelCoord];
+
+    // Skip sky pixels.
+    if (depth == 1.0)
+    {
+        shadowBuffer[pixelCoord] = float4(0, 0, 0, 0);
+        return;
+    }
+
+    // Compute world position from depth buffer.
+    float2 pixelCenter = pixelCoord + 0.5;
+    float2 uv = pixelCenter / float2(launchSize);
+    float4 clipSpacePosition = float4(uv * 2.0 - 1.0, depth, 1.0);
+    float4 worldSpacePosition = mul(clipSpacePosition, perFrameData.invViewProjectionMatrix);
+    float3 position = worldSpacePosition.xyz / worldSpacePosition.w;
+
+    // // Initialize the Halton sequence.
+    // HaltonState hState = haltonInit(hState, pixelCoord, perFrameData.frameIndex);
+
+    // // Generate random numbers to rotate the Halton sequence.
+    // uint seed = randomInit(pixelPos, launchDim.x, perFrameData.frameIndex);
+    // float rnd1 = frac(haltonNext(hState) + randomNext(frameseed));
+    // float rnd2 = frac(haltonNext(hState) + randomNext(frameseed));
+
+    // // Generate a random direction based on the cone angle.
+    // // The wider the cone, the softer (and noisier) the shadows are.
+    // // uniformSampleCone() from [pbrt]
+    // float3 rndDirection = uniformSampleCone(rnd1, rnd2, cosThetaMax);
+
+    // Prepare a shadow ray.
+    RayDesc ray;
+    ray.Origin = position;
+    ray.Direction = -perFrameData.sunDirection;
+    ray.TMin = max(1.0, length(position)) * 1e-3;
+    ray.TMax = 10000.0;
+    // ray.Direction = mul(rndDirection, createBasis(L));
+
+    // Initialize the payload.
+    ShadowPayload payload;
+    payload.miss = false;
+
+    RaytracingAccelerationStructure topLevelAS = GetTopLevelAS();
+    uint rayFlags = RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
+
+    // Launch a ray.
+    TraceRay(
+        topLevelAS,
+        rayFlags,
+        0xff, 
+        0, 
+        0,
+        0, 
+        ray,
+        payload);
+
+    shadowBuffer[pixelCoord] = payload.miss ? 1.0f : 0.0f;
+}
+
+[shader("miss")]
+void RayTracedShadowsMiss(inout ShadowPayload payload : SV_RayPayload)
+{
+    payload.miss = true;
+}

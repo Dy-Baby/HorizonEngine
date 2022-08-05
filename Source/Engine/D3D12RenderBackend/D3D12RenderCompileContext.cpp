@@ -338,7 +338,7 @@ namespace HE
 		return true;
 	}
 
-	bool D3D12RenderCompileContext::CompileRenderCommand(const RenderCommandTraceRay& command)
+	bool D3D12RenderCompileContext::CompileRenderCommand(const RenderCommandTraceRays& command)
 	{
 		if (!command.rgenSBT || !command.rmissSBT || command.rchitSBT)
 		{
@@ -615,7 +615,7 @@ bool Compile##RenderCommandStructType(D3D12RenderCompileContext* context, void* 
 	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandDispatchIndirect);
 	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandUpdateBottomLevelAS);
 	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandUpdateTopLevelAS);
-	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandTraceRay);
+	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandTraceRays);
 	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandSetViewport);
 	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandSetScissor);
 	COMPILE_RENDER_COMMAND_FUNCTION(RenderCommandBeginRenderPass);

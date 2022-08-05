@@ -250,7 +250,7 @@ VkImageUsageFlags GetVkImageUsageFlags(TextureCreateFlags flags)
 
 VkBufferUsageFlags GetVkBufferUsageFlags(BufferCreateFlags flags)
 {
-	VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 	if (HAS_ANY_FLAGS(flags, BufferCreateFlags::CopySrc))
 	{
 		usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;

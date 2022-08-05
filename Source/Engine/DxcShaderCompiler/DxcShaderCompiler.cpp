@@ -57,7 +57,7 @@ static bool DxcCompileShader(
     case ShaderRepresentation::SPIRV:
         args.push_back(TEXT("-D")); args.push_back(TEXT("SPIRV"));
         args.push_back(TEXT("-spirv"));
-        args.push_back(TEXT("-fspv-target-env=vulkan1.2"));
+        args.push_back(TEXT("-fspv-target-env=vulkan1.3"));
         args.push_back(TEXT("-fvk-use-scalar-layout"));
         args.push_back(TEXT("-fvk-use-dx-position-w"));
         break;

@@ -166,6 +166,51 @@ namespace HE
 			worldMatrices[i] = HE::Math::Compose(HE::Vector3(0.0f, 0.0f, 0.0f), HE::Quaternion(HE::Math::DegreesToRadians(HE::Vector3(180.0f, 0.0f, 0.0f))), HE::Vector3(1.0f, 1.0f, 1.0f));
 		}
 		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), numMeshes * sizeof(Matrix4x4));
+
+		std::vector<RenderBackendGeometryDesc> geometryDescs(numMeshes);
+		for (uint32 i = 0; i < numMeshes; i++)
+		{
+			geometryDescs[i] = {
+				.type = RenderBackendGeometryType::Triangles, 
+				.flags = RenderBackendGeometryFlags::Opaque, 
+				.triangleDesc = {
+					.numIndices = meshes[i].numIndices,
+					.numVertices = meshes[i].numVertices,
+					.vertexStride = 3 * sizeof(float),
+					.vertexBuffer = meshes[i].vertexBuffers[0],
+					.vertexOffset = 0,
+					.indexBuffer = meshes[i].indexBuffer,
+					.indexOffset = 0,
+					.transformBuffer = worldMatrixBuffer,
+					.transformOffset = 16 * sizeof(float),
+				}
+			};
+		}
+		
+		RenderBackendBottomLevelASDesc bottomLevelASDesc = {
+			.buildFlags = RenderBackendAccelerationStructureBuildFlags::PreferFastTrace,
+			.numGeometries = numMeshes,
+			.geometryDescs = geometryDescs.data(),
+		};
+		bottomLevelAS = RenderBackendCreateBottomLevelAS(renderBackend, deviceMask, &bottomLevelASDesc, "BottomLevelAS");
+
+
+		RenderBackendGeometryInstance geometryInstance = {
+			.transformMatrix = Matrix4x4(1.0),
+			.instanceID = 0,
+			.instanceMask = 0xff,
+			.instanceContributionToHitGroupIndex = 0,
+			.flags = RenderBackendGeometryInstanceFlags::TriangleFacingCullDisable,
+			.blas = bottomLevelAS,
+		};
+
+		RenderBackendTopLevelASDesc topLevelASDesc = {
+			.buildFlags = RenderBackendAccelerationStructureBuildFlags::PreferFastTrace,
+			.geometryFlags = RenderBackendGeometryFlags::Opaque,
+			.numInstances = 1,
+			.instances = &geometryInstance,
+		};
+		topLevelAS = RenderBackendCreateTopLevelAS(renderBackend, deviceMask, &topLevelASDesc, "TopLevelAS");
 	}
 
 	void Scene::Update()
