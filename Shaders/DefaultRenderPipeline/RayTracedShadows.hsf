@@ -82,7 +82,7 @@ void RayTracedShadowsRayGen()
     ray.Origin = worldSpacePosition.xyz;
     ray.Direction = normalize(float3(0.0, 0.0, 1.0));
     // ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-3;
-    ray.TMin = 0.1;
+    ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-2;
     ray.TMax = 100000.0;
     // ray.Direction = mul(rndDirection, createBasis(L));
 

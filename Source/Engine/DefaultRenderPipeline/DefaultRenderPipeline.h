@@ -47,6 +47,7 @@ private:
 	RenderBackendShaderHandle gbufferShader;
 	RenderBackendShaderHandle lightingShader;
 	RenderBackendShaderHandle tonemappingShader;
+	RenderBackendShaderHandle fxaaShader;
 
 	RenderBackendRayTracingPipelineStateHandle rayTracedShadowsPipelineState;
 	RenderBackendBufferHandle rayTracedShadowsSBT;

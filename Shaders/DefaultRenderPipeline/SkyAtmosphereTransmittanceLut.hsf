@@ -17,7 +17,7 @@ void SkyAtmosphereTransmittanceLutCS(uint3 GlobalInvocationID : SV_DispatchThrea
 	float viewHeight;
 	float viewZenithCosAngle;
 	UvToLutTransmittanceParams(atmosphere, viewHeight, viewZenithCosAngle, uv);
-
+	
 	const float3 rayOrigin = float3(0.0f, 0.0f, viewHeight);
 	const float3 rayDirection = float3(0.0f, sqrt(1.0f - viewZenithCosAngle * viewZenithCosAngle), viewZenithCosAngle);
 	const bool ground = false;

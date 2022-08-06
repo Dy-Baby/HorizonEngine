@@ -99,6 +99,20 @@ void DefaultRenderPipeline::Init()
 	lightingShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "LightingCS";
 	lightingShader = RenderBackendCreateShader(renderBackend, deviceMask, &lightingShaderDesc, "LightingShader");
 
+	RenderBackendShaderDesc fxaaShaderDesc;
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/FXAA.hsf", source);
+	CompileShader(
+		shaderCompiler,
+		source,
+		TEXT("FxaaCS"),
+		RenderBackendShaderStage::Compute,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&fxaaShaderDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
+	fxaaShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "FxaaCS";
+	fxaaShader = RenderBackendCreateShader(renderBackend, deviceMask, &fxaaShaderDesc, "fxaaShader");
+
 	RenderBackendShaderDesc tonemappingShaderDesc;
 	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/Tonemapping.hsf", source);
 	CompileShader(
@@ -564,15 +578,21 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 	RenderGizmo();
 #endif
 
-	renderGraph->AddPass("Final Pass", RenderGraphPassFlags::Compute,
+	RenderGraphTextureDesc ldrTextureDesc = RenderGraphTextureDesc::Create2D(
+		perFrameData.data.targetResolutionWidth,
+		perFrameData.data.targetResolutionHeight,
+		PixelFormat::RGBA8Unorm,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
+	auto ldrTexture = renderGraph->CreateTexture(ldrTextureDesc, "LDR Buffer");
+
+	renderGraph->AddPass("Tonemapping Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		const auto& sceneColorData = blackboard.Get<RenderGraphSceneColor>();
-		auto& finalTextureData = blackboard.Get<RenderGraphFinalTexture>();
 
 		auto sceneColor = builder.ReadTexture(sceneColorData.sceneColor, RenderBackendResourceState::ShaderResource);
-		auto finalTexture = finalTextureData.finalTexture = builder.WriteTexture(finalTextureData.finalTexture, RenderBackendResourceState::UnorderedAccess);
+		ldrTexture = builder.WriteTexture(ldrTexture, RenderBackendResourceState::UnorderedAccess);
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
@@ -582,10 +602,38 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
 			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(sceneColor)));
-			shaderArguments.BindTextureUAV(2, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(finalTexture), 0));
+			shaderArguments.BindTextureUAV(2, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(ldrTexture), 0));
 
 			commandList.Dispatch2D(
 				tonemappingShader,
+				shaderArguments,
+				dispatchWidth,
+				dispatchHeight);
+		};
+	});
+
+	renderGraph->AddPass("FXAA Pass", RenderGraphPassFlags::Compute,
+	[&](RenderGraphBuilder& builder)
+	{
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
+		const auto& sceneColorData = blackboard.Get<RenderGraphSceneColor>();
+		auto& finalTextureData = blackboard.Get<RenderGraphFinalTexture>();
+
+		ldrTexture = builder.ReadTexture(ldrTexture, RenderBackendResourceState::ShaderResource);
+		auto finalTexture = finalTextureData.finalTexture = builder.WriteTexture(finalTextureData.finalTexture, RenderBackendResourceState::UnorderedAccess);
+
+		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
+		{
+			uint32 dispatchWidth = CEIL_DIV(perFrameData.data.targetResolutionWidth, POST_PROCESS_THREAD_GROUP_SIZE);
+			uint32 dispatchHeight = CEIL_DIV(perFrameData.data.targetResolutionHeight, POST_PROCESS_THREAD_GROUP_SIZE);
+
+			ShaderArguments shaderArguments = {};
+			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
+			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(ldrTexture)));
+			shaderArguments.BindTextureUAV(2, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(finalTexture), 0));
+
+			commandList.Dispatch2D(
+				fxaaShader,
 				shaderArguments,
 				dispatchWidth,
 				dispatchHeight);
