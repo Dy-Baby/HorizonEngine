@@ -64,6 +64,9 @@ class RenderBackendTimingQueryHeap;
 using RenderBackendTimingQueryHeapHandle = RenderBackendHandleTyped<RenderBackendTimingQueryHeap>;
 
 class RenderBackendAccelerationStructure;
-using RenderBackendAccelerationStructureHandle = RenderBackendHandleTyped<RenderBackendAccelerationStructure>;
+using RenderBackendRayTracingAccelerationStructureHandle = RenderBackendHandleTyped<RenderBackendAccelerationStructure>;
+
+class RenderBackendRayTracingPipelineState;
+using RenderBackendRayTracingPipelineStateHandle = RenderBackendHandleTyped<RenderBackendRayTracingPipelineState>;
 
 }

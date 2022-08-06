@@ -182,6 +182,16 @@ VkShaderStageFlagBits ToVkShaderStageFlagBits(RenderBackendShaderStage stage)
 		return VK_SHADER_STAGE_FRAGMENT_BIT;
 	case RenderBackendShaderStage::Compute:
 		return VK_SHADER_STAGE_COMPUTE_BIT;
+	case RenderBackendShaderStage::RayGen:
+		return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	case RenderBackendShaderStage::AnyHit:
+		return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+	case RenderBackendShaderStage::ClosestHit:
+		return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	case RenderBackendShaderStage::Miss:
+		return VK_SHADER_STAGE_MISS_BIT_KHR;
+	case RenderBackendShaderStage::Intersection:
+		return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
 	default:
 		INVALID_ENUM_VALUE();
 		return VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
@@ -283,6 +293,10 @@ VkBufferUsageFlags GetVkBufferUsageFlags(BufferCreateFlags flags)
 	{
 		usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
 	}
+	if (HAS_ANY_FLAGS(flags, BufferCreateFlags::ShaderBindingTable))
+	{
+		usage |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR;
+	}
 	return usage;
 }
 
@@ -346,21 +360,21 @@ VkBuildAccelerationStructureFlagsKHR ToVkBuildAccelerationStructureFlagsKHR(Rend
 	return result;
 }
 
-VkGeometryInstanceFlagsKHR ToVkGeometryInstanceFlagsKHR(RenderBackendGeometryInstanceFlags flags)
+VkGeometryInstanceFlagsKHR ToVkGeometryInstanceFlagsKHR(RenderBackendRayTracingInstanceFlags flags)
 {
 	VkGeometryInstanceFlagsKHR result = 0;
 	switch (flags)
 	{
-	case RenderBackendGeometryInstanceFlags::TriangleFacingCullDisable:
+	case RenderBackendRayTracingInstanceFlags::TriangleFacingCullDisable:
 		result |= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 		break;
-	case RenderBackendGeometryInstanceFlags::TriangleFrontCounterclockwise:
+	case RenderBackendRayTracingInstanceFlags::TriangleFrontCounterclockwise:
 		result |= VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR;
 		break;
-	case RenderBackendGeometryInstanceFlags::ForceOpaque:
+	case RenderBackendRayTracingInstanceFlags::ForceOpaque:
 		result |= VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR;
 		break;
-	case RenderBackendGeometryInstanceFlags::ForceNoOpaque:
+	case RenderBackendRayTracingInstanceFlags::ForceNoOpaque:
 		result |= VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR;
 		break;
 	default:

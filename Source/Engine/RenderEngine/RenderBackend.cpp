@@ -122,13 +122,23 @@ namespace HE
 		backend->GetRenderStatistics(backend->instance, deviceMask, statistics);
 	}
 
-	RenderBackendAccelerationStructureHandle RenderBackendCreateBottomLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name)
+	RenderBackendRayTracingAccelerationStructureHandle RenderBackendCreateBottomLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name)
 	{
 		return backend->CreateBottomLevelAS(backend->instance, deviceMask, desc, name);
 	}
 
-	RenderBackendAccelerationStructureHandle RenderBackendCreateTopLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name)
+	RenderBackendRayTracingAccelerationStructureHandle RenderBackendCreateTopLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name)
 	{
 		return backend->CreateTopLevelAS(backend->instance, deviceMask, desc, name);
+	}
+
+	RenderBackendRayTracingPipelineStateHandle RenderBackendCreateRayTracingPipelineState(RenderBackend* backend, uint32 deviceMask, const RenderBackendRayTracingPipelineStateDesc* desc, const char* name)
+	{
+		return backend->CreateRayTracingPipelineState(backend->instance, deviceMask, desc, name);
+	}
+
+	RenderBackendBufferHandle RenderBackendCreateRayTracingShaderBindingTable(RenderBackend* backend, uint32 deviceMask, const RenderBackendRayTracingShaderBindingTableDesc* desc, const char* name)
+	{
+		return backend->CreateRayTracingShaderBindingTable(backend->instance, deviceMask, desc, name);
 	}
 }

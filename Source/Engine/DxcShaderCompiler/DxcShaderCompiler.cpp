@@ -46,6 +46,13 @@ static bool DxcCompileShader(
         TEXT("vs_6_0"),
         TEXT("ps_6_0"),
         TEXT("cs_6_0"),
+        L"lib_6_3", // raygen
+        L"lib_6_3", // any hit
+        L"lib_6_3", // closest hit
+        L"lib_6_3", // miss
+        L"lib_6_3", // intersection
+        L"as_6_5",  // task
+        L"ms_6_5",  // mesh
     };
 
     std::vector<LPCWSTR> args = {};

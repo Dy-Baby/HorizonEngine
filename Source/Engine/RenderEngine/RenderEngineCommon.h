@@ -41,19 +41,13 @@ enum class QueueFamily
 static_assert((uint32)QueueFamily::Graphics == 2, "Default graphics queue index should be 2.");
 static_assert((uint32)QueueFamily::Count == NUM_QUEUE_FAMILIES);
 
-enum class PipelineType
+enum class RenderBackendPipelineType
 {
 	Graphics,
 	Compute,
 	RayTracing,
 };
 	
-enum ShaderLanguage
-{
-	HLSL,
-	GLSL,
-};
-
 enum class RenderBackendShaderStage
 {
 	Vertex       = 0,

@@ -182,7 +182,7 @@ namespace HE
 					.indexBuffer = meshes[i].indexBuffer,
 					.indexOffset = 0,
 					.transformBuffer = worldMatrixBuffer,
-					.transformOffset = 16 * sizeof(float),
+					.transformOffset = i * 16 * (uint32)sizeof(float),
 				}
 			};
 		}
@@ -195,12 +195,12 @@ namespace HE
 		bottomLevelAS = RenderBackendCreateBottomLevelAS(renderBackend, deviceMask, &bottomLevelASDesc, "BottomLevelAS");
 
 
-		RenderBackendGeometryInstance geometryInstance = {
+		RenderBackendRayTracingInstance geometryInstance = {
 			.transformMatrix = Matrix4x4(1.0),
 			.instanceID = 0,
 			.instanceMask = 0xff,
 			.instanceContributionToHitGroupIndex = 0,
-			.flags = RenderBackendGeometryInstanceFlags::TriangleFacingCullDisable,
+			.flags = RenderBackendRayTracingInstanceFlags::TriangleFacingCullDisable,
 			.blas = bottomLevelAS,
 		};
 

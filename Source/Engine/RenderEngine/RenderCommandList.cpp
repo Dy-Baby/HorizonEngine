@@ -70,13 +70,11 @@ void RenderCommandList::Dispatch2D(RenderBackendShaderHandle shader, const Shade
 	Dispatch(shader, shaderArguments, x, y, 1);
 }
 
-void RenderCommandList::TraceRays(RenderBackendShaderHandle shader, const ShaderArguments& shaderArguments, RenderBackendBufferHandle rgenSBT, RenderBackendBufferHandle rmissSBT, RenderBackendBufferHandle rchitSBT, uint32 x, uint32 y, uint32 z)
+void RenderCommandList::TraceRays(RenderBackendRayTracingPipelineStateHandle pipelineState, RenderBackendBufferHandle shaderBindingTable, const ShaderArguments& shaderArguments, uint32 x, uint32 y, uint32 z)
 {
 	RenderCommandTraceRays* command = AllocateCommand<RenderCommandTraceRays>(RenderCommandTraceRays::Type);
-	command->shader = shader;
-	command->rgenSBT = rgenSBT;
-	command->rmissSBT = rmissSBT;
-	command->rchitSBT = rchitSBT;
+	command->pipelineState = pipelineState;
+	command->shaderBindingTable = shaderBindingTable;
 	command->width = x;
 	command->height = y;
 	command->depth = z;

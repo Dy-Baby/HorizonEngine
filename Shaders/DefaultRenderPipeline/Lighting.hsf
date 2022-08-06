@@ -1,11 +1,12 @@
 #include "../BindlessCommon.hsf"
 #include "DefaultRenderPipelineCommon.hsf"
 
-#define LIGHTING_SHADER_PER_FRAME_DATA_SLOT     0
-#define LIGHTING_SHADER_GBUFFER0_SRV_SLOT       1
-#define LIGHTING_SHADER_GBUFFER1_SRV_SLOT       2
-#define LIGHTING_SHADER_GBUFFER2_SRV_SLOT       3
-#define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT    4
+#define LIGHTING_SHADER_PER_FRAME_DATA_SLOT        0
+#define LIGHTING_SHADER_GBUFFER0_SRV_SLOT          1
+#define LIGHTING_SHADER_GBUFFER1_SRV_SLOT          2
+#define LIGHTING_SHADER_GBUFFER2_SRV_SLOT          3
+#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT    4
+#define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT       5
 
 PerFrameData GetPerFrameData()
 {
@@ -26,6 +27,11 @@ Texture2D GetGBuffer1SRV()
 Texture2D GetGBuffer2SRV()
 {
     return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_GBUFFER2_SRV_SLOT)];
+}
+
+Texture2D GetShadowBufferSRV()
+{
+    return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT)];
 }
 
 RWTexture2D<float4> GetSceneColorUAV()
@@ -49,6 +55,8 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	Texture2D gbuffer0 = GetGBuffer0SRV();
 	Texture2D gbuffer1 = GetGBuffer1SRV();
 	Texture2D gbuffer2 = GetGBuffer2SRV();
+	
+	Texture2D shadowBuffer = GetShadowBufferSRV();
 
 	float4 gbuffer0Data = gbuffer0[coord];
 	float4 gbuffer1Data = gbuffer1[coord];
@@ -61,7 +69,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float roughness = gbuffer1Data.w;
 
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
-	sceneColor[coord] = float4(baseColor.rgb, 1.0);
+	sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
 }
 
 // Material material = BindlessBuffers[5].Load<Material>(0);

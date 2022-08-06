@@ -43,7 +43,38 @@ float2 GetVertexTexCoord0(uint vertexIndex)
 float4x4 GetWorldMatrix()
 {
     uint bufferIndex = SHADER_ARGUMENTS_INDEX(GBUFFER_SHADER_WORLD_MATRIX_BUFFER_SLOT);
-    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<float4x4>((bufferIndex & 0xffff));
+    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<float4x4>((bufferIndex & 0xffff) * sizeof(float4x4));
+}
+
+struct MaterialInstanceData
+{
+    float4 baseColor;
+    float metallic;
+    float roughness;
+    uint baseColorMapIndex;
+    uint normalMapIndex;
+    uint metallicRoughnessMapIndex;
+};
+
+MaterialInstanceData GetMaterialInstanceData()
+{
+    uint bufferIndex = SHADER_ARGUMENTS_INDEX(GBUFFER_SHADER_MATERIAL_BUFFER_SLOT);
+    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<MaterialInstanceData>((bufferIndex & 0xffff) * sizeof(MaterialInstanceData));
+}
+
+Texture2D GetBaseColorMap(uint baseColorMapIndex)
+{
+    return BindlessTexture2Ds[baseColorMapIndex];
+}
+
+Texture2D GetNormalMap(uint normalMapIndex)
+{
+    return BindlessTexture2Ds[normalMapIndex];
+}
+
+Texture2D GetMetallicRoughnessMap(uint metallicRoughnessMapIndex)
+{
+    return BindlessTexture2Ds[metallicRoughnessMapIndex];
 }
 
 struct GBufferVSToPS
@@ -85,37 +116,6 @@ void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
     output.texCoord0 = texCoord0;
 }
 
-struct MaterialInstanceData
-{
-    float4 baseColor;
-    float metallic;
-    float roughness;
-    uint baseColorMapIndex;
-    uint normalMapIndex;
-    uint metallicRoughnessMapIndex;
-};
-
-MaterialInstanceData GetMaterialInstanceData()
-{
-    uint bufferIndex = SHADER_ARGUMENTS_INDEX(GBUFFER_SHADER_MATERIAL_BUFFER_SLOT);
-    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<MaterialInstanceData>((bufferIndex & 0xffff));
-}
-
-Texture2D GetBaseColorMap(uint baseColorMapIndex)
-{
-    return BindlessTexture2Ds[baseColorMapIndex];
-}
-
-Texture2D GetNormalMap(uint normalMapIndex)
-{
-    return BindlessTexture2Ds[normalMapIndex];
-}
-
-Texture2D GetMetallicRoughnessMap(uint metallicRoughnessMapIndex)
-{
-    return BindlessTexture2Ds[metallicRoughnessMapIndex];
-}
-
 struct GBufferData
 {
     float4 gbuffer0 : SV_TARGET0;
@@ -129,7 +129,7 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
 {
     float3 interpolatedVertexNormal = normalize(input.worldNormal);
     float4 tangent = float4(normalize(input.worldTangent.xyz), input.worldTangent.w);
-    float3 position = normalize(input.worldPosition);
+    float3 position = input.worldPosition;
     float2 texCoord0 = input.texCoord0;
     
     PerFrameData perFrameData = GetPerFrameData();

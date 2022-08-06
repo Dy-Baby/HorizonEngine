@@ -19,14 +19,14 @@ public:
 
 	RenderBackend* renderBackend;
 
-	uint32 numMeshes;
+	uint32 numMeshes = 0;
 	std::vector<Mesh> meshes;
 	std::vector<Matrix4x4> worldMatrices;
 
-	uint32 numMaterials;
+	uint32 numMaterials = 0;
 	std::vector<Material> materials;
 
-	uint32 numTextures;
+	uint32 numTextures = 0;
 	std::vector<std::string> texturePaths;
 	std::vector<RenderBackendTextureHandle> textures;
 
@@ -34,8 +34,8 @@ public:
 	RenderBackendBufferHandle prevWorldMatrixBuffer;
 	RenderBackendBufferHandle materialBuffer;
 
-	RenderBackendAccelerationStructureHandle bottomLevelAS;
-	RenderBackendAccelerationStructureHandle topLevelAS;
+	RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
+	RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
 
 	void Update();
 	void UploadResources();

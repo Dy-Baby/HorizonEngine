@@ -31,7 +31,7 @@ inline bool IsStencilFormat(VkFormat format)
 	return (format == VK_FORMAT_D32_SFLOAT_S8_UINT) || (format == VK_FORMAT_D24_UNORM_S8_UINT) || (format == VK_FORMAT_D16_UNORM_S8_UINT);
 }
 
-inline uint32 GetHandleSizeAligned(uint32 size, uint32 alignment)
+inline uint32 AlignUp(uint32 size, uint32 alignment)
 {
 	return (size + alignment - 1) & ~(alignment - 1);
 }
@@ -52,7 +52,7 @@ extern VkBufferUsageFlags GetVkBufferUsageFlags(BufferCreateFlags flags);
 extern VmaMemoryUsage GetVmaMemoryUsage(BufferCreateFlags flags);
 extern VkSamplerAddressMode ToVkSamplerAddressMode(TextureAddressMode addressMode);
 extern VkBuildAccelerationStructureFlagsKHR ToVkBuildAccelerationStructureFlagsKHR(RenderBackendAccelerationStructureBuildFlags flags);
-extern VkGeometryInstanceFlagsKHR ToVkGeometryInstanceFlagsKHR(RenderBackendGeometryInstanceFlags flags);
+extern VkGeometryInstanceFlagsKHR ToVkGeometryInstanceFlagsKHR(RenderBackendRayTracingInstanceFlags flags);
 extern VkGeometryFlagsKHR ToVkGeometryFlagsKHR(RenderBackendGeometryFlags flags);
 extern void GetVkFilterAndVkSamplerMipmapMode(
 	Filter filter,

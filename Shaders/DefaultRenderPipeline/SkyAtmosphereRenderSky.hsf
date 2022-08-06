@@ -65,6 +65,16 @@ void SkyAtmosphereRenderSkyCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 L = 0.0f;
 	Texture2D depthBuffer = GetDepthBufferSRV();
 	depthBufferValue = depthBuffer[coord].r;
+
+	// float2 pixelCenter = GlobalInvocationID.xy + 0.5;
+    // float2 uvTemp = pixelCenter / float2(width, height);
+    // float4 clipSpacePosition = float4(uvTemp * 2.0 - 1.0, depthBufferValue, 1.0);
+	// clipSpacePosition.y = -clipSpacePosition.y;
+    // float4 worldSpacePosition = mul(clipSpacePosition, frameData.invViewProjectionMatrix);
+    // worldSpacePosition /= worldSpacePosition.w;
+	// colorBuffer[coord] = float4(worldSpacePosition.xyz, 1.0);
+	// return;
+
 	if (viewHeight < atmosphere.topRadius && depthBufferValue == 1.0f)
 	{
 		float3 UpVector = normalize(rayOrigin);
@@ -98,5 +108,6 @@ void SkyAtmosphereRenderSkyCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	L.rgb += AP.rgb;
 	float opacity = AP.a;
 	float4 luminance = float4(L, opacity);
+
 	colorBuffer[coord] = luminance;
 }

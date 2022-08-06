@@ -72,7 +72,8 @@ bool ModelViewerApp::Init()
 
 	shaderCompiler = CreateDxcShaderCompiler();
 
-	int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
+	// int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
+	int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
 	renderBackend = VulkanRenderBackendCreateBackend(flags);
 	
 	uint32 deviceMask;
@@ -90,6 +91,8 @@ bool ModelViewerApp::Init()
 
 	GLTF2ImportSettings settings;
 	ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
+	ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
+
 	//ImportGLTF2("../../../Assets/Models/Sponza/glTF/Sponza.gltf", settings, scene);
 	scene->renderBackend = renderBackend;
 	scene->UploadResources();

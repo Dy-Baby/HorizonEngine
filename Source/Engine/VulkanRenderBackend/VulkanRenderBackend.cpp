@@ -138,6 +138,13 @@ struct VulkanBindlessManager
 		freeStorageBuffers.pop_back();
 		return index;
 	}
+
+	uint32 AllocateAccelerationStructureIndex()
+	{
+		uint32 index = freeAccelerationStructures.back();
+		freeAccelerationStructures.pop_back();
+		return index;
+	}
 };
 
 struct VulkanPhysicalDevice
@@ -223,6 +230,23 @@ struct VulkanSampler
 	uint32 bindlessIndex;
 };
 
+struct VulkanRayTracingPipelineState
+{
+	VkPipelineLayout pipelineLayout;
+	VkPipeline handle;
+	uint32 numRayGenerationShaders;
+	uint32 numMissShaders;
+	uint32 numHitGroups;
+};
+
+struct VulkanRayTracingShaderBindingTable
+{
+	VkStridedDeviceAddressRegionKHR rayGenShaderBindingTable;
+	VkStridedDeviceAddressRegionKHR missShaderBindingTable;
+	VkStridedDeviceAddressRegionKHR hitShaderBindingTable;
+	VkStridedDeviceAddressRegionKHR callableShaderBindingTable;
+};
+
 struct VulkanBuffer
 {
 	VkBuffer handle;
@@ -236,7 +260,9 @@ struct VulkanBuffer
 	void* mappedData;
 	int32 uavIndex;
 	std::string name;
+	VulkanRayTracingShaderBindingTable* shaderBindingTable;
 };
+
 
 struct PipelineState
 {
@@ -266,7 +292,7 @@ struct VulkanShaderCompiler
 	MemoryArena* allocator;
 };
 
-struct VulkanAccelerationStructure
+struct VulkanRayTracingAccelerationStructure
 {
 	uint32 deviceMask;
 	VkAccelerationStructureKHR handle;
@@ -289,6 +315,7 @@ struct VulkanAccelerationStructure
 		RenderBackendBottomLevelASDesc blasDesc;
 		RenderBackendTopLevelASDesc tlasDesc;
 	};
+	uint32 descriptorIndex;
 };
 
 struct VulkanPipeline
@@ -420,10 +447,11 @@ public:
 	uint32 CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, const char* name);
 	VkRenderPass FindOrCreateRenderPass(const VulkanRenderPassDesc& renderPassDesc);
 	VulkanFramebuffer* FindOrCreateFramebuffer(const RenderPassInfo& renderPassInfo, const VulkanRenderPassDesc& renderPassDesc, VkRenderPass renderPass);
-	VkPipelineLayout FindOrCreatePipelineLayout(uint32 pushConstantSize, PipelineType pipelineType);
+	VkPipelineLayout FindOrCreatePipelineLayout(uint32 pushConstantSize, RenderBackendPipelineType pipelineType);
 	VulkanPipeline* FindOrCreateComputePipeline(VulkanShader* shader, uint32 pushConstantSize);
 	VulkanPipeline* FindOrCreateRayTracingPipeline(VulkanShader* shader, uint32 pushConstantSize);
 	VulkanPipeline* FindOrCreateGraphicsPipeline(VulkanShader* shader, VkRenderPass renderPass, PrimitiveTopology topology, uint32 pushConstantSize);
+	void SetDebugUtilsObjectName(VkObjectType type, uint64 handle, const char* name); 
 	inline VkDevice GetHandle() const
 	{
 		return handle;
@@ -485,10 +513,15 @@ public:
 		uint32 index = GetRenderBackendHandleRepresentation(handle.GetIndex());
 		return &timingQueryHeaps[index];
 	}
-	inline VulkanAccelerationStructure* GetAccelerationStructure(RenderBackendAccelerationStructureHandle handle)
+	inline VulkanRayTracingAccelerationStructure* GetAccelerationStructure(RenderBackendRayTracingAccelerationStructureHandle handle)
 	{
 		uint32 index = GetRenderBackendHandleRepresentation(handle.GetIndex());
 		return &accelerationStructures[index];
+	}
+	inline VulkanRayTracingPipelineState* GetRayTracingPipelineState(RenderBackendRayTracingPipelineStateHandle handle)
+	{
+		uint32 index = GetRenderBackendHandleRepresentation(handle.GetIndex());
+		return &rayTracingPipelineStates[index];
 	}
 	inline uint32 GetRenderBackendHandleRepresentation(uint32 handle)
 	{
@@ -515,14 +548,12 @@ public:
 	VulkanCommandBufferManager* commandBufferManager;
 	RenderStatistics renderStatistics;
 	std::vector<VulkanSwapchain> swapchains;
-private:
-	void SetDebugUtilsObjectName(VkObjectType type, uint64 handle, const char* name);
 	void CreateVmaAllocator();
 	void DestroyVmaAllocator();
 	bool CreateBindlessManager(const VulkanBindlessConfig& bindlessConfig);
 	void DestroyBindlessManager();
 	void CreateDefaultResources(); 
-	uint32 CreateAccelerationStructure(VulkanAccelerationStructure* accelerationStructure, VkAccelerationStructureTypeKHR type, uint32* primitiveCounts, const char* name);
+	uint32 CreateAccelerationStructure(VulkanRayTracingAccelerationStructure* accelerationStructure, VkAccelerationStructureTypeKHR type, uint32* primitiveCounts, const char* name);
 	MemoryArena*          allocator;
 	VulkanRenderBackend*  backend;
 	VulkanPhysicalDevice* physicalDevice;
@@ -560,8 +591,10 @@ private:
 	std::vector<uint32> freeShaders;
 	std::vector<VulkanTimingQueryHeap> timingQueryHeaps;
 	std::vector<uint32> freetimingQueryHeaps;
-	std::vector<VulkanAccelerationStructure> accelerationStructures;
+
+	std::vector<VulkanRayTracingAccelerationStructure> accelerationStructures;
 	std::vector<uint32> freeAccelerationStructures;
+	std::vector<VulkanRayTracingPipelineState> rayTracingPipelineStates;
 
 	std::queue<ResourceToDestroy> resourcesToDestroy;
 
@@ -657,6 +690,7 @@ struct VulkanRenderBackend
 		PFN_vkGetAccelerationStructureBuildSizesKHR    vkGetAccelerationStructureBuildSizesKHR;
 		PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
 		PFN_vkGetRayTracingShaderGroupHandlesKHR       vkGetRayTracingShaderGroupHandlesKHR;
+		PFN_vkBuildAccelerationStructuresKHR           vkBuildAccelerationStructuresKHR;
 		PFN_vkCreateRayTracingPipelinesKHR             vkCreateRayTracingPipelinesKHR;
 		PFN_vkCmdBuildAccelerationStructuresKHR        vkCmdBuildAccelerationStructuresKHR;
 		PFN_vkCmdTraceRaysKHR                          vkCmdTraceRaysKHR;
@@ -1005,6 +1039,7 @@ bool VulkanRenderBackend::Init(int flags)
 	functions.vkGetAccelerationStructureBuildSizesKHR    = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetInstanceProcAddr(instance, "vkGetAccelerationStructureBuildSizesKHR"));
 	functions.vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetInstanceProcAddr(instance, "vkGetAccelerationStructureDeviceAddressKHR"));
 	functions.vkGetRayTracingShaderGroupHandlesKHR       = reinterpret_cast<PFN_vkGetRayTracingShaderGroupHandlesKHR>(vkGetInstanceProcAddr(instance, "vkGetRayTracingShaderGroupHandlesKHR"));
+	functions.vkBuildAccelerationStructuresKHR           = reinterpret_cast<PFN_vkBuildAccelerationStructuresKHR>(vkGetInstanceProcAddr(instance, "vkBuildAccelerationStructuresKHR"));
 	functions.vkCreateRayTracingPipelinesKHR             = reinterpret_cast<PFN_vkCreateRayTracingPipelinesKHR>(vkGetInstanceProcAddr(instance, "vkCreateRayTracingPipelinesKHR"));
 	functions.vkCmdBuildAccelerationStructuresKHR        = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetInstanceProcAddr(instance, "vkCmdBuildAccelerationStructuresKHR"));
 	functions.vkCmdTraceRaysKHR                          = reinterpret_cast<PFN_vkCmdTraceRaysKHR>(vkGetInstanceProcAddr(instance, "vkCmdTraceRaysKHR"));
@@ -1300,11 +1335,11 @@ uint64 VulkanDevice::GetBufferDeviceAddress(RenderBackendBufferHandle bufferHand
 {
 	uint32 index = GetRenderBackendHandleRepresentation(bufferHandle.GetIndex());
 	VulkanBuffer& buffer = buffers[index];
-	VkBufferDeviceAddressInfoKHR bufferDeviceInfo = {
+	VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo = {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
 		.buffer = buffer.handle,
 	};
-	return backend->functions.vkGetBufferDeviceAddressKHR(handle, &bufferDeviceInfo);
+	return backend->functions.vkGetBufferDeviceAddressKHR(handle, &bufferDeviceAddressInfo);
 }
 
 void VulkanDevice::DestroyBuffer(uint32 index)
@@ -1863,7 +1898,7 @@ void VulkanDevice::DestroyShader(uint32 index)
 
 }
 
-uint32 VulkanDevice::CreateAccelerationStructure(VulkanAccelerationStructure* accelerationStructure, VkAccelerationStructureTypeKHR type, uint32* primitiveCounts, const char* name)
+uint32 VulkanDevice::CreateAccelerationStructure(VulkanRayTracingAccelerationStructure* accelerationStructure, VkAccelerationStructureTypeKHR type, uint32* primitiveCounts, const char* name)
 {
 	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = {
 		.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
@@ -1895,7 +1930,7 @@ uint32 VulkanDevice::CreateAccelerationStructure(VulkanAccelerationStructure* ac
 			.flags = 0,
 			.usage = VMA_MEMORY_USAGE_GPU_ONLY,
 		};
-		VmaAllocationInfo allocationInfo = {};	
+		VmaAllocationInfo allocationInfo = {};
 		VK_CHECK(vmaCreateBuffer(
 			vmaAllocator,
 			&bufferCreateInfo,
@@ -1957,6 +1992,60 @@ uint32 VulkanDevice::CreateAccelerationStructure(VulkanAccelerationStructure* ac
 		.accelerationStructure = accelerationStructure->handle,
 	};
 	accelerationStructure->deviceAddress = backend->functions.vkGetAccelerationStructureDeviceAddressKHR(handle, &deviceAddressInfo);
+	
+	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = {
+		.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+		.type = type,
+		.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+		.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+		.dstAccelerationStructure = accelerationStructure->handle,
+		.geometryCount = (uint32)accelerationStructure->geometries.size(),
+		.pGeometries = accelerationStructure->geometries.data(),
+		.scratchData = { .deviceAddress = accelerationStructure->scratchBuffer.deviceAddress }
+	};
+
+	std::vector<VkAccelerationStructureBuildRangeInfoKHR> accelerationBuildStructureRangeInfos((uint32)accelerationStructure->geometries.size());
+	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> pBuildRangeInfos((uint32)accelerationStructure->geometries.size());
+	for (uint32 geometryIndex = 0; geometryIndex < (uint32)accelerationStructure->geometries.size(); geometryIndex++)
+	{
+		accelerationBuildStructureRangeInfos[geometryIndex] = {
+			.primitiveCount = primitiveCounts[geometryIndex],
+			.primitiveOffset = 0,
+			.firstVertex = 0,
+			.transformOffset = 0,
+		};
+		pBuildRangeInfos[geometryIndex] = &accelerationBuildStructureRangeInfos[geometryIndex];
+	}
+
+	VkCommandBuffer commandBuffer; VkCommandPool pool;
+	VulkanHelper::CreateTemporaryCommandBuffer(handle, GetQueueFamilyIndex(QueueFamily::Graphics), pool, commandBuffer);
+	backend->functions.vkCmdBuildAccelerationStructuresKHR(
+		commandBuffer,
+		1,
+		&accelerationBuildGeometryInfo, 
+		pBuildRangeInfos.data());
+	VulkanHelper::FlushTemporaryCommandBuffer(handle, GetCommandQueue(QueueFamily::Graphics, 0)->handle, pool, commandBuffer);
+
+	if (type == VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR || type == VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR)
+	{
+		uint32 descriptorIndex = bindlessManager.AllocateAccelerationStructureIndex();
+		const VkWriteDescriptorSetAccelerationStructureKHR writeAccelerationStructureInfo = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+			.accelerationStructureCount = 1,
+			.pAccelerationStructures = &accelerationStructure->handle,
+		};
+		VkWriteDescriptorSet write = {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext = &writeAccelerationStructureInfo,
+			.dstSet = bindlessManager.set,
+			.dstBinding = VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_ACCELERATION_STRUCTURES,
+			.dstArrayElement = descriptorIndex,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+		};
+		vkUpdateDescriptorSets(handle, 1, &write, 0, nullptr);
+		accelerationStructure->descriptorIndex = descriptorIndex;
+	}
 
 	uint32 index = 0;
 	if (!freeAccelerationStructures.empty())
@@ -1975,7 +2064,7 @@ uint32 VulkanDevice::CreateAccelerationStructure(VulkanAccelerationStructure* ac
 
 uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* desc, const char* name)
 {
-	VulkanAccelerationStructure accelerationStructure;
+	VulkanRayTracingAccelerationStructure accelerationStructure;
 	accelerationStructure.buildFlags = ToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
 	accelerationStructure.blasDesc = *desc;
 
@@ -1991,11 +2080,6 @@ uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* d
 		if (geometry.geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR)
 		{
 			uint32 maxVertex = geometryDesc.triangleDesc.numVertices;
-			if (!maxVertex)
-			{
-				VulkanBuffer* vertexBuffer = GetBuffer(geometryDesc.aabbDesc.buffer);
-				maxVertex = (uint32)vertexBuffer->size / geometryDesc.triangleDesc.vertexStride;
-			}
 			geometry.geometry.triangles = {
 				.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
 				.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT,
@@ -2027,7 +2111,7 @@ uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* d
 
 uint32 VulkanDevice::CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, const char* name)
 {
-	VulkanAccelerationStructure accelerationStructure = {};
+	VulkanRayTracingAccelerationStructure accelerationStructure = {};
 	accelerationStructure.buildFlags = ToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
 	accelerationStructure.tlasDesc = *desc;
 
@@ -2046,7 +2130,7 @@ uint32 VulkanDevice::CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, c
 		});
 	}
 
-	VulkanAccelerationStructure::Buffer instanceBuffer;
+	VulkanRayTracingAccelerationStructure::Buffer instanceBuffer;
 	{
 		instanceBuffer.size = desc->numInstances * sizeof(VkAccelerationStructureInstanceKHR);
 		VkBufferCreateInfo bufferCreateInfo = {
@@ -2316,7 +2400,7 @@ VulkanFramebuffer* VulkanDevice::FindOrCreateFramebuffer(const RenderPassInfo& r
 	return &framebufferList->framebuffers.back();
 }
 
-VkPipelineLayout VulkanDevice::FindOrCreatePipelineLayout(uint32 pushConstantSize, PipelineType pipelineType)
+VkPipelineLayout VulkanDevice::FindOrCreatePipelineLayout(uint32 pushConstantSize, RenderBackendPipelineType pipelineType)
 {	
 	uint64 layoutHash = Crc::Crc32(&pushConstantSize, sizeof(uint32), (uint32)pipelineType);
 	if (pipelineManager.pipelineLayoutMap.find(layoutHash) != pipelineManager.pipelineLayoutMap.end())
@@ -2327,16 +2411,18 @@ VkPipelineLayout VulkanDevice::FindOrCreatePipelineLayout(uint32 pushConstantSiz
 	VkShaderStageFlags shaderStageFlags = 0;
 	switch (pipelineType)
 	{
-	case PipelineType::Graphics:
+	case RenderBackendPipelineType::Graphics:
 		shaderStageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 		break;
-	case PipelineType::Compute:
+	case RenderBackendPipelineType::Compute:
 		shaderStageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		break;
-	case PipelineType::RayTracing:
-		shaderStageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+	case RenderBackendPipelineType::RayTracing:
+		shaderStageFlags = VK_SHADER_STAGE_ALL;
+		break;
 	default:
 		INVALID_ENUM_VALUE();
+		break;
 	}
 	VkPushConstantRange pushConstantRange = {
 		.stageFlags = shaderStageFlags,
@@ -2368,7 +2454,7 @@ VulkanPipeline* VulkanDevice::FindOrCreateComputePipeline(VulkanShader* shader, 
 		return &pipelineManager.pipelineMap[pipelineHash];
 	}
 
-	VkPipelineLayout pipelineLayout = FindOrCreatePipelineLayout(pushConstantSize, PipelineType::Compute);
+	VkPipelineLayout pipelineLayout = FindOrCreatePipelineLayout(pushConstantSize, RenderBackendPipelineType::Compute);
 
 	shader->stages[0].pName = shader->entryPoints[2].c_str();
 	VkComputePipelineCreateInfo computePipelineInfo = { 
@@ -2387,107 +2473,6 @@ VulkanPipeline* VulkanDevice::FindOrCreateComputePipeline(VulkanShader* shader, 
 	return &pipelineManager.pipelineMap[pipelineHash];
 }
 
-VulkanPipeline* VulkanDevice::FindOrCreateRayTracingPipeline(VulkanShader* shader, uint32 pushConstantSize)
-{
-	uint32 pipelineStateHash = Crc::Crc32(shader, sizeof(VulkanShader));
-	uint64 values[] = { (uint64)pipelineStateHash, (uint64)pushConstantSize };
-	uint64 pipelineHash = Crc::Crc32(values, 2 * sizeof(uint64));
-
-	std::vector<VkRayTracingShaderGroupCreateInfoKHR> groups;
-	{
-		for (uint32 i = 0; i < shader->numStages; i++)
-		{
-			switch (shader->stages[i].stage)
-			{
-			case VK_SHADER_STAGE_RAYGEN_BIT_KHR:
-			case VK_SHADER_STAGE_MISS_BIT_KHR:
-			{
-				VkRayTracingShaderGroupCreateInfoKHR shaderGroupCreateInfo = {
-					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-					.generalShader = i,
-					.closestHitShader = VK_SHADER_UNUSED_KHR,
-					.anyHitShader = VK_SHADER_UNUSED_KHR,
-					.intersectionShader = VK_SHADER_UNUSED_KHR,
-				};
-				groups.emplace_back(shaderGroupCreateInfo);
-			}
-			break;
-			case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:
-			{
-				VkRayTracingShaderGroupCreateInfoKHR shaderGroupCreateInfo = {
-					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-					.generalShader = VK_SHADER_UNUSED_KHR,
-					.closestHitShader = i,
-					.anyHitShader = VK_SHADER_UNUSED_KHR,
-					.intersectionShader = VK_SHADER_UNUSED_KHR,
-				};
-				groups.emplace_back(shaderGroupCreateInfo);
-			}
-			break;
-			case VK_SHADER_STAGE_ANY_HIT_BIT_KHR:
-			{
-				VkRayTracingShaderGroupCreateInfoKHR shaderGroupCreateInfo = {
-					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-					.generalShader = VK_SHADER_UNUSED_KHR,
-					.closestHitShader = VK_SHADER_UNUSED_KHR,
-					.anyHitShader = i,
-					.intersectionShader = VK_SHADER_UNUSED_KHR,
-				};
-				groups.emplace_back(shaderGroupCreateInfo);
-			}
-			break;
-			case VK_SHADER_STAGE_INTERSECTION_BIT_KHR:
-			{
-				VkRayTracingShaderGroupCreateInfoKHR shaderGroupCreateInfo = {
-					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
-					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-					.generalShader = VK_SHADER_UNUSED_KHR,
-					.closestHitShader = VK_SHADER_UNUSED_KHR,
-					.anyHitShader = VK_SHADER_UNUSED_KHR,
-					.intersectionShader = i,
-				};
-				groups.emplace_back(shaderGroupCreateInfo);
-			}
-			break;
-			default: INVALID_ENUM_VALUE(); break;
-			}
-		}
-	}
-
-	uint32 maxRayRecursionDepth = 1;
-
-	VkPipelineLayout pipelineLayout = FindOrCreatePipelineLayout(pushConstantSize, PipelineType::RayTracing);
-
-	VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCreateInfo = {
-		.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
-		.stageCount = (uint32)shader->numStages,
-		.pStages = shader->stages,
-		.groupCount = (uint32)groups.size(),
-		.pGroups = groups.data(),
-		.maxPipelineRayRecursionDepth = Math::Min(maxRayRecursionDepth, physicalDevice->rayTracingPipelineProperties.maxRayRecursionDepth),
-		.layout = pipelineLayout
-	};
-
-	VkPipeline pipeline;
-	VK_CHECK(backend->functions.vkCreateRayTracingPipelinesKHR(
-		handle, 
-		VK_NULL_HANDLE, 
-		VK_NULL_HANDLE, 
-		1, 
-		&rayTracingPipelineCreateInfo,
-		VULKAN_ALLOCATION_CALLBACKS, 
-		&pipeline));
-	
-	pipelineManager.pipelineMap.emplace(pipelineHash, VulkanPipeline{ pipelineHash, pipeline, pipelineLayout });
-	pipelineManager.pipelines.push_back(VulkanPipeline{ pipelineHash, pipeline, pipelineLayout });
-	shader->pipelineHashes.push_back(pipelineHash);
-
-	return &pipelineManager.pipelineMap[pipelineHash];
-}
-
 VulkanPipeline* VulkanDevice::FindOrCreateGraphicsPipeline(VulkanShader* shader, VkRenderPass renderPass, PrimitiveTopology topology, uint32 pushConstantSize)
 {
 	uint32 pipelineStateHash = Crc::Crc32(shader, sizeof(VulkanShader));
@@ -2499,7 +2484,7 @@ VulkanPipeline* VulkanDevice::FindOrCreateGraphicsPipeline(VulkanShader* shader,
 		return &pipelineManager.pipelineMap[pipelineHash];
 	}
 
-	VkPipelineLayout pipelineLayout = FindOrCreatePipelineLayout(pushConstantSize, PipelineType::Graphics);
+	VkPipelineLayout pipelineLayout = FindOrCreatePipelineLayout(pushConstantSize, RenderBackendPipelineType::Graphics);
 
 	static VkPipelineViewportStateCreateInfo viewportStateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -2848,6 +2833,8 @@ bool VulkanDevice::Init(VulkanRenderBackend* backend, VulkanPhysicalDevice* phys
 		requiredDeviceExtensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+		// TODO: delete these two externsions
 		requiredDeviceExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
 		requiredDeviceExtensions.push_back(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
 #endif
@@ -3278,6 +3265,7 @@ public:
 		, activeRenderPass(VK_NULL_HANDLE)
 		, activeComputePipeline(VK_NULL_HANDLE)
 		, activeGraphicsPipeline(VK_NULL_HANDLE)
+		, activeRayTracingPipeline(VK_NULL_HANDLE)
 		, statistics()
 		, imageBarriers()
 		, bufferBarriers() {}
@@ -3314,6 +3302,7 @@ private:
 	VkRenderPass activeRenderPass;
 	VkPipeline activeComputePipeline;
 	VkPipeline activeGraphicsPipeline;
+	VkPipeline activeRayTracingPipeline;
 	RenderStatistics statistics;
 	std::vector<VkImageMemoryBarrier2KHR> imageBarriers;
 	std::vector<VkBufferMemoryBarrier2KHR> bufferBarriers;
@@ -3633,6 +3622,7 @@ bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandUpdateB
 		1,
 		&accelerationStructureBuildGeometryInfo,
 		buildRangeInfos.data());
+
 	return true;
 }
 
@@ -3675,55 +3665,61 @@ bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandUpdateT
 
 bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandTraceRays& command)
 {
-	if (!command.rgenSBT || !command.rmissSBT || command.rchitSBT)
+	VulkanPushConstants pushConstants = {};
+	for (uint32 i = 0; i < 16; i++)
 	{
-		return false;
+		if (command.shaderArguments.slots[i].type == 1)
+		{
+			VulkanTexture* texture = device->GetTexture(command.shaderArguments.slots[i].srvSlot.srv.texture);
+			pushConstants.indices[i] = texture->srvIndex;
+		}
+		else if (command.shaderArguments.slots[i].type == 2)
+		{
+			VulkanTexture* texture = device->GetTexture(command.shaderArguments.slots[i].uavSlot.uav.texture);
+			pushConstants.indices[i] = texture->uavIndex;
+		}
+		else if (command.shaderArguments.slots[i].type == 3)
+		{
+			VulkanBuffer* buffer = device->GetBuffer(command.shaderArguments.slots[i].bufferSlot.handle);
+			pushConstants.indices[i] = (buffer->uavIndex << 16) | (uint16)command.shaderArguments.slots[i].bufferSlot.offset;
+		}
+		else if (command.shaderArguments.slots[i].type == 4)
+		{
+			VulkanRayTracingAccelerationStructure* as = device->GetAccelerationStructure(command.shaderArguments.slots[i].asSlot.handle);
+			pushConstants.indices[i] = as->descriptorIndex;
+		}
 	}
-
+	for (uint32 i = 0; i < 16; i++)
+	{
+		pushConstants.data[i] = command.shaderArguments.data[i];
+	}
+	const void* pushConstantsValue = &pushConstants;
 	uint32 pushConstantsSize = sizeof(VulkanPushConstants);
-	const void* pushConstantsValue = &command.shaderArguments;
 
-	VulkanPipeline* pipeline = device->FindOrCreateRayTracingPipeline(device->GetShader(command.shader), pushConstantsSize);
-	if (pipeline->handle != activeComputePipeline)
+	VulkanRayTracingPipelineState* pipelineState = device->GetRayTracingPipelineState(command.pipelineState);
+
+	if (pipelineState->handle != activeRayTracingPipeline)
 	{
 		VkDescriptorSet set = device->GetBindlessGlobalSet();
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline->layout, 0, 1, &set, 0, nullptr);
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline->handle);
-		activeComputePipeline = pipeline->handle;
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineState->pipelineLayout, 0, 1, &set, 0, nullptr);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineState->handle);
+		activeComputePipeline = pipelineState->handle;
 		statistics.pipelines++;
 	}
 
 	if (pushConstantsSize)
 	{
-		vkCmdPushConstants(commandBuffer, pipeline->layout, VK_SHADER_STAGE_ALL, 0, pushConstantsSize, pushConstantsValue);
+		vkCmdPushConstants(commandBuffer, pipelineState->pipelineLayout, VK_SHADER_STAGE_ALL, 0, pushConstantsSize, pushConstantsValue);
 	}
 
-	const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rayTracingPipelineProperties = device->GetRayTracingPipelineProperties();
-	const uint32 handleSizeAligned = GetShaderHandleSizeAligned(rayTracingPipelineProperties.shaderGroupHandleSize, rayTracingPipelineProperties.shaderGroupHandleAlignment);
-
-	VkStridedDeviceAddressRegionKHR raygenShaderBindingTable = {
-		.deviceAddress = device->GetBufferDeviceAddress(command.rgenSBT),
-		.stride = handleSizeAligned,
-		.size = handleSizeAligned
-	};
-	VkStridedDeviceAddressRegionKHR missShaderBindingTable = {
-		.deviceAddress = device->GetBufferDeviceAddress(command.rmissSBT),
-		.stride = handleSizeAligned,
-		.size = handleSizeAligned
-	};
-	VkStridedDeviceAddressRegionKHR hitShaderBindingTable = {
-		.deviceAddress = device->GetBufferDeviceAddress(command.rchitSBT),
-		.stride = handleSizeAligned,
-		.size = handleSizeAligned
-	};
-	VkStridedDeviceAddressRegionKHR callableShaderBindingTable = {};
+	VulkanBuffer* sbtBuffer = device->GetBuffer(command.shaderBindingTable);
 
 	device->GetBackend()->functions.vkCmdTraceRaysKHR(
 		commandBuffer,
-		&raygenShaderBindingTable,
-		&missShaderBindingTable,
-		&hitShaderBindingTable,
-		&callableShaderBindingTable,
+		&sbtBuffer->shaderBindingTable->rayGenShaderBindingTable,
+		&sbtBuffer->shaderBindingTable->missShaderBindingTable,
+		&sbtBuffer->shaderBindingTable->hitShaderBindingTable,
+		&sbtBuffer->shaderBindingTable->callableShaderBindingTable,
 		command.width,
 		command.height,
 		command.depth);
@@ -3787,7 +3783,7 @@ bool VulkanRenderCompileContext::PrepareForDraw(RenderBackendShaderHandle shader
 		else if (shaderArguments.slots[i].type == 3)
 		{
 			VulkanBuffer* buffer = device->GetBuffer(shaderArguments.slots[i].bufferSlot.handle);
-			pushConstants.indices[i] = (buffer->uavIndex << 16) | (uint16)shaderArguments.slots[i].bufferSlot.offset;
+			pushConstants.indices[i] = ((buffer->uavIndex & 0xffff) << 16 ) | (shaderArguments.slots[i].bufferSlot.offset & 0xffff);
 		}
 	}
 	for (uint32 i = 0; i < 16; i++)
@@ -4347,10 +4343,10 @@ static void DestroyShader(void* instance, RenderBackendShaderHandle handle)
 	}
 }
 
-static RenderBackendAccelerationStructureHandle CreateTopLevelAS(void* instance, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name)
+static RenderBackendRayTracingAccelerationStructureHandle CreateTopLevelAS(void* instance, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name)
 {
 	VulkanRenderBackend* backend = (VulkanRenderBackend*)instance;
-	RenderBackendAccelerationStructureHandle handle = backend->handleManager.Allocate<RenderBackendAccelerationStructureHandle>(deviceMask);
+	RenderBackendRayTracingAccelerationStructureHandle handle = backend->handleManager.Allocate<RenderBackendRayTracingAccelerationStructureHandle>(deviceMask);
 	for (uint32 deviceIndex = 0; deviceIndex < backend->numDevices; deviceIndex++)
 	{
 		VulkanDevice& device = backend->devices[deviceIndex];
@@ -4364,10 +4360,10 @@ static RenderBackendAccelerationStructureHandle CreateTopLevelAS(void* instance,
 	return handle;
 }
 
-static RenderBackendAccelerationStructureHandle CreateBottomLevelAS(void* instance, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name)
+static RenderBackendRayTracingAccelerationStructureHandle CreateBottomLevelAS(void* instance, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name)
 {
 	VulkanRenderBackend* backend = (VulkanRenderBackend*)instance;
-	RenderBackendAccelerationStructureHandle handle = backend->handleManager.Allocate<RenderBackendAccelerationStructureHandle>(deviceMask);
+	RenderBackendRayTracingAccelerationStructureHandle handle = backend->handleManager.Allocate<RenderBackendRayTracingAccelerationStructureHandle>(deviceMask);
 	for (uint32 deviceIndex = 0; deviceIndex < backend->numDevices; deviceIndex++)
 	{
 		VulkanDevice& device = backend->devices[deviceIndex];
@@ -4581,6 +4577,191 @@ static int32 GetTextureUAVDescriptorIndex(void* instance, uint32 deviceMask, Ren
 	return device.GetTextureUAVDescriptorIndex(textureIndex);
 }
 
+
+RenderBackendRayTracingPipelineStateHandle CreateRayTracingPipelineState(void* instance, uint32 deviceMask, const RenderBackendRayTracingPipelineStateDesc* desc, const char* name)
+{
+	VulkanRenderBackend* backend = (VulkanRenderBackend*)instance;
+	VulkanDevice& device = backend->devices[0];
+	RenderBackendRayTracingPipelineStateHandle handle = backend->handleManager.Allocate<RenderBackendRayTracingPipelineStateHandle>(deviceMask);
+
+	{
+		uint32 numShaders = (uint32)desc->shaders.size();
+		uint32 numShaderGroups = (uint32)desc->shaderGroupDescs.size();
+
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos(numShaders);
+		std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfos(numShaderGroups);
+
+		for (uint32 shaderIndex = 0; shaderIndex < numShaders; shaderIndex++)
+		{
+			shaderStageCreateInfos[shaderIndex] = {
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.stage = ToVkShaderStageFlagBits(desc->shaders[shaderIndex].stage),
+				.pName = desc->shaders[shaderIndex].entry.c_str(),
+			};
+			VkShaderModuleCreateInfo shaderModuleCreateInfo = {
+				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+				.codeSize = desc->shaders[shaderIndex].code.size,
+				.pCode = (uint32*)desc->shaders[shaderIndex].code.data,
+			};
+			VK_CHECK(vkCreateShaderModule(device.GetHandle(), &shaderModuleCreateInfo, VULKAN_ALLOCATION_CALLBACKS, &shaderStageCreateInfos[shaderIndex].module));
+			device.SetDebugUtilsObjectName(VK_OBJECT_TYPE_SHADER_MODULE, (uint64)shaderStageCreateInfos[shaderIndex].module, shaderStageCreateInfos[shaderIndex].pName);
+		}
+
+		uint32 numRayGenerationShaders = 0;
+		uint32 numMissShaders = 0;
+		uint32 numHitGroups = 0;
+
+		for (uint32 groupIndex = 0; groupIndex < numShaderGroups; groupIndex++)
+		{
+			switch (desc->shaderGroupDescs[groupIndex].type)
+			{
+			case RenderBackendRayTracingShaderGroupType::RayGen:
+				shaderGroupCreateInfos[groupIndex] = {
+					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+					.generalShader = desc->shaderGroupDescs[groupIndex].rayGenerationShader,
+					.closestHitShader = VK_SHADER_UNUSED_KHR,
+					.anyHitShader = VK_SHADER_UNUSED_KHR,
+					.intersectionShader = VK_SHADER_UNUSED_KHR,
+				};
+				numRayGenerationShaders++;
+				break;
+			case RenderBackendRayTracingShaderGroupType::Miss:
+				shaderGroupCreateInfos[groupIndex] = {
+					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+					.generalShader = desc->shaderGroupDescs[groupIndex].missShader,
+					.closestHitShader = VK_SHADER_UNUSED_KHR,
+					.anyHitShader = VK_SHADER_UNUSED_KHR,
+					.intersectionShader = VK_SHADER_UNUSED_KHR,
+				};
+				numMissShaders++;
+				break;
+			case RenderBackendRayTracingShaderGroupType::TrianglesHitGroup:
+				shaderGroupCreateInfos[groupIndex] = {
+					.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+					.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
+					.closestHitShader = desc->shaderGroupDescs[groupIndex].closestHitShader,
+					.anyHitShader = desc->shaderGroupDescs[groupIndex].anyHitShader,
+					.intersectionShader = desc->shaderGroupDescs[groupIndex].intersectionShader,
+				};
+				numHitGroups++;
+				break;
+			default:
+				INVALID_ENUM_VALUE();
+				break;
+			}
+		}
+		ASSERT(numRayGenerationShaders == 1);
+		
+		const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rayTracingPipelineProperties = device.GetRayTracingPipelineProperties();
+		
+		VkPipelineLayout pipelineLayout = device.FindOrCreatePipelineLayout(sizeof(VulkanPushConstants), RenderBackendPipelineType::RayTracing);
+
+		VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+			.stageCount = (uint32)shaderStageCreateInfos.size(),
+			.pStages = shaderStageCreateInfos.data(),
+			.groupCount = (uint32)shaderGroupCreateInfos.size(),
+			.pGroups = shaderGroupCreateInfos.data(),
+			.maxPipelineRayRecursionDepth = Math::Min(desc->maxRayRecursionDepth, rayTracingPipelineProperties.maxRayRecursionDepth),
+			.layout = pipelineLayout,
+		};
+		
+		uint32 index = (uint32)device.rayTracingPipelineStates.size();
+		VulkanRayTracingPipelineState& rayTracingPipelineState = device.rayTracingPipelineStates.emplace_back();
+
+		rayTracingPipelineState.pipelineLayout = pipelineLayout;
+		rayTracingPipelineState.numRayGenerationShaders = numRayGenerationShaders;
+		rayTracingPipelineState.numMissShaders = numMissShaders;
+		rayTracingPipelineState.numHitGroups = numHitGroups;
+
+		VK_CHECK(backend->functions.vkCreateRayTracingPipelinesKHR(
+			device.GetHandle(),
+			VK_NULL_HANDLE,
+			VK_NULL_HANDLE,
+			1,
+			&rayTracingPipelineCreateInfo,
+			VULKAN_ALLOCATION_CALLBACKS,
+			&rayTracingPipelineState.handle));
+
+		device.SetRenderBackendHandleRepresentation(handle.GetIndex(), index);
+	}
+
+	return handle;
+}
+
+RenderBackendBufferHandle CreateRayTracingShaderBindingTable(void* instance, uint32 deviceMask, const RenderBackendRayTracingShaderBindingTableDesc* desc, const char* name)
+{
+	VulkanRenderBackend* backend = (VulkanRenderBackend*)instance;
+	VulkanDevice& device = backend->devices[0];	
+	RenderBackendBufferHandle handle = backend->handleManager.Allocate<RenderBackendBufferHandle>(deviceMask);
+	{
+		VulkanRayTracingPipelineState& rayTracingPipelineState = *device.GetRayTracingPipelineState(desc->rayTracingPipelineState);
+
+		uint32 numMissShaders = rayTracingPipelineState.numMissShaders;
+		uint32 numHitGroups = rayTracingPipelineState.numHitGroups;
+		uint32 numShaderGroups = 1 + numMissShaders + numHitGroups;
+
+		const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& rayTracingPipelineProperties = device.GetRayTracingPipelineProperties();
+
+		const uint32 shaderGroupHandleSizeAligned = AlignUp(rayTracingPipelineProperties.shaderGroupHandleSize, rayTracingPipelineProperties.shaderGroupHandleAlignment);
+		const uint32 shaderGroupSizeAligned = AlignUp(shaderGroupHandleSizeAligned, rayTracingPipelineProperties.shaderGroupBaseAlignment);
+		
+		std::vector<uint8> shaderGroupHandles(shaderGroupHandleSizeAligned * numShaderGroups);
+		VK_CHECK(backend->functions.vkGetRayTracingShaderGroupHandlesKHR(device.GetHandle(), rayTracingPipelineState.handle, 0, numShaderGroups, shaderGroupHandleSizeAligned * numShaderGroups, shaderGroupHandles.data()));
+		
+		// TODO
+		uint32 rayGenGroupStride = shaderGroupSizeAligned;
+		uint32 missGroupStride = shaderGroupSizeAligned;
+		uint32 hitGroupStride = shaderGroupSizeAligned;
+
+		uint32 sbtBufferSize = rayGenGroupStride + numMissShaders * missGroupStride + numHitGroups * hitGroupStride;
+
+		RenderBackendBufferDesc sbtBufferDesc = RenderBackendBufferDesc::CreateShaderBindingTable(sbtBufferSize);
+		uint32 index = device.CreateBuffer(&sbtBufferDesc, "SBT");
+		VulkanBuffer& sbtBuffer = device.buffers[index];
+		uint8* sbtBufferData = reinterpret_cast<uint8*>(device.MapBuffer(index));
+
+		for (uint32 groupIndex = 0; groupIndex < numShaderGroups; groupIndex++)
+		{
+			memcpy(sbtBufferData, shaderGroupHandles.data() + groupIndex * shaderGroupHandleSizeAligned, shaderGroupHandleSizeAligned);
+			sbtBufferData += shaderGroupSizeAligned;
+		}
+
+		VkBufferDeviceAddressInfoKHR bufferDeviceAddressInfo = {
+			.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+			.buffer = sbtBuffer.handle,
+		};
+		VkDeviceAddress sbtBufferAddress = backend->functions.vkGetBufferDeviceAddressKHR(device.GetHandle(), &bufferDeviceAddressInfo);
+
+		sbtBuffer.shaderBindingTable = new VulkanRayTracingShaderBindingTable();
+
+		sbtBuffer.shaderBindingTable->rayGenShaderBindingTable = {
+			.deviceAddress = sbtBufferAddress,
+			.stride = rayGenGroupStride,
+			.size = rayGenGroupStride
+		};
+
+		sbtBuffer.shaderBindingTable->missShaderBindingTable = {
+			.deviceAddress = sbtBufferAddress + sbtBuffer.shaderBindingTable->rayGenShaderBindingTable.size,
+			.stride = missGroupStride,
+			.size = missGroupStride * numMissShaders
+		};
+
+		sbtBuffer.shaderBindingTable->hitShaderBindingTable = {
+			.deviceAddress = sbtBufferAddress + sbtBuffer.shaderBindingTable->missShaderBindingTable.size,
+			.stride = hitGroupStride,
+			.size = hitGroupStride * numHitGroups
+		};
+
+		sbtBuffer.shaderBindingTable->callableShaderBindingTable = { 0, 0, 0 };
+
+		device.SetRenderBackendHandleRepresentation(handle.GetIndex(), index);
+	}
+	return handle;
+}
+
 }
 
 namespace HE
@@ -4622,6 +4803,8 @@ namespace HE
 			.GetRenderStatistics = GetRenderStatistics,
 			.CreateBottomLevelAS = CreateBottomLevelAS,
 			.CreateTopLevelAS = CreateTopLevelAS,
+			.CreateRayTracingPipelineState = CreateRayTracingPipelineState,
+			.CreateRayTracingShaderBindingTable = CreateRayTracingShaderBindingTable,
 		};
 		return backend;
 	}

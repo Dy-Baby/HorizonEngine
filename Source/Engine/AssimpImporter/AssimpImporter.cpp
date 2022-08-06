@@ -44,7 +44,6 @@ bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, Scene* scen
 		return false;
 	}
 	
-	scene->numTextures = 0;
 	std::map<std::string, int32> importedTextures;
 
 	if (aiScene->HasMaterials())
@@ -111,7 +110,7 @@ bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, Scene* scen
 			}
 			scene->materials.emplace_back(material);
 		}
-		scene->numMaterials = aiScene->mNumMaterials;
+		scene->numMaterials += aiScene->mNumMaterials;
 	}
 
 	for (uint32 i = 0; i < aiScene->mNumMeshes; i++)
@@ -126,7 +125,8 @@ bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, Scene* scen
 
 		Mesh mesh;
 
-		mesh.materialID = aiMesh->mMaterialIndex;
+		mesh.materialID = scene->numMaterials - aiScene->mNumMaterials + aiMesh->mMaterialIndex;
+
 		mesh.numVertices = aiMesh->mNumVertices;
 		mesh.numIndices = aiMesh->mNumFaces * 3;
 		
@@ -160,7 +160,7 @@ bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, Scene* scen
 
 		scene->meshes.emplace_back(mesh);
 	}
-	scene->numMeshes = aiScene->mNumMeshes;
+	scene->numMeshes += aiScene->mNumMeshes;
 
 	return true;
 }

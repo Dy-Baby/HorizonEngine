@@ -26,9 +26,9 @@ enum class RenderCommandType
 	ResolveTimings,
 	Dispatch,
 	DispatchIndirect,
-	TraceRays,
-	UpdateTopLevelAS,
 	UpdateBottomLevelAS,
+	UpdateTopLevelAS,
+	TraceRays,
 	SetViewport,
 	SetScissor,
 	BeginRenderPass,
@@ -114,11 +114,9 @@ struct RenderCommandDispatchIndirect : RenderCommand<RenderCommandType::Dispatch
 
 struct RenderCommandTraceRays : RenderCommand<RenderCommandType::TraceRays, RenderCommandQueueType::Graphics>
 {
-	RenderBackendShaderHandle shader;
+	RenderBackendRayTracingPipelineStateHandle pipelineState;
+	RenderBackendBufferHandle shaderBindingTable;
 	ShaderArguments shaderArguments;
-	RenderBackendBufferHandle rgenSBT;
-	RenderBackendBufferHandle rmissSBT;
-	RenderBackendBufferHandle rchitSBT;
 	uint32 width;
 	uint32 height;
 	uint32 depth;
@@ -126,14 +124,14 @@ struct RenderCommandTraceRays : RenderCommand<RenderCommandType::TraceRays, Rend
 
 struct RenderCommandUpdateBottomLevelAS : RenderCommand<RenderCommandType::UpdateBottomLevelAS, RenderCommandQueueType::Compute>
 {
-	RenderBackendAccelerationStructureHandle srcBLAS;
-	RenderBackendAccelerationStructureHandle dstBLAS;
+	RenderBackendRayTracingAccelerationStructureHandle srcBLAS;
+	RenderBackendRayTracingAccelerationStructureHandle dstBLAS;
 };
 
 struct RenderCommandUpdateTopLevelAS : RenderCommand<RenderCommandType::UpdateTopLevelAS, RenderCommandQueueType::Compute>
 {
-	RenderBackendAccelerationStructureHandle srcTLAS;
-	RenderBackendAccelerationStructureHandle dstTLAS;
+	RenderBackendRayTracingAccelerationStructureHandle srcTLAS;
+	RenderBackendRayTracingAccelerationStructureHandle dstTLAS;
 };
 
 struct RenderCommandSetViewport : RenderCommand<RenderCommandType::SetViewport, RenderCommandQueueType::Graphics>

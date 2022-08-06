@@ -26,6 +26,11 @@ struct RenderBackendBufferDesc
 		auto flags = BufferCreateFlags::Static | BufferCreateFlags::UnorderedAccess | BufferCreateFlags::ShaderResource;
 		return RenderBackendBufferDesc(elementSize, elementCount, flags);
 	}
+	static RenderBackendBufferDesc CreateShaderBindingTable(uint64 bytes)
+	{
+		auto flags = BufferCreateFlags::ShaderBindingTable | BufferCreateFlags::CpuOnly | BufferCreateFlags::CreateMapped;
+		return RenderBackendBufferDesc(4, (uint32)(bytes >> 2), flags);
+	}
 	static RenderBackendBufferDesc CreateShaderBindingTable(uint64 handleSize, uint32 handleCount)
 	{
 		auto flags = BufferCreateFlags::ShaderBindingTable | BufferCreateFlags::CpuOnly | BufferCreateFlags::CreateMapped;
@@ -250,6 +255,12 @@ struct ShaderArguments
 		uint32 offset;
 	};
 
+	struct AS
+	{
+		uint32 slot;
+		RenderBackendRayTracingAccelerationStructureHandle handle;
+	};
+
 	struct Slot
 	{
 		int32 type = 0;
@@ -258,6 +269,7 @@ struct ShaderArguments
 			TextureSRV srvSlot;
 			TextureUAV uavSlot;
 			Buffer bufferSlot;
+			AS asSlot;
 		};
 	};
 
@@ -276,6 +288,11 @@ struct ShaderArguments
 		slots[slot] = { .type = 3, .bufferSlot = { slot, buffer, offset } };
 	}
 
+	void BindAS(uint32 slot, RenderBackendRayTracingAccelerationStructureHandle as)
+	{
+		slots[slot] = { .type = 4, .asSlot = { slot, as } };
+	}
+
 	void PushConstants(uint32 slot, float value)
 	{
 		data[slot] = value;
@@ -285,7 +302,7 @@ struct ShaderArguments
 	float data[16];
 };
 
-enum class RenderBackendAccelerationStructureBuildFlags
+enum RenderBackendAccelerationStructureBuildFlags
 {
 	None = 0,
 	AllowUpdate = 1 << 0,
@@ -295,7 +312,7 @@ enum class RenderBackendAccelerationStructureBuildFlags
 	MinimizeMemory = 1 << 4,
 };
 
-enum class RenderBackendGeometryInstanceFlags
+enum class RenderBackendRayTracingInstanceFlags
 {
 	None = 0,
 	TriangleFacingCullDisable = 1 << 0,
@@ -304,14 +321,14 @@ enum class RenderBackendGeometryInstanceFlags
 	ForceNoOpaque = 1 << 3,
 };
 
-struct RenderBackendGeometryInstance
+struct RenderBackendRayTracingInstance
 {
 	Matrix4x4 transformMatrix;
 	uint32 instanceID;
 	uint32 instanceMask;
 	uint32 instanceContributionToHitGroupIndex;
-	RenderBackendGeometryInstanceFlags flags;
-	RenderBackendAccelerationStructureHandle blas;
+	RenderBackendRayTracingInstanceFlags flags;
+	RenderBackendRayTracingAccelerationStructureHandle blas;
 };
 
 enum class RenderBackendGeometryType
@@ -369,7 +386,7 @@ struct RenderBackendTopLevelASDesc
 	RenderBackendAccelerationStructureBuildFlags buildFlags;
 	RenderBackendGeometryFlags geometryFlags;
 	uint32 numInstances;
-	RenderBackendGeometryInstance* instances;
+	RenderBackendRayTracingInstance* instances;
 };
 
 struct RenderBackendAccelerationStructureRange
@@ -378,6 +395,110 @@ struct RenderBackendAccelerationStructureRange
 	uint32 primitiveOffset;
 	uint32 firstVertex;
 	uint32 transformOffset;
+};
+
+enum class RenderBackendRayTracingShaderGroupType
+{
+	RayGen,
+	Miss,
+	TrianglesHitGroup,
+	ProceduralHitGroup,
+};
+
+struct RenderBackendRayTracingShaderDesc
+{
+	RenderBackendShaderStage stage;
+	std::string entry;
+	ShaderBlob code;
+};
+
+struct RenderBackendRayTracingShaderGroupDesc
+{
+	static const uint32 ShaderUnused = ~0u;
+
+	static RenderBackendRayTracingShaderGroupDesc CreateRayGen(uint32 rayGenerationShader)
+	{
+		return RenderBackendRayTracingShaderGroupDesc(
+			RenderBackendRayTracingShaderGroupType::RayGen,
+			rayGenerationShader,
+			ShaderUnused,
+			ShaderUnused,
+			ShaderUnused,
+			ShaderUnused);
+	}
+
+	static RenderBackendRayTracingShaderGroupDesc CreateMiss(uint32 missShader)
+	{
+		return RenderBackendRayTracingShaderGroupDesc(
+			RenderBackendRayTracingShaderGroupType::Miss,
+			ShaderUnused,
+			missShader,
+			ShaderUnused,
+			ShaderUnused,
+			ShaderUnused);
+	}
+
+	static RenderBackendRayTracingShaderGroupDesc CreateTrianglesHitGroup(uint32 closestHitShader, uint32 anyHitShader, uint32 intersectionShader)
+	{
+		return RenderBackendRayTracingShaderGroupDesc(
+			RenderBackendRayTracingShaderGroupType::TrianglesHitGroup,
+			ShaderUnused,
+			ShaderUnused,
+			closestHitShader,
+			anyHitShader,
+			intersectionShader);
+	}
+
+	RenderBackendRayTracingShaderGroupDesc()
+		: type(RenderBackendRayTracingShaderGroupType::RayGen)
+		, rayGenerationShader(ShaderUnused)
+		, missShader(ShaderUnused)
+		, closestHitShader(ShaderUnused)
+		, anyHitShader(ShaderUnused)
+		, intersectionShader(ShaderUnused)
+	{
+
+	}
+
+	RenderBackendRayTracingShaderGroupDesc(
+		RenderBackendRayTracingShaderGroupType type, 
+		uint32 rayGenerationShader, 
+		uint32 missShader, 
+		uint32 closestHitShader,
+		uint32 anyHitShader,
+		uint32 intersectionShader)
+		: type(type)
+		, rayGenerationShader(rayGenerationShader)
+		, missShader(missShader)
+		, closestHitShader(closestHitShader)
+		, anyHitShader(anyHitShader)
+		, intersectionShader(intersectionShader)
+	{
+
+	}
+
+	RenderBackendRayTracingShaderGroupType type;
+	uint32 rayGenerationShader;
+	uint32 missShader;
+	uint32 closestHitShader;
+	uint32 anyHitShader;
+	uint32 intersectionShader;
+};
+
+struct RenderBackendRayTracingPipelineStateDesc
+{
+	uint32 maxRayRecursionDepth;
+	std::vector<RenderBackendRayTracingShaderDesc> shaders;
+	std::vector<RenderBackendRayTracingShaderGroupDesc> shaderGroupDescs;
+};
+
+struct RenderBackendRayTracingShaderBindingTableDesc
+{
+	RenderBackendRayTracingPipelineStateHandle rayTracingPipelineState;
+	uint32 numShaderRecords;
+	std::vector<uint32> shaderGroupIndices;
+	std::vector<uint32> shaderRecordSizes;
+	std::vector<void*>  shaderRecordValues;
 };
 
 //struct GpuProfiler
@@ -443,8 +564,10 @@ struct RenderBackend
 	void (*DestroyShader)(void* instance, RenderBackendShaderHandle shader);
 	void (*SubmitRenderCommandLists)(void* instance, RenderCommandList** commandLists, uint32 numCommandLists);
 	void (*GetRenderStatistics)(void* instance, uint32 deviceMask, RenderStatistics* statistics);
-	RenderBackendAccelerationStructureHandle (*CreateBottomLevelAS)(void* instance, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name);
-	RenderBackendAccelerationStructureHandle (*CreateTopLevelAS)(void* instance, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name);
+	RenderBackendRayTracingAccelerationStructureHandle (*CreateBottomLevelAS)(void* instance, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name);
+	RenderBackendRayTracingAccelerationStructureHandle (*CreateTopLevelAS)(void* instance, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name);
+	RenderBackendRayTracingPipelineStateHandle (*CreateRayTracingPipelineState)(void* instance, uint32 deviceMask, const RenderBackendRayTracingPipelineStateDesc* desc, const char* name);
+	RenderBackendBufferHandle (*CreateRayTracingShaderBindingTable)(void* instance, uint32 deviceMask, const RenderBackendRayTracingShaderBindingTableDesc* desc, const char* name);
 };
 
 extern void RenderBackendTick(void* instance);
@@ -471,7 +594,9 @@ extern RenderBackendShaderHandle RenderBackendCreateShader(RenderBackend* backen
 extern void RenderBackendDestroyShader(RenderBackend* backend, RenderBackendShaderHandle shader);
 extern void RenderBackendSubmitRenderCommandLists(RenderBackend* backend, RenderCommandList** commandLists, uint32 numCommandLists);
 extern void RenderBackendGetRenderStatistics(RenderBackend* backend, uint32 deviceMask, RenderStatistics* statistics);
-extern RenderBackendAccelerationStructureHandle RenderBackendCreateBottomLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name);
-extern RenderBackendAccelerationStructureHandle RenderBackendCreateTopLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name);
+extern RenderBackendRayTracingAccelerationStructureHandle RenderBackendCreateBottomLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendBottomLevelASDesc* desc, const char* name);
+extern RenderBackendRayTracingAccelerationStructureHandle RenderBackendCreateTopLevelAS(RenderBackend* backend, uint32 deviceMask, const RenderBackendTopLevelASDesc* desc, const char* name);
+extern RenderBackendRayTracingPipelineStateHandle RenderBackendCreateRayTracingPipelineState(RenderBackend* backend, uint32 deviceMask, const RenderBackendRayTracingPipelineStateDesc* desc, const char* name);
+extern RenderBackendBufferHandle RenderBackendCreateRayTracingShaderBindingTable(RenderBackend* backend, uint32 deviceMask, const RenderBackendRayTracingShaderBindingTableDesc* desc, const char* name);
 
 }

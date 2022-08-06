@@ -113,6 +113,52 @@ void DefaultRenderPipeline::Init()
 	tonemappingShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "TonemappingCS";
 	tonemappingShader = RenderBackendCreateShader(renderBackend, deviceMask, &tonemappingShaderDesc, "TonemappingShader");
 
+	RenderBackendRayTracingPipelineStateDesc rayTracedShadowsPipelineStateDesc = {
+		.maxRayRecursionDepth = 1,
+	};
+
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/RayTracedShadows.hsf", source);
+
+	rayTracedShadowsPipelineStateDesc.shaders.push_back(RenderBackendRayTracingShaderDesc{
+		.stage = RenderBackendShaderStage::RayGen,
+		.entry = "RayTracedShadowsRayGen",
+	});
+	CompileShader(
+		shaderCompiler,
+		source,
+		TEXT("RayTracedShadowsRayGen"),
+		RenderBackendShaderStage::RayGen,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&rayTracedShadowsPipelineStateDesc.shaders[0].code);
+
+	rayTracedShadowsPipelineStateDesc.shaders.push_back(RenderBackendRayTracingShaderDesc{
+		.stage = RenderBackendShaderStage::Miss,
+		.entry = "RayTracedShadowsMiss",
+	});
+	CompileShader(
+		shaderCompiler,
+		source,
+		TEXT("RayTracedShadowsMiss"),
+		RenderBackendShaderStage::Miss,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&rayTracedShadowsPipelineStateDesc.shaders[1].code);
+
+	rayTracedShadowsPipelineStateDesc.shaderGroupDescs.resize(2);
+	rayTracedShadowsPipelineStateDesc.shaderGroupDescs[0] = RenderBackendRayTracingShaderGroupDesc::CreateRayGen(0);
+	rayTracedShadowsPipelineStateDesc.shaderGroupDescs[1] = RenderBackendRayTracingShaderGroupDesc::CreateMiss(1);
+
+	rayTracedShadowsPipelineState = RenderBackendCreateRayTracingPipelineState(renderBackend, deviceMask, &rayTracedShadowsPipelineStateDesc, "rayTracedShadowsPipelineState");
+
+	RenderBackendRayTracingShaderBindingTableDesc rayTracedShadowsSBTDesc = {
+		.rayTracingPipelineState = rayTracedShadowsPipelineState,
+		.numShaderRecords = 0,
+	};
+	rayTracedShadowsSBT = RenderBackendCreateRayTracingShaderBindingTable(renderBackend, deviceMask, &rayTracedShadowsSBTDesc, "rayTracedShadowsSBT");
+
 	SkyAtmosphereConfig config;
 	skyAtmosphere = CreateSkyAtmosphere(renderBackend, shaderCompiler, &config);
 }
@@ -415,9 +461,9 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 				shaderArguments.BindBuffer(2, vertexNormal, 0);
 				shaderArguments.BindBuffer(3, vertexTangent, 0);
 				shaderArguments.BindBuffer(4, vertexTexCoord, 0);
-				shaderArguments.BindBuffer(5, worldMatrixBuffer, 0);
-				shaderArguments.BindBuffer(6, prevWorldMatrixBuffer, 0);
-				shaderArguments.BindBuffer(7, materialBuffer, 0);
+				shaderArguments.BindBuffer(5, worldMatrixBuffer, i);
+				shaderArguments.BindBuffer(6, prevWorldMatrixBuffer, i);
+				shaderArguments.BindBuffer(7, materialBuffer, view->scene->meshes[i].materialID);
 				//shaderArguments.BindBuffer(8, indirectBuffer, 0);
 
 				commandList.DrawIndexed(
@@ -451,11 +497,13 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
-			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
-			shaderArguments.BindTextureUAV(4, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowBuffer), 0));
+			shaderArguments.BindAS(1, view->scene->topLevelAS);
+			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
+			shaderArguments.BindTextureUAV(3, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowBuffer), 0)); 
 			
 			commandList.TraceRays(
-				rayTracedShadowsShader,
+				rayTracedShadowsPipelineState,
+				rayTracedShadowsSBT,
 				shaderArguments,
 				width,
 				height,
@@ -473,8 +521,9 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		auto gbuffer0 = builder.ReadTexture(gbufferData.gbuffer0, RenderBackendResourceState::ShaderResource);
 		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
 		auto gbuffer2 = builder.ReadTexture(gbufferData.gbuffer2, RenderBackendResourceState::ShaderResource);
-
+		shadowBuffer = builder.ReadTexture(shadowBuffer, RenderBackendResourceState::ShaderResource);
 		// auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::DepthStencilReadOnly);
+
 		auto sceneColor = sceneColorData.sceneColor = builder.WriteTexture(sceneColorData.sceneColor, RenderBackendResourceState::UnorderedAccess);
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
@@ -487,8 +536,9 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer0)));
 			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
 			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer2)));
+			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowBuffer)));
+			shaderArguments.BindTextureUAV(5, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(sceneColor), 0));
 			// shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
-			shaderArguments.BindTextureUAV(4, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(sceneColor), 0));
 
 			commandList.Dispatch2D(
 				lightingShader,
@@ -499,7 +549,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 	});
 	
 	// const bool renderSkyAtmosphere = ShouldRenderSkyAtmosphere();
-	const bool renderSkyAtmosphere = true;
+	const bool renderSkyAtmosphere = false;
 	if (renderSkyAtmosphere)
 	{
 		const auto& entities = view->scene->GetEntityManager()->GetView<SkyAtmosphereComponent>();

@@ -48,6 +48,9 @@ private:
 	RenderBackendShaderHandle lightingShader;
 	RenderBackendShaderHandle tonemappingShader;
 
+	RenderBackendRayTracingPipelineStateHandle rayTracedShadowsPipelineState;
+	RenderBackendBufferHandle rayTracedShadowsSBT;
+
 	SkyAtmosphere* skyAtmosphere;
 };
 
