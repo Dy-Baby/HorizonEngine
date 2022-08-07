@@ -1,6 +1,7 @@
 # Horizon Engine
 Horizon Engine is a 3D real-time rendering engine.
 
+## Introduction
 Features:
 * Fiber-based Job System
 * Bindless
@@ -8,7 +9,7 @@ Features:
 * ECS (Entity-Component-System)
 * Hybrid Render Pipeline
 
-## Screenshots
+## Samples
 ![image](/Screenshots/screenshot_editor.png)
 ![image](/Screenshots/screenshot_sky_atmosphere.png)
 ![image](/Screenshots/screenshot_particle_system.png)
@@ -42,12 +43,18 @@ Features:
 * [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 * [premake](https://github.com/premake/premake-core)
 
-## Debug Tool
+## Documentation
+
+## Debug Tools
 
 [Nsight Graphics](https://developer.nvidia.com/nsight-graphics)
 
 [RenderDoc](https://renderdoc.org/)
 
-## Contributing
+## Contributors
 
 Contributions are welcome.
+
+## Lisence
+
+## Support
