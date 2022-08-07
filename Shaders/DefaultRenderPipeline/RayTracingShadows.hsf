@@ -4,7 +4,7 @@
 #define RAY_TRACED_SHADOWS_SHADER_PER_FRAME_DATA_SLOT       0
 #define RAY_TRACED_SHADOWS_SHADER_TLAS_SLOT                 1
 #define RAY_TRACED_SHADOWS_SHADER_DEPTH_BUFFER_SRV_SLOT     2
-#define RAY_TRACED_SHADOWS_SHADER_SHADOW_BUFFER_UAV_SLOT    3
+#define RAY_TRACED_SHADOWS_SHADER_SHADOW_MASK_UAV_SLOT      3
 
 PerFrameData GetPerFrameData()
 {
@@ -22,9 +22,9 @@ Texture2D GetDepthBufferSRV()
 	return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_DEPTH_BUFFER_SRV_SLOT)];
 }
 
-RWTexture2D<float4> GetShadowBufferUAV()
+RWTexture2D<float4> GetShadowMaskUAV()
 {
-	return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_SHADOW_BUFFER_UAV_SLOT)];
+	return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(RAY_TRACED_SHADOWS_SHADER_SHADOW_MASK_UAV_SLOT)];
 }
 
 struct ShadowPayload
@@ -33,14 +33,14 @@ struct ShadowPayload
 };
 
 [shader("raygeneration")]
-void RayTracedShadowsRayGen()
+void RayTracingShadowsRayGen()
 {
     uint3 launchIndex = DispatchRaysIndex();
     uint3 launchSize = DispatchRaysDimensions();
 
     PerFrameData perFrameData = GetPerFrameData();
     Texture2D depthBuffer = GetDepthBufferSRV();
-    RWTexture2D<float4> shadowBuffer = GetShadowBufferUAV();
+    RWTexture2D<float4> shadowMask = GetShadowMaskUAV();
 
     const uint2 pixelCoord = launchIndex.xy;
 
@@ -48,7 +48,7 @@ void RayTracedShadowsRayGen()
     const float depth = depthBuffer[pixelCoord].r;
     if (depth == 1.0)
     {
-        shadowBuffer[pixelCoord] = 0.0;
+        shadowMask[pixelCoord] = 0.0;
         return;
     }
 
@@ -104,11 +104,11 @@ void RayTracedShadowsRayGen()
         ray,
         payload);
 
-    shadowBuffer[pixelCoord] = payload.miss ? 1.0f : 0.0f;
+    shadowMask[pixelCoord] = payload.miss ? 1.0f : 0.0f;
 }
 
 [shader("miss")]
-void RayTracedShadowsMiss(inout ShadowPayload payload : SV_RayPayload)
+void RayTracingShadowsMiss(inout ShadowPayload payload : SV_RayPayload)
 {
     payload.miss = true;
 }

@@ -127,51 +127,51 @@ void DefaultRenderPipeline::Init()
 	tonemappingShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "TonemappingCS";
 	tonemappingShader = RenderBackendCreateShader(renderBackend, deviceMask, &tonemappingShaderDesc, "TonemappingShader");
 
-	RenderBackendRayTracingPipelineStateDesc rayTracedShadowsPipelineStateDesc = {
+	RenderBackendRayTracingPipelineStateDesc rayTracingShadowsPipelineStateDesc = {
 		.maxRayRecursionDepth = 1,
 	};
 
-	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/RayTracedShadows.hsf", source);
+	LoadShaderSourceFromFile("../../../Shaders/DefaultRenderPipeline/RayTracingShadows.hsf", source);
 
-	rayTracedShadowsPipelineStateDesc.shaders.push_back(RenderBackendRayTracingShaderDesc{
+	rayTracingShadowsPipelineStateDesc.shaders.push_back(RenderBackendRayTracingShaderDesc{
 		.stage = RenderBackendShaderStage::RayGen,
-		.entry = "RayTracedShadowsRayGen",
+		.entry = "RayTracingShadowsRayGen",
 	});
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("RayTracedShadowsRayGen"),
+		TEXT("RayTracingShadowsRayGen"),
 		RenderBackendShaderStage::RayGen,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
 		defines,
-		&rayTracedShadowsPipelineStateDesc.shaders[0].code);
+		&rayTracingShadowsPipelineStateDesc.shaders[0].code);
 
-	rayTracedShadowsPipelineStateDesc.shaders.push_back(RenderBackendRayTracingShaderDesc{
+	rayTracingShadowsPipelineStateDesc.shaders.push_back(RenderBackendRayTracingShaderDesc{
 		.stage = RenderBackendShaderStage::Miss,
-		.entry = "RayTracedShadowsMiss",
+		.entry = "RayTracingShadowsMiss",
 	});
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("RayTracedShadowsMiss"),
+		TEXT("RayTracingShadowsMiss"),
 		RenderBackendShaderStage::Miss,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
 		defines,
-		&rayTracedShadowsPipelineStateDesc.shaders[1].code);
+		&rayTracingShadowsPipelineStateDesc.shaders[1].code);
 
-	rayTracedShadowsPipelineStateDesc.shaderGroupDescs.resize(2);
-	rayTracedShadowsPipelineStateDesc.shaderGroupDescs[0] = RenderBackendRayTracingShaderGroupDesc::CreateRayGen(0);
-	rayTracedShadowsPipelineStateDesc.shaderGroupDescs[1] = RenderBackendRayTracingShaderGroupDesc::CreateMiss(1);
+	rayTracingShadowsPipelineStateDesc.shaderGroupDescs.resize(2);
+	rayTracingShadowsPipelineStateDesc.shaderGroupDescs[0] = RenderBackendRayTracingShaderGroupDesc::CreateRayGen(0);
+	rayTracingShadowsPipelineStateDesc.shaderGroupDescs[1] = RenderBackendRayTracingShaderGroupDesc::CreateMiss(1);
 
-	rayTracedShadowsPipelineState = RenderBackendCreateRayTracingPipelineState(renderBackend, deviceMask, &rayTracedShadowsPipelineStateDesc, "rayTracedShadowsPipelineState");
+	rayTracingShadowsPipelineState = RenderBackendCreateRayTracingPipelineState(renderBackend, deviceMask, &rayTracingShadowsPipelineStateDesc, "rayTracingShadowsPipelineState");
 
-	RenderBackendRayTracingShaderBindingTableDesc rayTracedShadowsSBTDesc = {
-		.rayTracingPipelineState = rayTracedShadowsPipelineState,
+	RenderBackendRayTracingShaderBindingTableDesc rayTracingShadowsSBTDesc = {
+		.rayTracingPipelineState = rayTracingShadowsPipelineState,
 		.numShaderRecords = 0,
 	};
-	rayTracedShadowsSBT = RenderBackendCreateRayTracingShaderBindingTable(renderBackend, deviceMask, &rayTracedShadowsSBTDesc, "rayTracedShadowsSBT");
+	rayTracingShadowsSBT = RenderBackendCreateRayTracingShaderBindingTable(renderBackend, deviceMask, &rayTracingShadowsSBTDesc, "rayTracingShadowsSBT");
 
 	SkyAtmosphereConfig config;
 	skyAtmosphere = CreateSkyAtmosphere(renderBackend, shaderCompiler, &config);
@@ -299,12 +299,12 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		clearDepth);
 	depthBufferData.depthBuffer = renderGraph->CreateTexture(depthBufferDesc, "Depth Buffer");
 
-	RenderGraphTextureDesc shadowBufferDesc = RenderGraphTextureDesc::Create2D(
+	RenderGraphTextureDesc shadowMaskDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::R32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
-	auto shadowBuffer = renderGraph->CreateTexture(shadowBufferDesc, "Shadow Buffer");
+	auto shadowMask = renderGraph->CreateTexture(shadowMaskDesc, "Shadow Mask");
 
 	RenderGraphTextureDesc sceneColorDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -494,7 +494,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		};
 	});
 
-	renderGraph->AddPass("Ray Traced Shadows Pass", RenderGraphPassFlags::RayTracing,
+	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::RayTracing,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -502,7 +502,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 
 		auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
 
-		shadowBuffer = builder.WriteTexture(shadowBuffer, RenderBackendResourceState::UnorderedAccess);
+		shadowMask = builder.WriteTexture(shadowMask, RenderBackendResourceState::UnorderedAccess);
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
@@ -513,11 +513,11 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
 			shaderArguments.BindAS(1, view->scene->topLevelAS);
 			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
-			shaderArguments.BindTextureUAV(3, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowBuffer), 0)); 
+			shaderArguments.BindTextureUAV(3, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowMask), 0)); 
 			
 			commandList.TraceRays(
-				rayTracedShadowsPipelineState,
-				rayTracedShadowsSBT,
+				rayTracingShadowsPipelineState,
+				rayTracingShadowsSBT,
 				shaderArguments,
 				width,
 				height,
@@ -535,7 +535,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 		auto gbuffer0 = builder.ReadTexture(gbufferData.gbuffer0, RenderBackendResourceState::ShaderResource);
 		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
 		auto gbuffer2 = builder.ReadTexture(gbufferData.gbuffer2, RenderBackendResourceState::ShaderResource);
-		shadowBuffer = builder.ReadTexture(shadowBuffer, RenderBackendResourceState::ShaderResource);
+		shadowMask = builder.ReadTexture(shadowMask, RenderBackendResourceState::ShaderResource);
 		// auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::DepthStencilReadOnly);
 
 		auto sceneColor = sceneColorData.sceneColor = builder.WriteTexture(sceneColorData.sceneColor, RenderBackendResourceState::UnorderedAccess);
@@ -550,7 +550,7 @@ void DefaultRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* rende
 			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer0)));
 			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
 			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer2)));
-			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowBuffer)));
+			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowMask)));
 			shaderArguments.BindTextureUAV(5, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(sceneColor), 0));
 			// shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
 
