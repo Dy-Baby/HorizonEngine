@@ -1,5 +1,5 @@
 #include "ModelViewer.h"
-#include "DefaultRenderPipeline/DefaultRenderPipeline.h"
+#include "HybridRenderPipeline/HybridRenderPipeline.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>

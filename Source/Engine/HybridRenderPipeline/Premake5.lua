@@ -1,4 +1,4 @@
-project "DxcShaderCompiler"
+project "HybridRenderPipeline"
     kind "StaticLib"
     language "C++"
     cppdialect "C++20"
@@ -14,13 +14,9 @@ project "DxcShaderCompiler"
         "**.inl",
         "**.hsf",
     }
-
+    
     includedirs {
         enginepath(""),
-        enginepath("Core"),
-        enginepath("DxcShaderCompiler"),
-        enginepath("VulkanRenderBackend"),
-        enginepath("AssimpImporter"),
         thirdpartypath("assimp/include"),
         thirdpartypath("entt/include"),
         thirdpartypath("dxc/include"),

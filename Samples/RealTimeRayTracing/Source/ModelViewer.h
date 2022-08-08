@@ -74,7 +74,7 @@ private:
 	SimpleFirstPersonCameraController cameraController;
 
 	HE::SceneView* sceneView;
-	HE::DefaultRenderPipeline* renderPipeline;
+	HE::HybridRenderPipeline* renderPipeline;
 };
 
 extern int ModelViewerMain();

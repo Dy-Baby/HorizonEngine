@@ -14,7 +14,7 @@ enum class RenderGraphPassFlags : uint8
     Raster         = (1 << 0),
     Compute        = (1 << 1),
     AsyncCompute   = (1 << 2),
-    RayTracing     = (1 << 3),
+    RayTrace       = (1 << 3),
     NeverGetCulled = (1 << 4),
     SkipRenderPass = (1 << 6),
 };

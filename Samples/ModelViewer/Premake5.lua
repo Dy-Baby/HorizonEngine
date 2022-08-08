@@ -26,7 +26,7 @@ project "ModelViewer"
         "DxcShaderCompiler",
         "RenderEngine",
         "RenderGraph",
-        "DefaultRenderPipeline",
+        "HybridRenderPipeline",
         "AssimpImporter",
         thirdpartypath("glfw/lib/glfw3.lib"),
         thirdpartypath("assimp/lib/assimp-vc143-mt.lib"),

@@ -7,7 +7,7 @@
 #include "DxcShaderCompiler/DxcShaderCompiler.h"
 // #include "ShaderSystem/ShaderSystem.h"
 //#include "RenderGraph/RenderGraph.h"
-#include "DefaultRenderPipeline/DefaultRenderPipeline.h"
+#include "HybridRenderPipeline/HybridRenderPipeline.h"
 #include "ECS/ECS.h"
 #include "AssimpImporter/AssimpImporter.h"
 #include "Input/Input.h"

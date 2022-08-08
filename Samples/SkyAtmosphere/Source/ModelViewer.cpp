@@ -1,6 +1,6 @@
 #include "ModelViewer.h"
 #include "MainWindow.h"
-#include "DefaultRenderPipeline/DefaultRenderPipeline.h"
+#include "HybridRenderPipeline/HybridRenderPipeline.h"
 
 ModelViewerApp* ModelViewerApp::Instance = nullptr;
 
@@ -136,7 +136,7 @@ bool ModelViewerApp::Init()
 	renderContext->shaderCompiler = shaderCompiler;
 	renderContext->uiRenderer = uiRenderer;
 
-	renderPipeline = new DefaultRenderPipeline(renderContext);
+	renderPipeline = new HybridRenderPipeline(renderContext);
 	renderPipeline->Init();
 
 	sceneView = new SceneView();

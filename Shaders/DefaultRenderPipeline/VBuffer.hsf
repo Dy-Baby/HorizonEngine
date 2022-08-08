@@ -1,6 +1,0 @@
-#include "../BindlessCommon.hsf"
-#include "DefaultRenderPipelineCommon.hsf"
-
-void VBufferCS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
-{
-}

@@ -1,0 +1,86 @@
+#include "../BindlessCommon.hsf"
+#include "HybridRenderPipelineCommon.hsf"
+#include "BSDFCommon.hsf"
+
+#define IBL_SPECULAR_SHADER_ENVIROMENT_MAP_SRV_SLOT      0
+#define IBL_SPECULAR_SHADER_IBL_SPECULAR_LUT_UAV_SLOT    1
+
+const uint NUM_SAMPLES = 1024;
+
+TextureCube GetEnviromentMapSRV()
+{
+	return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(IBL_SPECULAR_SHADER_ENVIROMENT_MAP_SRV_SLOT)];
+}
+
+RWTexture2DArray<float4> GetIBLSpecularLutUAV()
+{
+    return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(IBL_SPECULAR_SHADER_IBL_SPECULAR_LUT_UAV_SLOT)];
+}
+
+const uint NumSamples = 1024;
+
+// Filtering based on https://placeholderart.wordpress.com/2015/07/28/implementation-notes-runtime-environment-map-filtering-for-image-based-lighting/
+float3 PrefilterEnvmap(TextureCube envmap, float3 N, float roughness, uint numSamples)
+{
+	float3 V = N;
+	float3 T = 0.0;
+	float3 B = 0.0;
+	GetTangentBasis(T, B, N);
+
+	float3 color = 0.0;
+	float weight = 0.0;
+
+	uint width, height;
+	envmap.GetDimensions(0, width, height);
+
+	// Convolve environment map using GGX NDF importance sampling
+	for (uint i = 0; i < numSamples; i++)
+	{
+		float2 Xi = Hammersley2D(i, numSamples);
+		float3 H = TangentToWorld(ImportanceSampleGGX(Xi, roughness), T, B, N);
+		float3 L = 2.0 * dot(V, H) * H - V;
+		float NdotL = clamp(dot(N, L), 0.0, 1.0);
+		if (NdotL > 0.0)
+		{
+			// Vectors to evaluate pdf
+			float NdotH = clamp(dot(N, H), 0.0, 1.0);
+			float VdotH = clamp(dot(V, H), 0.0, 1.0);
+			// Probability Distribution Function
+			float pdf = D_GGX(NdotH, roughness) * NdotH / (4.0 * VdotH);
+			// Slid angle of current smple
+			float omegaS = 1.0 / (float(numSamples) * pdf);
+			// Solid angle of 1 pixel across all cube faces
+			float omegaP = 4.0 * PI / (6.0 * width * height);
+			// Biased (+1.0) mip level for better result
+			float mipBias = 1.0;
+			float mipLevel = (roughness == 0.0) ? 0.0 : max(0.5 * log2(omegaS / omegaP) + mipBias, 0.0);
+			color += envmap.SampleLevel(SAMPLER_LINEAR_WARP, L, mipLevel).rgb * NdotL;
+			weight += NdotL;
+		}
+	}
+	color /= weight;
+	return color;
+}
+
+[numthreads(8, 8, 1)]
+void IBLSpecularCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
+{
+	RWTexture2DArray<float4> iblSpecularLut = GetIBLSpecularLutUAV();
+    uint width, height, elements;
+    iblSpecularLut.GetDimensions(width, height, elements);
+	if (GlobalInvocationID.x >= width || GlobalInvocationID.y >= height) 
+    {
+        return;
+    }
+	uint3 coord = GlobalInvocationID;
+    float2 uv = (coord.xy + 0.5) / float2(width, height);
+	
+	float3 N = UVToCubemapCoord(uv, coord.z);
+
+	float roughness = SHADER_ARGUMENTS_DATA(0);
+	
+	TextureCube envmap = GetEnviromentMapSRV();
+	float3 result = PrefilterEnvmap(envmap, N, roughness, NumSamples);
+
+	iblSpecularLut[coord] = float4(result, 1.0);
+}
