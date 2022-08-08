@@ -56,6 +56,7 @@ void RayTracingShadowsRayGen()
     PerFrameData perFrameData = GetPerFrameData();
     Texture2D depthBuffer = GetDepthBufferSRV();
     RWTexture2D<float4> shadowMask = GetShadowMaskUAV();
+    RaytracingAccelerationStructure topLevelAS = GetTopLevelAS();
 
     const uint2 pixelCoord = launchIndex.xy;
 
@@ -77,30 +78,32 @@ void RayTracingShadowsRayGen()
 
     uint randSeed = InitRand(launchIndex.x + launchIndex.y * launchDim.x, perFrameData.frameIndex);
 
-    float cosThetaMax = 0.995;
+    float cosThetaMax = 0.999;
     // Generate a random direction based on the cone angle. 
     // @see UniformSampleCone in [pbrt]
     float3 randDirection = UniformSampleCone(float2(nextRand(randSeed), nextRand(randSeed)), cosThetaMax);
 
-    float3 N = float3(1.0, 0.0, 1.0);
+    float3 N = float3(-1.0, 0.0, 1.0);
     float3 B = GetPerpendicularVector(N);
     float3 T = cross(B, N);
 
-    randDirection = T * randDirection.x + B * randDirection.y * + N * randDirection.z;
+    // float3 T; float3 B; float3 N = float3(-1.0, 0.0, 1.0);
+    // GenerateTangentBasis(T, B, N);
+
+    float3x3 TBN = float3x3(T, B, N);
+    randDirection = mul(randDirection, TBN);
 
     // Prepare a shadow ray.
     RayDesc ray;
     ray.Origin = worldSpacePosition.xyz;
-    ray.Direction = normalize(randDirection);
-    // ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-3;
-    ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-2;
+    ray.Direction = randDirection;
+    ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-3;
     ray.TMax = 100000.0;
+
+    uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 
     ShadowRayPayload payload;
     payload.visibility = 0.0;
-
-    RaytracingAccelerationStructure topLevelAS = GetTopLevelAS();
-    uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 
     TraceRay(
         topLevelAS,
