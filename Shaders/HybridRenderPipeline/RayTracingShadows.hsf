@@ -1,4 +1,5 @@
 #include "../BindlessCommon.hsf"
+#include "../Random.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
 #define RAY_TRACING_SHADOWS_SHADER_PER_FRAME_DATA_SLOT       0
@@ -27,16 +28,30 @@ RWTexture2D<float4> GetShadowMaskUAV()
 	return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(RAY_TRACING_SHADOWS_SHADER_SHADOW_MASK_UAV_SLOT)];
 }
 
-struct ShadowPayload
+struct ShadowRayPayload
 {
-	bool miss;
+	float visibility;
 };
+
+float3 UniformSampleCone(float2 randVal, float cosThetaMax) 
+{
+    float cosTheta = (1.0 - randVal.x) + randVal.x * cosThetaMax;
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float phi = randVal.y * 2.0 * PI;
+    return float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+}
+
+float nextRand(inout uint s)
+{
+	s = (1664525u * s + 1013904223u);
+	return float(s & 0x00FFFFFF) / float(0x01000000);
+}
 
 [shader("raygeneration")]
 void RayTracingShadowsRayGen()
 {
     uint3 launchIndex = DispatchRaysIndex();
-    uint3 launchSize = DispatchRaysDimensions();
+    uint3 launchDim = DispatchRaysDimensions();
 
     PerFrameData perFrameData = GetPerFrameData();
     Texture2D depthBuffer = GetDepthBufferSRV();
@@ -54,43 +69,38 @@ void RayTracingShadowsRayGen()
 
     // Reconstruct world position from the depth buffer
     float2 pixelCenter = pixelCoord + 0.5;
-    float2 uv = pixelCenter / float2(launchSize.xy);
+    float2 uv = pixelCenter / float2(launchDim.xy);
     float4 clipSpacePosition = float4(uv * 2.0 - 1.0, depth, 1.0);
     clipSpacePosition.y = -clipSpacePosition.y;
     float4 worldSpacePosition = mul(clipSpacePosition, perFrameData.invViewProjectionMatrix);
     worldSpacePosition /= worldSpacePosition.w;
 
-    // float4 viewSpacePosition = mul(clipSpacePosition, perFrameData.invProjectionMatrix);
-    // viewSpacePosition /= viewSpacePosition.w;
-    // float3 worldSpacePosition = mul(viewSpacePosition, perFrameData.invViewMatrix).xyz;
-    
-    // // Initialize the Halton sequence.
-    // HaltonState hState = haltonInit(hState, pixelCoord, perFrameData.frameIndex);
+    uint randSeed = InitRand(launchIndex.x + launchIndex.y * launchDim.x, perFrameData.frameIndex);
 
-    // // Generate random numbers to rotate the Halton sequence.
-    // uint seed = randomInit(pixelPos, launchDim.x, perFrameData.frameIndex);
-    // float rnd1 = frac(haltonNext(hState) + randomNext(frameseed));
-    // float rnd2 = frac(haltonNext(hState) + randomNext(frameseed));
+    float cosThetaMax = 0.995;
+    // Generate a random direction based on the cone angle. 
+    // @see UniformSampleCone in [pbrt]
+    float3 randDirection = UniformSampleCone(float2(nextRand(randSeed), nextRand(randSeed)), cosThetaMax);
 
-    // // Generate a random direction based on the cone angle.
-    // // The wider the cone, the softer (and noisier) the shadows are.
-    // // uniformSampleCone() from [pbrt]
-    // float3 rndDirection = uniformSampleCone(rnd1, rnd2, cosThetaMax);
+    float3 N = float3(1.0, 0.0, 1.0);
+    float3 B = GetPerpendicularVector(N);
+    float3 T = cross(B, N);
+
+    randDirection = T * randDirection.x + B * randDirection.y * + N * randDirection.z;
 
     // Prepare a shadow ray.
     RayDesc ray;
     ray.Origin = worldSpacePosition.xyz;
-    ray.Direction = normalize(float3(0.0, 0.0, 1.0));
+    ray.Direction = normalize(randDirection);
     // ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-3;
     ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-2;
     ray.TMax = 100000.0;
-    // ray.Direction = mul(rndDirection, createBasis(L));
 
-    ShadowPayload payload;
-    payload.miss = false;
+    ShadowRayPayload payload;
+    payload.visibility = 0.0;
 
     RaytracingAccelerationStructure topLevelAS = GetTopLevelAS();
-    uint rayFlags = RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
+    uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 
     TraceRay(
         topLevelAS,
@@ -102,11 +112,11 @@ void RayTracingShadowsRayGen()
         ray,
         payload);
 
-    shadowMask[pixelCoord] = payload.miss ? 1.0f : 0.0f;
+    shadowMask[pixelCoord] = payload.visibility;
 }
 
 [shader("miss")]
-void RayTracingShadowsMiss(inout ShadowPayload payload : SV_RayPayload)
+void RayTracingShadowsMiss(inout ShadowRayPayload payload : SV_RayPayload)
 {
-    payload.miss = true;
+    payload.visibility = 1.0;
 }

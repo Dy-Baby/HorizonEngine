@@ -33,7 +33,7 @@ void IBLDiffuseCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 N = UVToCubemapCoord(uv, coord.z);
 	float3 T = 0;
 	float3 B = 0;
-	GetTangentBasis(T, B, N);
+	GenerateTangentBasis(T, B, N);
 
 	TextureCube envmap = GetEnviromentMapSRV();
 

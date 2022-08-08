@@ -1,5 +1,5 @@
 # Horizon Engine
-Horizon Engine is a 3D real-time rendering engine.
+Horizon Engine is a 3D real-time render engine.
 
 ## Introduction
 Features:

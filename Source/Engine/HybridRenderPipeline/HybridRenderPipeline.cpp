@@ -252,6 +252,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		.targetResolutionWidth = view->targetWidth,
 		.targetResolutionHeight = view->targetHeight,
 	};
+	perFrameData.data.frameIndex++;
 	//perFrameData.data.cameraPosition = {0.00, -1.00, 0.50};
 	//perFrameData.data.viewProjectionMatrix = {
 	//	{ -0.85633, 0.00, 0.00, 0.00 },

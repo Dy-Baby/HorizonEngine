@@ -18,7 +18,7 @@ float2 IntegrateBRDF(float NdotV, float roughness)
     float3 T = 0.0;
     float3 B = 0.0;
     float3 N = float3(0.0, 0.0, 1.0);
-    GetTangentBasis(T, B, N);
+    GenerateTangentBasis(T, B, N);
 
     float2 brdf = 0.0;
     for (uint i = 0; i < NUM_SAMPLES; i++) 

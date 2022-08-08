@@ -4,7 +4,6 @@
 #define FXAA_PC 1
 #define FXAA_HLSL_5 1
 #define FXAA_QUALITY__PRESET 39
-
 #include "Fxaa3_11.hsf"
 
 #define FXAA_SHADER_PER_FRAME_DATA_SLOT       0

@@ -8,7 +8,7 @@ namespace HE
 
 struct PerFrameData
 {
-	float time;
+	uint32 frameIndex = 0;
 
 	float gamma;
 	float exposure;

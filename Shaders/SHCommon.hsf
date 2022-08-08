@@ -1,0 +1,38 @@
+
+struct OneBandSHCoefficients
+{
+	float c;
+};
+
+struct OneBandSHCoefficientsRGB
+{
+	OneBandSHCoefficients r;
+    OneBandSHCoefficients g;
+    OneBandSHCoefficients b;
+};
+
+struct TwoBandSHCoefficients
+{
+	float4 c;
+};
+
+struct TwoBandSHCoefficientsRGB
+{
+	TwoBandSHCoefficients r;
+    TwoBandSHCoefficients g;
+    TwoBandSHCoefficients b;
+};
+
+struct ThreeBandSHCoefficients
+{
+	float4 c0;
+    float4 c1;
+    float  c2;
+};
+
+struct ThreeBandSHCoefficientsRGB
+{
+	ThreeBandSHCoefficients r;
+    ThreeBandSHCoefficients g;
+    ThreeBandSHCoefficients b;
+};
