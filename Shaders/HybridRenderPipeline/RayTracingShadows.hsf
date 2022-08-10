@@ -92,7 +92,7 @@ void RayTracingShadowsRayGen()
     ray.Origin = worldSpacePosition.xyz;
     ray.Direction = randDirection;
     ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-2;
-    ray.TMax = 100000.0;
+    ray.TMax = 10000.0;
 
     uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 

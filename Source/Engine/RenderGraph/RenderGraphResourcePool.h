@@ -7,7 +7,7 @@ namespace HE
 
 struct RenderGraphPersistentTexture
 {
-	bool avtive;
+	bool active;
 	RenderBackendTextureHandle texture;
 	RenderBackendTextureDesc desc;
     RenderBackendResourceState initialState;
@@ -15,7 +15,7 @@ struct RenderGraphPersistentTexture
 
 struct RenderGraphPersistentBuffer
 {
-	bool avtive;
+	bool active;
 	RenderBackendBufferHandle buffer;
 	RenderBackendBufferDesc desc;
 	RenderBackendResourceState initialState;

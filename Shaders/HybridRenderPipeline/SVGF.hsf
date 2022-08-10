@@ -489,8 +489,8 @@ void SVGFAtrousCS(uint3 ThreadID : SV_DispatchThreadID)
 
     // explicitly store/accumulate center pixel with weight 1 to prevent issues
     // with the edge-stopping functions
-    float sumWIllumination   = 1.0;
-    float4  sumIllumination  = illuminationCenter;
+    float sumWIllumination = 1.0;
+    float4 sumIllumination = illuminationCenter;
 
     for (int yy = -2; yy <= 2; yy++)
     {
@@ -517,8 +517,8 @@ void SVGFAtrousCS(uint3 ThreadID : SV_DispatchThreadID)
                 const float wIllumination = w.x * kernel;
 
                 // alpha channel contains the variance, therefore the weights need to be squared, see paper for the formula
-                sumWIllumination  += wIllumination;
-                sumIllumination   += float4(wIllumination.xxx, wIllumination * wIllumination) * illuminationP;
+                sumWIllumination += wIllumination;
+                sumIllumination  += float4(wIllumination.xxx, wIllumination * wIllumination) * illuminationP;
             }
         }
     }
