@@ -108,6 +108,10 @@ RenderGraphBufferHandle RenderGraph::ImportExternalBuffer(RenderBackendBufferHan
 	return handle;
 }
 
+void RenderGraph::ExportTextureDeferred(RenderGraphTextureHandle texture, RenderGraphPersistentTexture* outPersistentTexture)
+{
+}
+
 bool RenderGraph::Compile()
 {
 	if (passes.empty())

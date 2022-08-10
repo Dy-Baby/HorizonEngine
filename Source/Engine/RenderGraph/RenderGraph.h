@@ -36,10 +36,11 @@ public:
 
 	RenderGraphTextureHandle CreateTexture(const RenderGraphTextureDesc& desc, const char* name);
 	RenderGraphBufferHandle CreateBuffer(const RenderGraphBufferDesc& desc, const char* name);
-	RenderGraphTextureSRVHandle CreateTextureSRV(RenderGraphTextureHandle texture, const RenderGraphTextureSRVDesc& desc);
-	RenderGraphTextureUAVHandle CreateTextureUAV(RenderGraphTextureHandle texture, uint32 mipLevel);
+	//RenderGraphTextureSRVHandle CreateTextureSRV(RenderGraphTextureHandle texture, const RenderGraphTextureSRVDesc& desc);
+	//RenderGraphTextureUAVHandle CreateTextureUAV(RenderGraphTextureHandle texture, uint32 mipLevel);
 	RenderGraphTextureHandle ImportExternalTexture(RenderBackendTextureHandle renderBackendTexture, const RenderBackendTextureDesc& desc, RenderBackendResourceState initialState, char const* name);
 	RenderGraphBufferHandle ImportExternalBuffer(RenderBackendBufferHandle renderBackendBuffer, const RenderBackendBufferDesc& desc, RenderBackendResourceState initialState, char const* name);
+	void ExportTextureDeferred(RenderGraphTextureHandle texture, RenderGraphPersistentTexture* outPersistentTexture);
 
 	RenderGraphBlackboard blackboard;
 

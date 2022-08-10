@@ -106,8 +106,8 @@ void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
 
     float4x4 prevWorldMatrix = GetPrevWorldMatrix();
     float4 prevWorldPosition = mul(localPosition, prevWorldMatrix);
-    float4 prevClipPosition = mul(perFrameData.preViewProjectionMatrix, prevWorldPosition);
-    
+    float4 prevClipPosition = mul(prevWorldPosition, perFrameData.preViewProjectionMatrix);
+
     output.clipPosition = clipPosition;
     output.prevClipPosition = prevClipPosition;
     output.worldPosition = worldPosition;
@@ -160,7 +160,9 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
     float4 clipPosition = input.clipPosition;
     float linearDepth01 = clipPosition.z / clipPosition.w;
 
-    float4 velocity = float4(1.0, 1.0, 1.0, 1.0);
+    float2 currUV = (clipPosition.xy / clipPosition.w) * 0.5 + 0.5;
+    float2 prevUV = (prevClipPosition.xy / prevClipPosition.w) * 0.5 + 0.5;
+    float4 velocity = float4(prevUV - currUV, 1.0, 1.0);
 
     gbufferData.gbuffer0 = float4(position, metallic);
 	gbufferData.gbuffer1 = float4(normal, roughness);

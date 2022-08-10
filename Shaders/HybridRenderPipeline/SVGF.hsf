@@ -29,28 +29,79 @@
 #include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
-cbuffer PerImageCB
+#define SVGF_SHADER_PER_FRAME_DATA_SLOT             0
+#define SVGF_SHADER_VELOCITY_BUFFER_SRV_SLOT        1
+#define SVGF_SHADER_SHADOW_MASK_SRV_SLOT            2
+#define SVGF_SHADER_GBUFFER1_SRV_SLOT               3
+#define SVGF_SHADER_LINEAR_DEPTH_BUFFER_SRV_SLOT    4
+#define SVGF_SHADER_ILLUMINATION_UAV_SLOT           5
+#define SVGF_SHADER_MOMENTS_UAV_SLOT                6
+#define SVGF_SHADER_HITORY_LENGTH_UAV_SLOT          7
+#define SVGF_SHADER_PREV_LINEAR_DEPTH_SRV_SLOT      8
+#define SVGF_SHADER_PREV_ILLUMINATION_UAV_SLOT      9
+#define SVGF_SHADER_PREV_MOMENTS_UAV_SLOT           10
+#define SVGF_SHADER_PREV_HISTORY_LENGTH_UAV_SLOT    11
+
+PerFrameData GetPerFrameData()
 {
-    
-    Texture2D   gIllumination;
+    uint bufferIndex = SHADER_ARGUMENTS_INDEX(SVGF_SHADER_PER_FRAME_DATA_SLOT);
+    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<PerFrameData>(bufferIndex & 0xffff);
+}
 
-    Texture2D   gMotion;
-    Texture2D   gPositionNormalFwidth;
-    Texture2D   gColor;
-    Texture2D   gAlbedo;
-    Texture2D   gEmission;
-    Texture2D   gPrevIllum;
-    Texture2D   gPrevMoments;
-    Texture2D   gLinearZAndNormal;
-    Texture2D   gPrevLinearZAndNormal;
-    Texture2D   gHistoryLength;
+Texture2D GetVelocityBufferSRV()
+{
+	return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_VELOCITY_BUFFER_SRV_SLOT)];
+}
 
-    float       gAlpha;
-    float       gMomentsAlpha;
-    int         gStepSize;
-    float       gPhiColor;
-    float       gPhiNormal;
-};
+Texture2D GetShadowMaskSRV()
+{
+	return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_SHADOW_MASK_SRV_SLOT)];
+}
+
+Texture2D GetGBuffer1SRV()
+{
+	return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_GBUFFER1_SRV_SLOT)];
+}
+
+Texture2D GetLinearDepthBufferSRV()
+{
+	return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_LINEAR_DEPTH_BUFFER_SRV_SLOT)];
+}
+
+RWTexture2D<float4> GetIlluminationUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_ILLUMINATION_UAV_SLOT)];
+}
+
+RWTexture2D<float4> GetMomentsUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_MOMENTS_UAV_SLOT)];
+}
+
+RWTexture2D<float4> GetHistoryLengthUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_HITORY_LENGTH_UAV_SLOT)];
+}
+
+Texture2D GetPrevLinearDepthBufferSRV()
+{
+    return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_PREV_LINEAR_DEPTH_SRV_SLOT)];
+}
+
+RWTexture2D<float4> GetPrevIlluminationUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_PREV_ILLUMINATION_UAV_SLOT)];
+}
+
+RWTexture2D<float4> GetPrevMomentsUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_PREV_MOMENTS_UAV_SLOT)];
+}
+
+RWTexture2D<float4> GetPrevHistoryLengthUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_PREV_HISTORY_LENGTH_UAV_SLOT)];
+}
 
 float computeWeight(
     float depthCenter, float depthP, float phiDepth,
@@ -64,17 +115,6 @@ float computeWeight(
     const float weightIllum   = exp(0.0 - max(weightLillum, 0.0) - max(weightZ, 0.0)) * weightNormal;
 
     return weightIllum;
-}
-
-/** Converts point in the octahedral map to normalized direction (non-equal area, signed normalized).
-    \param[in] p Position in octahedral map in [-1,1] for each component.
-    \return Normalized direction.
-*/
-float3 oct_to_ndir_snorm(float2 p)
-{
-    float3 n = float3(p.xy, 1.0 - abs(p.x) - abs(p.y));
-    n.xy = (n.z < 0.0) ? oct_wrap(n.xy) : n.xy;
-    return normalize(n);
 }
 
 float3 demodulate(float3 c, float3 albedo)
@@ -96,25 +136,31 @@ bool isReprjValid(int2 size, int2 coord, float Z, float Zprev, float fwidthZ, fl
     return true;
 }
 
-bool loadPrevData(float2 posH, out float4 prevIllum, out float2 prevMoments, out float historyLength)
+bool loadPrevData(uint2 ipos, uint2 imageDim, out float4 prevIllum, out float2 prevMoments, out float historyLength)
 {
-    const int2 ipos = posH;
-    const float2 imageDim = float2(getTextureDims(gColor, 0));
+    float2 pixelCenter = ipos + 0.5;
 
-    const float2 motion = gMotion[ipos].xy;
-    const float normalFwidth = gPositionNormalFwidth[ipos].y;
+    Texture2D velocityBuffer = GetVelocityBufferSRV();
+    Texture2D linearDepthBuffer = GetLinearDepthBufferSRV();
+    Texture2D gbuffer1 = GetGBuffer1SRV();
 
-    // +0.5 to account for texel center offset
-    const int2 iposPrev = int2(float2(ipos) + motion.xy * imageDim + float2(0.5,0.5));
+    RWTexture2D<float4> gPrevIllum = GetPrevIlluminationUAV();
+    RWTexture2D<float4> gPrevMoments = GetPrevMomentsUAV();
+    RWTexture2D<float4> gPrevHistoryLength = GetPrevHistoryLengthUAV();
 
-    float2 depth = gLinearZAndNormal[ipos].xy;
-    float3 normal = oct_to_ndir_snorm(gLinearZAndNormal[ipos].zw);
+    const float2 motion = velocityBuffer[ipos].xy;
+    const float normalFwidth = linearDepthBuffer[ipos].w;
 
-    prevIllum   = float4(0,0,0,0);
-    prevMoments = float2(0,0);
+    const int2 iposPrev = int2(pixelCenter + motion.xy * imageDim);
+
+    float2 depth = linearDepthBuffer[ipos].xy;
+    float3 normal = gbuffer1[ipos].xyz;
+
+    prevIllum   = 0;
+    prevMoments = 0;
 
     bool v[4];
-    const float2 posPrev = floor(posH.xy) + motion.xy * imageDim;
+    const float2 posPrev = pixelCenter + motion.xy * imageDim;
     const int2 offset[4] = { int2(0, 0), int2(1, 0), int2(0, 1), int2(1, 1) };
 
     // check for all 4 taps of the bilinear filter for validity
@@ -122,8 +168,8 @@ bool loadPrevData(float2 posH, out float4 prevIllum, out float2 prevMoments, out
     for (int sampleIdx = 0; sampleIdx < 4; sampleIdx++)
     {
         int2 loc = int2(posPrev) + offset[sampleIdx];
-        float2 depthPrev = gPrevLinearZAndNormal[loc].xy;
-        float3 normalPrev = oct_to_ndir_snorm(gPrevLinearZAndNormal[loc].zw);
+        float2 depthPrev = linearDepthBuffer[loc].xy;
+        float3 normalPrev = gbuffer1[loc].xyz;
 
         v[sampleIdx] = isReprjValid(, iposPrev, depth.x, depthPrev.x, depth.y, normal, normalPrev, normalFwidth);
 
@@ -171,8 +217,8 @@ bool loadPrevData(float2 posH, out float4 prevIllum, out float2 prevMoments, out
             for (int xx = -radius; xx <= radius; xx++)
             {
                 const int2 p = iposPrev + int2(xx, yy);
-                const float2 depthFilter = gPrevLinearZAndNormal[p].xy;
-                const float3 normalFilter = oct_to_ndir_snorm(gPrevLinearZAndNormal[p].zw);
+                const float2 depthFilter = linearDepthBuffer[p].xy;
+                const float3 normalFilter = gbuffer1[p].xyz;
 
                 if (isReprjValid(iposPrev, depth.x, depthFilter.x, depth.y, normal, normalFilter, normalFwidth))
                 {
@@ -210,22 +256,28 @@ void SVGFReprojectCS(uint3 ThreadID : SV_DispatchThreadID)
 {
     uint2 pixelCoord = ThreadID.xy;
 
+    PerFrameData perFrameData = GetPerFrameData();
+    uint width = perFrameData.renderResolutionWidth;
+    uint height = perFrameData.renderResolutionHeight;
     if (ThreadID.x >= width || ThreadID.y >= height) 
 	{
 		return;
 	}
 
-    Texture2D shadowMask = ;
-    float gAlpha = ;
-    float gMomentsAlpha = ;
+    float       gPhiColor     = SHADER_ARGUMENTS_DATA(0);
+    float       gPhiNormal    = SHADER_ARGUMENTS_DATA(1);
+    float       gAlpha        = SHADER_ARGUMENTS_DATA(2);
+    float       gMomentsAlpha = SHADER_ARGUMENTS_DATA(3);
 
+
+    Texture2D shadowMask = GetShadowMaskSRV();
     //float3 illumination = demodulate(gColor[ipos].rgb - gEmission[ipos].rgb, gAlbedo[ipos].rgb);
     float3 illumination = float3(shadowMask[pixelCoord].r);
 
     float historyLength;
     float4 prevIllumination;
     float2 prevMoments;
-    bool success = loadPrevData(posH.xy, prevIllumination, prevMoments, historyLength);
+    bool success = loadPrevData(pixelCoord, uint2(width, height), prevIllumination, prevMoments, historyLength);
     historyLength = min(32.0f, success ? historyLength + 1.0f : 1.0f);
 
     // this adjusts the alpha for the case where insufficient history is available.
@@ -246,25 +298,44 @@ void SVGFReprojectCS(uint3 ThreadID : SV_DispatchThreadID)
 
     float variance = max(0.f, moments.g - moments.r * moments.r);
 
-    PS_OUT psOut;
-    // temporal integration of illumination
-    psOut.OutIllumination = lerp(prevIllumination, float4(illumination, 0), alpha);
-    // variance is propagated through the alpha channel
-    psOut.OutIllumination.a = variance;
-    psOut.OutMoments = moments;
-    psOut.OutHistoryLength = historyLength;
+    RWTexture2D<float4> illuminationUAV = GetIlluminationUAV();
+    RWTexture2D<float4> momentsUAV = GetMomentsUAV();
+    RWTexture2D<float4> historyLengthUAV = GetHistoryLengthUAV();
 
-    return psOut;
+    // temporal integration of illumination
+    // variance is propagated through the alpha channel
+    illuminationUAV[pixelCoord] = float4(lerp(prevIllumination.rgb, illumination, alpha), variance);
+    momentsUAV[pixelCoord] = moments;
+    historyLengthUAV[pixelCoord] = historyLength;
 }
 
 [numthreads(8, 8, 1)]
 void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
 {
-    float4 posH = vsOut.posH;
-    int2 ipos = int2(posH.xy);
+    uint2 ipos = ThreadID.xy;
+
+    PerFrameData perFrameData = GetPerFrameData();
+    uint width = perFrameData.renderResolutionWidth;
+    uint height = perFrameData.renderResolutionHeight;
+    if (ThreadID.x >= width || ThreadID.y >= height) 
+	{
+		return;
+	}
+
+    float       gPhiColor     = SHADER_ARGUMENTS_DATA(0);
+    float       gPhiNormal    = SHADER_ARGUMENTS_DATA(1);
+    float       gAlpha        = SHADER_ARGUMENTS_DATA(2);
+    float       gMomentsAlpha = SHADER_ARGUMENTS_DATA(3);
+
+    Texture2D linearDepthBuffer = GetLinearDepthBufferSRV();
+    Texture2D gbuffer1 = GetGBuffer1SRV();
+
+    RWTexture2D<float4> gIllumination = GetIlluminationUAV();
+    RWTexture2D<float4> gMoments = GetMomentsUAV();
+    RWTexture2D<float4> gHistoryLength = GetHistoryLengthUAV();
 
     float h = gHistoryLength[ipos].x;
-    int2 screenSize = getTextureDims(gHistoryLength, 0);
+    int2 screenSize = int2(width, height);
 
     if (h < 4.0) // not enough temporal history available
     {
@@ -273,15 +344,15 @@ void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
         float2 sumMoments = float2(0.0, 0.0);
 
         const float4 illuminationCenter = gIllumination[ipos];
-        const float lIlluminationCenter = luminance(illuminationCenter.rgb);
+        const float lIlluminationCenter = Luminance(illuminationCenter.rgb);
 
-        const float2 zCenter = gLinearZAndNormal[ipos].xy;
+        const float2 zCenter = linearDepthBuffer[ipos].xy;
         if (zCenter.x < 0)
         {
             // current pixel does not a valid depth => must be envmap => do nothing
             return illuminationCenter;
         }
-        const float3 nCenter = oct_to_ndir_snorm(gLinearZAndNormal[ipos].zw);
+        const float3 nCenter = gbuffer1[ipos].xyz;
         const float phiLIllumination = gPhiColor;
         const float phiDepth = max(zCenter.y, 1e-8) * 3.0;
 
@@ -302,9 +373,9 @@ void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
                 {
                     const float3 illuminationP = gIllumination[p].rgb;
                     const float2 momentsP = gMoments[p].xy;
-                    const float lIlluminationP = luminance(illuminationP.rgb);
-                    const float zP = gLinearZAndNormal[p].x;
-                    const float3 nP = oct_to_ndir_snorm(gLinearZAndNormal[p].zw);
+                    const float lIlluminationP = Luminance(illuminationP.rgb);
+                    const float zP = linearDepthBuffer[p].x;
+                    const float3 nP = gbuffer1[p].xyz;
 
                     const float w = computeWeight(
                         zCenter.x, zP, phiDepth * length(float2(xx, yy)),
@@ -340,7 +411,7 @@ void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
 }
 
 // computes a 3x3 gaussian blur of the variance, centered around the current pixel
-float computeVarianceCenter(int2 ipos)
+float computeVarianceCenter(int2 ipos, RWTexture2D<float4> gIllumination)
 {
     float sum = 0.f;
 
@@ -356,7 +427,7 @@ float computeVarianceCenter(int2 ipos)
         {
             const int2 p = ipos + int2(xx, yy);
             const float k = kernel[abs(xx)][abs(yy)];
-            sum += gIllumination.Load(int3(p, 0)).a * k;
+            sum += gIllumination[p].a * k;
         }
     }
 
@@ -365,31 +436,53 @@ float computeVarianceCenter(int2 ipos)
 
 [numthreads(8, 8, 1)]
 void SVGFAtrousCS(uint3 ThreadID : SV_DispatchThreadID)
-{
-    const int2 ipos       = int2(vsOut.posH.xy);
-    const int2 screenSize = getTextureDims(gAlbedo, 0);
+{    
+    uint2 ipos = ThreadID.xy;
+
+    PerFrameData perFrameData = GetPerFrameData();
+    uint width = perFrameData.renderResolutionWidth;
+    uint height = perFrameData.renderResolutionHeight;
+    if (ThreadID.x >= width || ThreadID.y >= height) 
+	{
+		return;
+	}
+
+    float       gPhiColor     = SHADER_ARGUMENTS_DATA(0);
+    float       gPhiNormal    = SHADER_ARGUMENTS_DATA(1);
+    float       gAlpha        = SHADER_ARGUMENTS_DATA(2);
+    float       gMomentsAlpha = SHADER_ARGUMENTS_DATA(3);
+    float       gStepSize     = SHADER_ARGUMENTS_DATA(4);
+
+    Texture2D linearDepthBuffer = GetLinearDepthBufferSRV();
+    Texture2D gbuffer1 = GetGBuffer1SRV();
+
+    RWTexture2D<float4> gIllumination = GetIlluminationUAV();
+    RWTexture2D<float4> gMoments = GetMomentsUAV();
+    RWTexture2D<float4> gHistoryLength = GetHistoryLengthUAV();
+
+    int2 screenSize = int2(width, height);
 
     const float epsVariance      = 1e-10;
     const float kernelWeights[3] = { 1.0, 2.0 / 3.0, 1.0 / 6.0 };
 
     // constant samplers to prevent the compiler from generating code which
     // fetches the sampler descriptor from memory for each texture access
-    const float4 illuminationCenter = gIllumination.Load(int3(ipos, 0));
+    const float4 illuminationCenter = gIllumination[ipos];
     const float lIlluminationCenter = Luminance(illuminationCenter.rgb);
 
     // variance, filtered using 3x3 gaussin blur
-    const float var = computeVarianceCenter(ipos);
+    const float var = computeVarianceCenter(ipos, gIllumination);
 
     // number of temporally integrated pixels
     const float historyLength = gHistoryLength[ipos].x;
 
-    const float2 zCenter = gLinearZAndNormal[ipos].xy;
+    const float2 zCenter = linearDepthBuffer[ipos].xy;
     if (zCenter.x < 0)
     {
         // not a valid depth => must be envmap => do not filter
         return illuminationCenter;
     }
-    const float3 nCenter = oct_to_ndir_snorm(gLinearZAndNormal[ipos].zw);
+    const float3 nCenter = gbuffer1[ipos].xyz;
 
     const float phiLIllumination   = gPhiColor * sqrt(max(0.0, epsVariance + var.r));
     const float phiDepth     = max(zCenter.y, 1e-8) * gStepSize;
@@ -410,10 +503,10 @@ void SVGFAtrousCS(uint3 ThreadID : SV_DispatchThreadID)
 
             if (inside && (xx != 0 || yy != 0)) // skip center pixel, it is already accumulated
             {
-                const float4 illuminationP = gIllumination.Load(int3(p, 0));
+                const float4 illuminationP = gIllumination[p];
                 const float lIlluminationP = Luminance(illuminationP.rgb);
-                const float zP = gLinearZAndNormal[p].x;
-                const float3 nP = oct_to_ndir_snorm(gLinearZAndNormal[p].zw);
+                const float zP = linearDepthBuffer[p].x;
+                const float3 nP = gbuffer[p].xyz;
 
                 // compute the edge-stopping functions
                 const float2 w = computeWeight(

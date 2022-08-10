@@ -608,7 +608,6 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 
 	float filterIterations = 4;
 	float feedbackTap = 1;
-	float varianceEpsilon = 1.0e-4;
 	float phiColor = 10.0;
 	float phiNormal = 128.0;
 	float alpha = 0.05;
@@ -635,12 +634,12 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
 		"SVGF History Length");
 
-	RenderGraphTextureHandle prevLinearDepthBuffer = renderGraph->ImportTexture(prevLinearDepthBufferRB, );
-	RenderGraphTextureHandle prevIllum             = renderGraph->ImportTexture(prevIllumRB, );
-	RenderGraphTextureHandle prevMoments           = renderGraph->ImportTexture(prevMomentsRB, );
-	RenderGraphTextureHandle prevHistoryLength     = renderGraph->ImportTexture(prevHistoryLengthRB, );
+	RenderGraphTextureHandle prevLinearDepthBuffer = renderGraph->ImportExternalTexture(prevLinearDepthBufferRB.texture, prevLinearDepthBufferRB.desc, prevLinearDepthBufferRB.initialState, "Prev Linear Depth Buffer");
+	RenderGraphTextureHandle prevIllum             = renderGraph->ImportExternalTexture(prevIllumRB.texture, prevIllumRB.desc, prevIllumRB.initialState, "Prev Linear Depth Buffer");
+	RenderGraphTextureHandle prevMoments           = renderGraph->ImportExternalTexture(prevMomentsRB.texture, prevMomentsRB.desc, prevMomentsRB.initialState, "Prev Linear Depth Buffer");
+	RenderGraphTextureHandle prevHistoryLength     = renderGraph->ImportExternalTexture(prevHistoryLengthRB.texture, prevHistoryLengthRB.desc, prevHistoryLengthRB.initialState, "Prev Linear Depth Buffer");
 
-	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("SVGF Reproject Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -683,12 +682,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
-	prevLinearDepthBufferRB = renderGraph->ExportTextureDeferred(linearDepthBuffer, );
-	prevIllumRB             = renderGraph->ExportTextureDeferred(svgfIllumination, );
-	prevMomentsRB           = renderGraph->ExportTextureDeferred(svgfMoments, );
-	prevHistoryLengthRB     = renderGraph->ExportTextureDeferred(svgfHistoryLength, );
-
-	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("SVFG Filter Moments Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -720,7 +714,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
-	renderGraph->AddPass("Ray Tracing Shadows Denoise Pass", RenderGraphPassFlags::RayTrace,
+	renderGraph->AddPass("SVFG Atrous Pass", RenderGraphPassFlags::RayTrace,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -753,6 +747,16 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 			}
 		};
 	});
+
+	gRenderGraphResourcePool->CacheTexture(prevLinearDepthBufferRB);
+	gRenderGraphResourcePool->CacheTexture(prevIllumRB);
+	gRenderGraphResourcePool->CacheTexture(prevMomentsRB);
+	gRenderGraphResourcePool->CacheTexture(prevHistoryLengthRB);
+
+	renderGraph->ExportTextureDeferred(gbufferData.gbuffer3, &prevLinearDepthBufferRB);
+	renderGraph->ExportTextureDeferred(svgfIllumination,     &prevIllumRB);
+	renderGraph->ExportTextureDeferred(svgfMoments,          &prevMomentsRB);
+	renderGraph->ExportTextureDeferred(svgfHistoryLength,    &prevHistoryLengthRB);
 
 	renderGraph->AddPass("Lighting Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)

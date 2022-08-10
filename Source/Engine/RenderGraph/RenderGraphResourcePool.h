@@ -5,32 +5,31 @@
 namespace HE
 {
 
-struct RenderGraphPooledTexture
+struct RenderGraphPersistentTexture
 {
-	bool active;
-    RenderBackendResourceState initialState;
-    RenderBackendResourceState currentState;
-	RenderBackendTextureDesc desc;
+	bool avtive;
 	RenderBackendTextureHandle texture;
+	RenderBackendTextureDesc desc;
+    RenderBackendResourceState initialState;
 };
 
-struct RenderGraphPooledBuffer
+struct RenderGraphPersistentBuffer
 {
-	bool active;
-	RenderBackendResourceState initialState;
-	RenderBackendResourceState currentState;
-	RenderBackendBufferDesc desc;
+	bool avtive;
 	RenderBackendBufferHandle buffer;
+	RenderBackendBufferDesc desc;
+	RenderBackendResourceState initialState;
 };
 
 class RenderGraphResourcePool
 {
 public:
 	void Tick();
+	void CacheTexture(const RenderGraphPersistentTexture& texture);
 	RenderBackendTextureHandle FindOrCreateTexture(RenderBackend* backend, const RenderBackendTextureDesc* desc, const char* name);
 private:
 	friend class RenderGraph;
-	std::pmr::vector<RenderGraphPooledTexture> allocatedTextures;
+	std::pmr::vector<RenderGraphPersistentTexture> allocatedTextures;
 	uint32 frameCounter = 0;
 };
 

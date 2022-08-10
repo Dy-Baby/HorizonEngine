@@ -16,6 +16,11 @@ void RenderGraphResourcePool::Tick()
 	frameCounter++;
 }
 
+void RenderGraphResourcePool::CacheTexture(const RenderGraphPersistentTexture& texture)
+{
+
+}
+
 RenderBackendTextureHandle RenderGraphResourcePool::FindOrCreateTexture(RenderBackend* backend, const RenderBackendTextureDesc* desc, const char* name)
 {
 	for (auto& pooledTexture : allocatedTextures)
@@ -35,10 +40,9 @@ RenderBackendTextureHandle RenderGraphResourcePool::FindOrCreateTexture(RenderBa
 	RenderBackendTextureHandle texture = RenderBackendCreateTexture(backend, deviceMask, desc, nullptr, name);
 	RenderBackendResourceState initialState = RenderBackendResourceState::Undefined;
 
-	RenderGraphPooledTexture pooledTexture = {
+	RenderGraphPersistentTexture pooledTexture = {
 		.active = true,
 		.initialState = initialState,
-		.currentState = initialState,
 		.desc = *desc,
 		.texture = texture,
 	};
