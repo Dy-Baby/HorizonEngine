@@ -13,7 +13,7 @@ struct OneBandSHCoefficientsRGB
 
 struct TwoBandSHCoefficients
 {
-	float4 c;
+	float c[4];
 };
 
 struct TwoBandSHCoefficientsRGB
@@ -25,9 +25,7 @@ struct TwoBandSHCoefficientsRGB
 
 struct ThreeBandSHCoefficients
 {
-	float4 c0;
-    float4 c1;
-    float  c2;
+	float c[9];
 };
 
 struct ThreeBandSHCoefficientsRGB

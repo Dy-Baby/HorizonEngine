@@ -6,7 +6,7 @@
 namespace HE
 {
 
-static const HybridRenderPipelineSettings HybridRenderPipelineSettings = {
+static const HybridRenderPipelineSettings hybridRenderPipelineSettings = {
 
 };
 
@@ -181,6 +181,48 @@ void HybridRenderPipeline::Init()
 
 	rayTracingShadowsPipelineState = RenderBackendCreateRayTracingPipelineState(renderBackend, deviceMask, &rayTracingShadowsPipelineStateDesc, "rayTracingShadowsPipelineState");
 
+	RenderBackendShaderDesc svgfReprojectCSDesc;
+	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/SVGF.hsf", source);
+	CompileShader(
+		shaderCompiler,
+		source,
+		TEXT("SVGFReprojectCS"),
+		RenderBackendShaderStage::Compute,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&svgfReprojectCSDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
+	svgfReprojectCSDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SVGFReprojectCS";
+	svgfReprojectCS = RenderBackendCreateShader(renderBackend, deviceMask, &svgfReprojectCSDesc, "SVGFReprojectCS");
+
+	RenderBackendShaderDesc svgfFilterMomentsCSDesc;
+	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/SVGF.hsf", source);
+	CompileShader(
+		shaderCompiler,
+		source,
+		TEXT("SVGFFilterMomentsCS"),
+		RenderBackendShaderStage::Compute,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&svgfFilterMomentsCSDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
+	svgfFilterMomentsCSDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SVGFFilterMomentsCS";
+	svgfFilterMomentsCS = RenderBackendCreateShader(renderBackend, deviceMask, &svgfFilterMomentsCSDesc, "SVGFFilterMomentsCS");
+
+	RenderBackendShaderDesc svgfAtrousCSDesc;
+	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/SVGF.hsf", source);
+	CompileShader(
+		shaderCompiler,
+		source,
+		TEXT("SVGFAtrousCS"),
+		RenderBackendShaderStage::Compute,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&svgfAtrousCSDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
+	svgfAtrousCSDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SVGFAtrousCS";
+	svgfAtrousCS = RenderBackendCreateShader(renderBackend, deviceMask, &svgfAtrousCSDesc, "SVGFAtrousCS");
+
 	RenderBackendRayTracingShaderBindingTableDesc rayTracingShadowsSBTDesc = {
 		.rayTracingPipelineState = rayTracingShadowsPipelineState,
 		.numShaderRecords = 0,
@@ -231,7 +273,9 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	auto& finalTextureData = blackboard.CreateSingleton<RenderGraphFinalTexture>();
 	auto& ouptutTextureData = blackboard.CreateSingleton<RenderGraphOutputTexture>();
 
+	static uint32 frameIndex = 0;
 	perFrameData.data = {
+		.frameIndex = frameIndex,
 		.gamma = 2.2,
 		.exposure = 1.2,
 		.sunDirection = { 0.00, 0.90045, 0.43497 },
@@ -252,7 +296,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		.targetResolutionWidth = view->targetWidth,
 		.targetResolutionHeight = view->targetHeight,
 	};
-	perFrameData.data.frameIndex++;
+	frameIndex++;
 	//perFrameData.data.cameraPosition = {0.00, -1.00, 0.50};
 	//perFrameData.data.viewProjectionMatrix = {
 	//	{ -0.85633, 0.00, 0.00, 0.00 },
@@ -308,6 +352,22 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		clearColor);
 	gbufferData.gbuffer2 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer 2");
 
+	RenderGraphTextureDesc gbuffer3Desc = RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::RGBA32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
+		clearColor);
+	gbufferData.gbuffer3 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer 3");
+
+	RenderGraphTextureDesc velocityBufferDesc = RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::RGBA32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
+		clearColor);
+	gbufferData.velocityBuffer = renderGraph->CreateTexture(velocityBufferDesc, "Velocity Buffer");
+
 	RenderGraphTextureDesc depthBufferDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
@@ -315,13 +375,6 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::DepthStencil,
 		clearDepth);
 	depthBufferData.depthBuffer = renderGraph->CreateTexture(depthBufferDesc, "Depth Buffer");
-
-	RenderGraphTextureDesc shadowMaskDesc = RenderGraphTextureDesc::Create2D(
-		perFrameData.data.renderResolutionWidth,
-		perFrameData.data.renderResolutionHeight,
-		PixelFormat::R32Float,
-		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
-	auto shadowMask = renderGraph->CreateTexture(shadowMaskDesc, "Shadow Mask");
 
 	RenderGraphTextureDesc sceneColorDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -435,8 +488,8 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 			};
 		});
 	}
-
 	*/
+
 	renderGraph->AddPass("GBuffer Pass", RenderGraphPassFlags::Raster,
 	[&](RenderGraphBuilder& builder)
 	{
@@ -447,11 +500,15 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		auto gbuffer0 = gbufferData.gbuffer0 = builder.WriteTexture(gbufferData.gbuffer0, RenderBackendResourceState::RenderTarget);
 		auto gbuffer1 = gbufferData.gbuffer1 = builder.WriteTexture(gbufferData.gbuffer1, RenderBackendResourceState::RenderTarget);
 		auto gbuffer2 = gbufferData.gbuffer2 = builder.WriteTexture(gbufferData.gbuffer2, RenderBackendResourceState::RenderTarget);
+		auto gbuffer3 = gbufferData.gbuffer3 = builder.WriteTexture(gbufferData.gbuffer3, RenderBackendResourceState::RenderTarget);
+		auto velocityBuffer = gbufferData.velocityBuffer = builder.WriteTexture(gbufferData.velocityBuffer, RenderBackendResourceState::RenderTarget);
 		auto depthBuffer = depthBufferData.depthBuffer = builder.WriteTexture(depthBufferData.depthBuffer, RenderBackendResourceState::DepthStencil);
 
 		builder.BindColorTarget(0, gbuffer0, RenderTargetLoadOp::Clear, RenderTargetStoreOp::Store);
 		builder.BindColorTarget(1, gbuffer1, RenderTargetLoadOp::Clear, RenderTargetStoreOp::Store);
 		builder.BindColorTarget(2, gbuffer2, RenderTargetLoadOp::Clear, RenderTargetStoreOp::Store);
+		builder.BindColorTarget(3, gbuffer3, RenderTargetLoadOp::Clear, RenderTargetStoreOp::Store);
+		builder.BindColorTarget(4, velocityBuffer, RenderTargetLoadOp::Clear, RenderTargetStoreOp::Store);
 		builder.BindDepthStencilTarget(depthBuffer, RenderTargetLoadOp::Clear, RenderTargetStoreOp::Store);
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
@@ -511,6 +568,13 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
+	RenderGraphTextureDesc shadowMaskDesc = RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::R32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
+	auto shadowMask = renderGraph->CreateTexture(shadowMaskDesc, "Shadow Mask");
+
 	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::RayTrace,
 	[&](RenderGraphBuilder& builder)
 	{
@@ -539,6 +603,154 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 				width,
 				height,
 				1);
+		};
+	});
+
+	float filterIterations = 4;
+	float feedbackTap = 1;
+	float varianceEpsilon = 1.0e-4;
+	float phiColor = 10.0;
+	float phiNormal = 128.0;
+	float alpha = 0.05;
+	float momentsAlpha = 0.2;
+
+	auto svgfIllumination = renderGraph->CreateTexture(RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::RGBA32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
+		"SVGF Illumination");
+
+	auto svgfMoments = renderGraph->CreateTexture(RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::RG32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
+		"SVGF Moments");
+
+	auto svgfHistoryLength = renderGraph->CreateTexture(RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::R16Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
+		"SVGF History Length");
+
+	RenderGraphTextureHandle prevLinearDepthBuffer = renderGraph->ImportTexture(prevLinearDepthBufferRB, );
+	RenderGraphTextureHandle prevIllum             = renderGraph->ImportTexture(prevIllumRB, );
+	RenderGraphTextureHandle prevMoments           = renderGraph->ImportTexture(prevMomentsRB, );
+	RenderGraphTextureHandle prevHistoryLength     = renderGraph->ImportTexture(prevHistoryLengthRB, );
+
+	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::Compute,
+	[&](RenderGraphBuilder& builder)
+	{
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
+		const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
+
+		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
+		auto linearDepthBuffer = builder.ReadTexture(gbufferData.gbuffer3, RenderBackendResourceState::ShaderResource);
+		auto velocityBuffer = gbufferData.velocityBuffer = builder.ReadTexture(gbufferData.velocityBuffer, RenderBackendResourceState::ShaderResource);
+
+		shadowMask = builder.WriteTexture(shadowMask, RenderBackendResourceState::UnorderedAccess);
+
+		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
+		{
+			uint32 width = perFrameData.data.renderResolutionWidth;
+			uint32 height = perFrameData.data.renderResolutionHeight;
+
+			ShaderArguments shaderArguments = {};
+			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
+			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowMask)));
+			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
+			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(linearDepthBuffer)));
+			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(velocityBuffer)));
+			shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(prevIllum)));
+			shaderArguments.BindTextureSRV(6, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(prevMoments)));
+			shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(prevHistoryLength)));
+			shaderArguments.BindTextureSRV(8, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(prevLinearDepthBuffer)));
+			shaderArguments.BindTextureUAV(9, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfIllumination), 0));
+			shaderArguments.BindTextureUAV(10, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfMoments), 0));
+			shaderArguments.BindTextureUAV(11, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfHistoryLength), 0));
+			shaderArguments.PushConstants(0, phiColor);
+			shaderArguments.PushConstants(1, phiNormal);
+			shaderArguments.PushConstants(2, alpha);
+			shaderArguments.PushConstants(3, momentsAlpha);
+
+			commandList.Dispatch2D(
+				svgfReprojectCS,
+				shaderArguments,
+				width,
+				height);
+		};
+	});
+
+	prevLinearDepthBufferRB = renderGraph->ExportTextureDeferred(linearDepthBuffer, );
+	prevIllumRB             = renderGraph->ExportTextureDeferred(svgfIllumination, );
+	prevMomentsRB           = renderGraph->ExportTextureDeferred(svgfMoments, );
+	prevHistoryLengthRB     = renderGraph->ExportTextureDeferred(svgfHistoryLength, );
+
+	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::Compute,
+	[&](RenderGraphBuilder& builder)
+	{
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
+		const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
+
+		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource); 
+		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+
+		shadowMask = builder.WriteTexture(shadowMask, RenderBackendResourceState::UnorderedAccess);
+
+		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
+		{
+			uint32 width = perFrameData.data.renderResolutionWidth;
+			uint32 height = perFrameData.data.renderResolutionHeight;
+
+			ShaderArguments shaderArguments = {};
+			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
+			shaderArguments.BindAS(1, view->scene->topLevelAS);
+			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
+			shaderArguments.BindTextureUAV(3, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowMask), 0));
+
+			commandList.Dispatch2D(
+				svgfFilterMomentsCS,
+				shaderArguments,
+				width,
+				height);
+		};
+	});
+
+	renderGraph->AddPass("Ray Tracing Shadows Denoise Pass", RenderGraphPassFlags::RayTrace,
+	[&](RenderGraphBuilder& builder)
+	{
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
+		const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
+
+		auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+		r = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+		r = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+
+		shadowMask = builder.WriteTexture(shadowMask, RenderBackendResourceState::UnorderedAccess);
+
+		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
+		{
+			uint32 width = perFrameData.data.renderResolutionWidth;
+			uint32 height = perFrameData.data.renderResolutionHeight;
+
+			for (uint32 iterationIndex = 0; iterationIndex < filterIterations; iterationIndex++)
+			{
+				uint32 stepSize = (1 << iterationIndex);
+				ShaderArguments shaderArguments = {};
+				shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
+				shaderArguments.BindAS(1, view->scene->topLevelAS);
+				shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
+				shaderArguments.BindTextureUAV(3, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowMask), 0));
+				commandList.Dispatch2D(
+					svgfAtrousCS,
+					shaderArguments,
+					width,
+					height);
+			}
 		};
 	});
 

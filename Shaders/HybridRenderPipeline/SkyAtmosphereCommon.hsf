@@ -3,7 +3,7 @@
  * https://sebh.github.io/publications/egsr2020.pdf
  * https://github.com/sebh/UnrealEngineSkyAtmosphere
  */
-#include "../BindlessCommon.hsf"
+#include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
 #ifndef SHADOWMAP_ENABLED 

@@ -53,6 +53,15 @@ private:
 	RenderBackendRayTracingPipelineStateHandle rayTracingShadowsPipelineState;
 	RenderBackendBufferHandle rayTracingShadowsSBT;
 
+	RenderBackendShaderHandle svgfReprojectCS;
+	RenderBackendShaderHandle svgfFilterMomentsCS;
+	RenderBackendShaderHandle svgfAtrousCS;
+
+	RenderBackendTextureHandle prevLinearDepthBufferRB;
+	RenderBackendTextureHandle prevIllumRB;
+	RenderBackendTextureHandle prevMomentsRB;
+	RenderBackendTextureHandle prevHistoryLengthRB;
+
 	SkyAtmosphere* skyAtmosphere;
 };
 

@@ -1,4 +1,4 @@
-#include "../BindlessCommon.hsf"
+#include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
 #define GBUFFER_SHADER_PER_FRAME_DATA_SLOT              0
@@ -80,8 +80,8 @@ Texture2D GetMetallicRoughnessMap(uint metallicRoughnessMapIndex)
 struct GBufferVSToPS
 {
     float4 clipPosition : SV_POSITION;
-    // float4 prevClipPosition : POSITION0;
-    float3 worldPosition : POSITION;
+    float4 prevClipPosition : POSITION0;
+    float3 worldPosition : POSITION1;
     float3 worldNormal : NORMAL0;
     float4 worldTangent : TANGENT0;
     float2 texCoord0 : TEXCOORD0;
@@ -104,12 +104,12 @@ void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
 
     float2 texCoord0 =  GetVertexTexCoord0(vertexIndex);
 
-    // float4x4 prevWorldMatrix = GetPrevWorldMatrix();
-    // float4 prevWorldPosition = mul(localPosition, prevWorldMatrix);
-    // float4 prevClipPosition = mul(perFrameData.preViewProjectionMatrix, prevWorldPosition);
+    float4x4 prevWorldMatrix = GetPrevWorldMatrix();
+    float4 prevWorldPosition = mul(localPosition, prevWorldMatrix);
+    float4 prevClipPosition = mul(perFrameData.preViewProjectionMatrix, prevWorldPosition);
     
     output.clipPosition = clipPosition;
-    // output.prevClipPosition = prevClipPosition;
+    output.prevClipPosition = prevClipPosition;
     output.worldPosition = worldPosition;
     output.worldNormal = worldNormal;
     output.worldTangent = worldTangent;
@@ -121,8 +121,8 @@ struct GBufferData
     float4 gbuffer0 : SV_TARGET0;
     float4 gbuffer1 : SV_TARGET1;
     float4 gbuffer2 : SV_TARGET2;
-    // float2 velocity : SV_TARGET3;
-    // float depth : SV_TARGET3;
+    float4 gbuffer3 : SV_TARGET3;
+    float2 velocity : SV_TARGET4;
 };
 
 void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
@@ -159,10 +159,12 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
 
     float4 clipPosition = input.clipPosition;
     float linearDepth01 = clipPosition.z / clipPosition.w;
-    
+
+    float4 velocity = float4(1.0, 1.0, 1.0, 1.0);
+
     gbufferData.gbuffer0 = float4(position, metallic);
 	gbufferData.gbuffer1 = float4(normal, roughness);
     gbufferData.gbuffer2 = float4(baseColor);
-    // gbufferData.velocity = velocity;
-    // gbufferData.depth = linearDepth01;
+    gbufferData.gbuffer3 = float4(linearDepth01, max(abs(ddx(linearDepth01)), abs(ddy(linearDepth01))), length(fwidth(position)), length(fwidth(normal)));
+    gbufferData.velocity = velocity;
 }

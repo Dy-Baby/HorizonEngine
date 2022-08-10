@@ -1,4 +1,4 @@
-#include "../BindlessCommon.hsf"
+#include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
 #define FXAA_PC 1

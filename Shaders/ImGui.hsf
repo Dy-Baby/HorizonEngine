@@ -1,4 +1,4 @@
-#include "BindlessCommon.hsf"
+#include "ShaderCommon.hsf"
 
 #define IMGUI_SHADER_TEXTURE_SRV_SLOT      0
 #define IMGUI_SHADER_VERTEX_BUFFER_SLOT    1

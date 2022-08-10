@@ -47,6 +47,8 @@ struct RenderGraphGBuffer
 	RenderGraphTextureHandle gbuffer0;
 	RenderGraphTextureHandle gbuffer1;
 	RenderGraphTextureHandle gbuffer2;
+	RenderGraphTextureHandle gbuffer3;
+	RenderGraphTextureHandle velocityBuffer;
 };
 RENDER_GRAPH_BLACKBOARD_REGISTER_STRUCT(RenderGraphGBuffer);
 

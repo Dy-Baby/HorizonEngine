@@ -35,7 +35,7 @@ float Halton(uint index, uint base)
 	return r;
 }
 
-uint InitRand(uint positionSeed, uint timeSeed)
+uint RandInit(uint positionSeed, uint timeSeed)
 {
 	uint seed = HighQualityIntegerHash(positionSeed + HighQualityIntegerHash(timeSeed));
 	return seed;

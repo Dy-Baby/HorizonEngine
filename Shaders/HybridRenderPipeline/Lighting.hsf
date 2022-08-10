@@ -1,4 +1,4 @@
-#include "../BindlessCommon.hsf"
+#include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
 #define LIGHTING_SHADER_PER_FRAME_DATA_SLOT        0

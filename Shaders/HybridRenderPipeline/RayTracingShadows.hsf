@@ -1,4 +1,4 @@
-#include "../BindlessCommon.hsf"
+#include "../ShaderCommon.hsf"
 #include "../Random.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
@@ -41,12 +41,6 @@ float3 UniformSampleCone(float2 randVal, float cosThetaMax)
     return float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
 }
 
-float nextRand(inout uint s)
-{
-	s = (1664525u * s + 1013904223u);
-	return float(s & 0x00FFFFFF) / float(0x01000000);
-}
-
 [shader("raygeneration")]
 void RayTracingShadowsRayGen()
 {
@@ -76,12 +70,12 @@ void RayTracingShadowsRayGen()
     float4 worldSpacePosition = mul(clipSpacePosition, perFrameData.invViewProjectionMatrix);
     worldSpacePosition /= worldSpacePosition.w;
 
-    uint randSeed = InitRand(launchIndex.x + launchIndex.y * launchDim.x, perFrameData.frameIndex);
+    uint randSeed = RandInit(launchIndex.x + launchIndex.y * launchDim.x, perFrameData.frameIndex);
 
     float cosThetaMax = 0.999;
     // Generate a random direction based on the cone angle. 
     // @see UniformSampleCone in [pbrt]
-    float3 randDirection = UniformSampleCone(float2(nextRand(randSeed), nextRand(randSeed)), cosThetaMax);
+    float3 randDirection = UniformSampleCone(float2(Rand(randSeed), Rand(randSeed)), cosThetaMax);
 
     float3 N = float3(-1.0, 0.0, 1.0);
     float3 B = GetPerpendicularVector(N);
@@ -97,7 +91,7 @@ void RayTracingShadowsRayGen()
     RayDesc ray;
     ray.Origin = worldSpacePosition.xyz;
     ray.Direction = randDirection;
-    ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-3;
+    ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-2;
     ray.TMax = 100000.0;
 
     uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
