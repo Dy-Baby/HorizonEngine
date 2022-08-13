@@ -16,6 +16,7 @@ struct PerFrameData
 	float4x4 invProjectionMatrix;
 	float4x4 viewProjectionMatrix;
 	float4x4 invViewProjectionMatrix;
+	float4x4 prevViewProjectionMatrix;
 	uint renderResolutionWidth;
 	uint renderResolutionHeight;
 	uint targetResolutionWidth;

@@ -42,9 +42,9 @@ RenderBackendTextureHandle RenderGraphResourcePool::FindOrCreateTexture(RenderBa
 
 	RenderGraphPersistentTexture pooledTexture = {
 		.active = true,
-		.initialState = initialState,
-		.desc = *desc,
 		.texture = texture,
+		.desc = *desc,
+		.initialState = initialState,
 	};
 	allocatedTextures.emplace_back(pooledTexture);
 

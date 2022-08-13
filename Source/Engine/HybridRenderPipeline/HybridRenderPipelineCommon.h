@@ -28,6 +28,7 @@ struct PerFrameData
 	Matrix4x4 invProjectionMatrix;
 	Matrix4x4 viewProjectionMatrix;
 	Matrix4x4 invViewProjectionMatrix;
+	Matrix4x4 prevViewProjectionMatrix;
 
 	uint32 renderResolutionWidth;
 	uint32 renderResolutionHeight;

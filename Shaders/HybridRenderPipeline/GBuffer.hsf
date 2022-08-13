@@ -46,6 +46,12 @@ float4x4 GetWorldMatrix()
     return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<float4x4>((bufferIndex & 0xffff) * sizeof(float4x4));
 }
 
+float4x4 GetPrevWorldMatrix()
+{
+    uint bufferIndex = SHADER_ARGUMENTS_INDEX(GBUFFER_SHADER_PREV_WORLD_MATRIX_BUFFER_SLOT);
+    return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<float4x4>((bufferIndex & 0xffff) * sizeof(float4x4));
+}
+
 struct MaterialInstanceData
 {
     float4 baseColor;
@@ -105,8 +111,8 @@ void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
     float2 texCoord0 =  GetVertexTexCoord0(vertexIndex);
 
     float4x4 prevWorldMatrix = GetPrevWorldMatrix();
-    float4 prevWorldPosition = mul(localPosition, prevWorldMatrix);
-    float4 prevClipPosition = mul(prevWorldPosition, perFrameData.preViewProjectionMatrix);
+    float4 prevWorldPosition = mul(float4(localPosition, 1.0), prevWorldMatrix);
+    float4 prevClipPosition = mul(prevWorldPosition, perFrameData.prevViewProjectionMatrix);
 
     output.clipPosition = clipPosition;
     output.prevClipPosition = prevClipPosition;
@@ -122,7 +128,7 @@ struct GBufferData
     float4 gbuffer1 : SV_TARGET1;
     float4 gbuffer2 : SV_TARGET2;
     float4 gbuffer3 : SV_TARGET3;
-    float2 velocity : SV_TARGET4;
+    float4 velocity : SV_TARGET4;
 };
 
 void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
@@ -161,7 +167,7 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
     float linearDepth01 = clipPosition.z / clipPosition.w;
 
     float2 currUV = (clipPosition.xy / clipPosition.w) * 0.5 + 0.5;
-    float2 prevUV = (prevClipPosition.xy / prevClipPosition.w) * 0.5 + 0.5;
+    float2 prevUV = (input.prevClipPosition.xy / input.prevClipPosition.w) * 0.5 + 0.5;
     float4 velocity = float4(prevUV - currUV, 1.0, 1.0);
 
     gbufferData.gbuffer0 = float4(position, metallic);

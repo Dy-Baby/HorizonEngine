@@ -180,7 +180,14 @@ void HybridRenderPipeline::Init()
 	rayTracingShadowsPipelineStateDesc.shaderGroupDescs[1] = RenderBackendRayTracingShaderGroupDesc::CreateMiss(1);
 
 	rayTracingShadowsPipelineState = RenderBackendCreateRayTracingPipelineState(renderBackend, deviceMask, &rayTracingShadowsPipelineStateDesc, "rayTracingShadowsPipelineState");
+	
+	RenderBackendRayTracingShaderBindingTableDesc rayTracingShadowsSBTDesc = {
+		.rayTracingPipelineState = rayTracingShadowsPipelineState,
+		.numShaderRecords = 0,
+	};
+	rayTracingShadowsSBT = RenderBackendCreateRayTracingShaderBindingTable(renderBackend, deviceMask, &rayTracingShadowsSBTDesc, "rayTracingShadowsSBT");
 
+#if 0
 	RenderBackendShaderDesc svgfReprojectCSDesc;
 	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/SVGF.hsf", source);
 	CompileShader(
@@ -222,13 +229,8 @@ void HybridRenderPipeline::Init()
 		&svgfAtrousCSDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
 	svgfAtrousCSDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SVGFAtrousCS";
 	svgfAtrousCS = RenderBackendCreateShader(renderBackend, deviceMask, &svgfAtrousCSDesc, "SVGFAtrousCS");
-
-	RenderBackendRayTracingShaderBindingTableDesc rayTracingShadowsSBTDesc = {
-		.rayTracingPipelineState = rayTracingShadowsPipelineState,
-		.numShaderRecords = 0,
-	};
-	rayTracingShadowsSBT = RenderBackendCreateRayTracingShaderBindingTable(renderBackend, deviceMask, &rayTracingShadowsSBTDesc, "rayTracingShadowsSBT");
-
+#endif 
+	
 	SkyAtmosphereConfig config;
 	skyAtmosphere = CreateSkyAtmosphere(renderBackend, shaderCompiler, &config);
 }
@@ -606,6 +608,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
+#if 0
 	float filterIterations = 4;
 	float feedbackTap = 1;
 	float phiColor = 10.0;
@@ -757,6 +760,8 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	renderGraph->ExportTextureDeferred(svgfIllumination,     &prevIllumRB);
 	renderGraph->ExportTextureDeferred(svgfMoments,          &prevMomentsRB);
 	renderGraph->ExportTextureDeferred(svgfHistoryLength,    &prevHistoryLengthRB);
+
+#endif
 
 	renderGraph->AddPass("Lighting Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
