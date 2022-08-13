@@ -42,16 +42,21 @@ struct DensityProfileLayer
     float constantTerm;
 };
 
+META_STRUCT()
 struct SkyAtmosphereComponent
 {
+    SkyAtmosphereComponent();
+
     /// Platnet
 
     /// Platnet top at absolute world origine.
     
     /// The distance (kilometers) between the planet center and the ground.
+    META_PROPERTY(Category = "Platnet", ClampMin = 0.0)
     float groundRadius;
 
     /// The average albedo of the ground.
+    META_PROPERTY(Category = "Platnet", ClampMin = 0.0)
     Vector3 groundAlbedo;
 
     /// Atmosphere

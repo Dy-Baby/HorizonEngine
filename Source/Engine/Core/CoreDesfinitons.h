@@ -34,6 +34,9 @@
 
 #define HE_DEFAULT_ALIGNMENT uint64(8)
 
+#define META_STRUCT()
+#define META_PROPERTY(...)
+
 namespace HE
 {
 

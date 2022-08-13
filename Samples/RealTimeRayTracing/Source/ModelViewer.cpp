@@ -30,25 +30,24 @@ void SetupEarthAtmosphere(HE::SkyAtmosphereComponent* component)
 	const float earthMieScaleHeight = 1.2f;
 
 	const double maxSunZenithAngle = M_PI * 120.0 / 180.0;
-	*component = HE::SkyAtmosphereComponent{
 		// Earth
-		.groundRadius = earthRadius,
-		.groundAlbedo = { 0.401978f, 0.401978f, 0.401978f },
-		.atmosphereHeight = earthAtmosphereHeight,
-		.multipleScatteringFactor = 1.0,
+	component->groundRadius = earthRadius;
+	component->groundAlbedo = { 0.401978f, 0.401978f, 0.401978f };
+	component->atmosphereHeight = earthAtmosphereHeight;
+	component->multipleScatteringFactor = 1.0;
 		// Raleigh
-		.rayleighScattering = { 0.005802f, 0.013558f, 0.033100f }, // 1/km
-		.rayleighScaleHeight = earthRayleighScaleHeight,
+	component->rayleighScattering = { 0.005802f, 0.013558f, 0.033100f }; // 1/km
+	component->rayleighScaleHeight = earthRayleighScaleHeight;
 		// Mie
-		.mieScattering = { 0.003996f, 0.003996f, 0.003996f }, // 1/km
-		.mieExtinction = { 0.004440f, 0.004440f, 0.004440f }, // 1/km
-		.mieAnisotropy = 0.8f,
-		.mieScaleHeight = earthMieScaleHeight,
+	component->mieScattering = { 0.003996f, 0.003996f, 0.003996f }; // 1/km
+	component->mieExtinction = { 0.004440f, 0.004440f, 0.004440f }; // 1/km
+	component->mieAnisotropy = 0.8f;
+	component->mieScaleHeight = earthMieScaleHeight;
 		// Absorption
-		.absorptionDensity = { { 25.0f, 0.0f, 0.0f, 1.0f / 15.0f, -2.0f / 3.0f }, { 0.0f, 0.0f, 0.0f, -1.0f / 15.0f, 8.0f / 3.0f } },
-		.absorptionExtinction = { 0.000650f, 0.001881f, 0.000085f }, // 1/km
-		.cosMaxSunZenithAngle = (float)HE::Math::Cos(maxSunZenithAngle),
-	};
+	component->absorptionDensity[0] = {25.0f, 0.0f, 0.0f, 1.0f / 15.0f, -2.0f / 3.0f};
+	component->absorptionDensity[1] = {0.0f, 0.0f, 0.0f, -1.0f / 15.0f, 8.0f / 3.0f};
+	component->absorptionExtinction = { 0.000650f, 0.001881f, 0.000085f }; // 1/km
+	component->cosMaxSunZenithAngle = (float)HE::Math::Cos(maxSunZenithAngle);
 }
 
 bool ModelViewerApp::Init()
@@ -78,7 +77,7 @@ bool ModelViewerApp::Init()
 	
 	uint32 deviceMask;
 	uint32 physicalDeviceID = 0;
-	RenderBackendCreateRenderDevices(renderBackend, &physicalDeviceID, 1, &deviceMask);
+	HE::RenderBackendCreateRenderDevices(renderBackend, &physicalDeviceID, 1, &deviceMask);
 	
 	swapChain = RenderBackendCreateSwapChain(renderBackend, deviceMask, (uint64)window->GetNativeHandle());
 	swapChainWidth = window->GetWidth();
@@ -90,8 +89,8 @@ bool ModelViewerApp::Init()
 	scene = new Scene();
 
 	GLTF2ImportSettings settings;
-	ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
-	ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
+	HE::ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
+	HE::ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
 
 	//ImportGLTF2("../../../Assets/Models/Sponza/glTF/Sponza.gltf", settings, scene);
 	scene->renderBackend = renderBackend;

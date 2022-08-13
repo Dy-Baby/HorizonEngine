@@ -4,6 +4,37 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
+std::unordered_map<std::string, std::function<void(std::string, void*)>> uiCreator;
+std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
+int                                       g_node_depth = -1;
+bool inited = false;
+
+void UIInit()
+{
+	using namespace HE;
+	uiCreator["float"] = [](const std::string& name, void* value)
+	{
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextUnformatted(name.c_str());
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+		ImGui::DragFloat(("##" + name).c_str(), static_cast<float*>(value));
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+	};
+	
+	uiCreator["struct glm::vec<3,float,0>"] = [](const std::string& name, void* value)
+	{
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextUnformatted(name.c_str());
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+		ImGui::DragFloat3(("##" + name).c_str(), static_cast<float*>(value));
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+	};
+}
+
 void BeginDockSpace()
 {
 	static bool dockSpaceOpen = true;
@@ -89,15 +120,70 @@ void DrawOverlay()
 	ImGui::End();
 }
 
+template<typename ComponentType>
+void DrawComponent(const ComponentType& component)
+{
+	using namespace entt;
+	if (ImGui::CollapsingHeader("Sky Atmosphere"))
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+		ImGui::Columns(2);
+		ImGui::Separator();
+
+		for (auto data : entt::resolve<ComponentType>().data())
+		{
+			std::string type = std::string(data.type().info().name());
+			std::string name = data.prop("Name"_hs).value().cast<std::string>();
+			auto g = data.get(component);
+			void* value = data.get(component).data();
+			uiCreator[type](name, value);
+		}
+
+		ImGui::Columns(1);
+		ImGui::Separator();
+		ImGui::PopStyleVar();
+	}
+}
+
 void ModelViewerApp::OnImGui()
 {
 	using namespace HE;
+	using namespace entt;
 
 	BeginDockSpace();
+
+	if (!inited)
+	{
+		UIInit();
+		inited = true;
+	}
 
 	ImGui::Begin("Settings");
 	{
 		auto& skyAtmosphereComponent = scene->GetEntityManager()->GetComponent<SkyAtmosphereComponent>(sky);
+		// DrawComponent<SkyAtmosphereComponent>(skyAtmosphereComponent);
+
+		if (ImGui::CollapsingHeader("Sky Atmosphere"))
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			ImGui::Columns(2);
+			ImGui::Separator();
+
+			for (auto data : entt::resolve<SkyAtmosphereComponent>().data())
+			{
+				std::string type = std::string(data.type().info().name());
+				std::string name = data.prop("Name"_hs).value().cast<std::string>();
+				auto g = data.get(skyAtmosphereComponent);
+				void* value = data.get(skyAtmosphereComponent).data();
+				uiCreator[type](name, value);
+			}
+
+			ImGui::Columns(1);
+			ImGui::Separator();
+			ImGui::PopStyleVar();
+		}
+
+#if 0
 		if (ImGui::CollapsingHeader("Sky Atmosphere"))
 		{
 			ImGui::Separator();
@@ -197,6 +283,7 @@ void ModelViewerApp::OnImGui()
 			ImGui::Separator();
 			ImGui::PopStyleVar();
 		}
+#endif
 	}
 	ImGui::End();
 

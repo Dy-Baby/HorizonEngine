@@ -71,13 +71,13 @@ public:
 	template<typename... Component>
 	bool HasAllComponents(EntityHandle entity) 
 	{ 
-		return registry.has<Component ...>(entity);
+		return registry.all_of<Component ...>(entity);
 	}
 
 	template<typename... Component>
 	bool HasAnyComponent(EntityHandle entity) 
 	{ 
-		return registry.any<Component ...>(entity);
+		return registry.any_of<Component ...>(entity);
 	}
 
 	template<typename Component, typename... Args>
@@ -144,17 +144,6 @@ public:
 	void RemoveComponent(EntityHandle entity) 
 	{ 
 		return registry.remove<Component>(entity);
-	}
-
-	template<typename Component>
-	void RemoveComponentIfExsits(EntityHandle entity) 
-	{
-		return registry.remove_if_exists<Component>(entity);
-	}
-
-	void RemoveAllComponents(EntityHandle entity)
-	{ 
-		return registry.remove_all(entity);
 	}
 
 private:

@@ -1,5 +1,6 @@
 #include "HybridRenderPipelineCommon.h"
 #include "SkyAtmosphere.h"
+#include "ECS/ECS.h"
 
 namespace HE
 {
@@ -389,6 +390,22 @@ void DestroySkyAtmosphere(SkyAtmosphere* skyAtmosphere)
     RenderBackendDestroyShader(renderBackend, skyAtmosphere->aerialPerspectiveVolumeShader);
     RenderBackendDestroyShader(renderBackend, skyAtmosphere->renderSkyShader);
     delete skyAtmosphere;
+}
+
+SkyAtmosphereComponent::SkyAtmosphereComponent()
+{
+    using namespace entt;
+    auto factory = entt::meta<SkyAtmosphereComponent>();//.type("Sky Atmosphere"_hs)
+    factory.data<&SkyAtmosphereComponent::groundRadius, entt::as_ref_t>("Ground Radius"_hs)
+           .prop("Name"_hs, std::string("Ground Radius"));
+    factory.data<&SkyAtmosphereComponent::groundAlbedo, entt::as_ref_t>("Ground Albedo"_hs)
+           .prop("Name"_hs, std::string("Ground Albedo"));
+    factory.data<&SkyAtmosphereComponent::atmosphereHeight, entt::as_ref_t>("Atmosphere Height"_hs)
+        .prop("Name"_hs, std::string("Atmosphere Height"));
+    factory.data<&SkyAtmosphereComponent::multipleScatteringFactor, entt::as_ref_t>("Multiple Scattering Factor"_hs)
+        .prop("Name"_hs, std::string("Multiple Scattering Factor"));
+    factory.data<&SkyAtmosphereComponent::rayleighScattering, entt::as_ref_t>("Rayleigh Scattering"_hs)
+        .prop("Name"_hs, std::string("Rayleigh Scattering"));
 }
 
 }
