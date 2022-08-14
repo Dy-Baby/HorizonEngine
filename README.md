@@ -51,7 +51,7 @@ Features:
 
 [RenderDoc](https://renderdoc.org/)
 
-## Contributors
+## Contributing
 
 Contributions are welcome.
 

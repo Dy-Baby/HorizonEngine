@@ -11,6 +11,11 @@ namespace HE
 namespace Math
 {
 
+FORCEINLINE bool IsPowerOfTwo(uint32 n)
+{
+    return (n != 0) && ((n & -n) == n);
+}
+
 FORCEINLINE double Cos(double radians)
 {
     return cos(radians);

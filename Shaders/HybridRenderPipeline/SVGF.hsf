@@ -29,18 +29,19 @@
 #include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
-#define SVGF_SHADER_PER_FRAME_DATA_SLOT             0
-#define SVGF_SHADER_VELOCITY_BUFFER_SRV_SLOT        1
-#define SVGF_SHADER_SHADOW_MASK_SRV_SLOT            2
-#define SVGF_SHADER_GBUFFER1_SRV_SLOT               3
-#define SVGF_SHADER_LINEAR_DEPTH_BUFFER_SRV_SLOT    4
-#define SVGF_SHADER_ILLUMINATION_UAV_SLOT           5
-#define SVGF_SHADER_MOMENTS_UAV_SLOT                6
-#define SVGF_SHADER_HITORY_LENGTH_UAV_SLOT          7
-#define SVGF_SHADER_PREV_LINEAR_DEPTH_SRV_SLOT      8
-#define SVGF_SHADER_PREV_ILLUMINATION_UAV_SLOT      9
-#define SVGF_SHADER_PREV_MOMENTS_UAV_SLOT           10
-#define SVGF_SHADER_PREV_HISTORY_LENGTH_UAV_SLOT    11
+#define SVGF_SHADER_PER_FRAME_DATA_SLOT               0
+#define SVGF_SHADER_VELOCITY_BUFFER_SRV_SLOT          1
+#define SVGF_SHADER_SHADOW_MASK_SRV_SLOT              2
+#define SVGF_SHADER_GBUFFER1_SRV_SLOT                 3
+#define SVGF_SHADER_LINEAR_DEPTH_BUFFER_SRV_SLOT      4
+#define SVGF_SHADER_ILLUMINATION_UAV_SLOT             5
+#define SVGF_SHADER_MOMENTS_UAV_SLOT                  6
+#define SVGF_SHADER_HITORY_LENGTH_UAV_SLOT            7
+#define SVGF_SHADER_PREV_LINEAR_DEPTH_SRV_SLOT        8
+#define SVGF_SHADER_PREV_ILLUMINATION_UAV_SLOT        9
+#define SVGF_SHADER_PREV_MOMENTS_UAV_SLOT             10
+#define SVGF_SHADER_PREV_HISTORY_LENGTH_UAV_SLOT      11
+#define SVGF_SHADER_FILTERED_ILLUMINATION_UAV_SLOT    12
 
 PerFrameData GetPerFrameData()
 {
@@ -101,6 +102,11 @@ RWTexture2D<float4> GetPrevMomentsUAV()
 RWTexture2D<float4> GetPrevHistoryLengthUAV()
 {
     return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_PREV_HISTORY_LENGTH_UAV_SLOT)];
+}
+
+RWTexture2D<float4> GetFilteredIlluminationUAV()
+{
+    return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(SVGF_SHADER_FILTERED_ILLUMINATION_UAV_SLOT)];
 }
 
 float computeWeight(
@@ -171,7 +177,7 @@ bool loadPrevData(uint2 ipos, uint2 imageDim, out float4 prevIllum, out float2 p
         float2 depthPrev = linearDepthBuffer[loc].xy;
         float3 normalPrev = gbuffer1[loc].xyz;
 
-        v[sampleIdx] = isReprjValid(, iposPrev, depth.x, depthPrev.x, depth.y, normal, normalPrev, normalFwidth);
+        v[sampleIdx] = isReprjValid(imageDim, iposPrev, depth.x, depthPrev.x, depth.y, normal, normalPrev, normalFwidth);
 
         valid = valid || v[sampleIdx];
     }
@@ -220,7 +226,7 @@ bool loadPrevData(uint2 ipos, uint2 imageDim, out float4 prevIllum, out float2 p
                 const float2 depthFilter = linearDepthBuffer[p].xy;
                 const float3 normalFilter = gbuffer1[p].xyz;
 
-                if (isReprjValid(iposPrev, depth.x, depthFilter.x, depth.y, normal, normalFilter, normalFwidth))
+                if (isReprjValid(imageDim, iposPrev, depth.x, depthFilter.x, depth.y, normal, normalFilter, normalFwidth))
                 {
                     prevIllum += gPrevIllum[p];
                     prevMoments += gPrevMoments[p].xy;
@@ -272,7 +278,7 @@ void SVGFReprojectCS(uint3 ThreadID : SV_DispatchThreadID)
 
     Texture2D shadowMask = GetShadowMaskSRV();
     //float3 illumination = demodulate(gColor[ipos].rgb - gEmission[ipos].rgb, gAlbedo[ipos].rgb);
-    float3 illumination = float3(shadowMask[pixelCoord].r);
+    float3 illumination = shadowMask[pixelCoord].rrr;
 
     float historyLength;
     float4 prevIllumination;
@@ -305,7 +311,7 @@ void SVGFReprojectCS(uint3 ThreadID : SV_DispatchThreadID)
     // temporal integration of illumination
     // variance is propagated through the alpha channel
     illuminationUAV[pixelCoord] = float4(lerp(prevIllumination.rgb, illumination, alpha), variance);
-    momentsUAV[pixelCoord] = moments;
+    momentsUAV[pixelCoord] = float4(moments, 0, 0);
     historyLengthUAV[pixelCoord] = historyLength;
 }
 
@@ -334,6 +340,8 @@ void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
     RWTexture2D<float4> gMoments = GetMomentsUAV();
     RWTexture2D<float4> gHistoryLength = GetHistoryLengthUAV();
 
+    RWTexture2D<float4> output = GetFilteredIlluminationUAV();
+
     float h = gHistoryLength[ipos].x;
     int2 screenSize = int2(width, height);
 
@@ -350,7 +358,8 @@ void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
         if (zCenter.x < 0)
         {
             // current pixel does not a valid depth => must be envmap => do nothing
-            return illuminationCenter;
+            output[ipos] = gIllumination[ipos];
+            return;
         }
         const float3 nCenter = gbuffer1[ipos].xyz;
         const float phiLIllumination = gPhiColor;
@@ -401,13 +410,11 @@ void SVGFFilterMomentsCS(uint3 ThreadID : SV_DispatchThreadID)
         // give the variance a boost for the first frames
         variance *= 4.0 / h;
 
-        return float4(sumIllumination, variance.r);
+        output[ipos] = float4(sumIllumination, variance.r);
+        return;
     }
-    else
-    {
-        // do nothing, pass data unmodified
-        return gIllumination[ipos];
-    }
+    // do nothing, pass data unmodified
+    output[ipos] = gIllumination[ipos];
 }
 
 // computes a 3x3 gaussian blur of the variance, centered around the current pixel

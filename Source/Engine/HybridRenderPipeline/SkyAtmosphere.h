@@ -51,9 +51,11 @@ struct SkyAtmosphereComponent
     /// Platnet top at absolute world origine.
     
     /// The distance (kilometers) between the planet center and the ground.
+    //[[ attr1 ]]
     float groundRadius;
 
     /// The average albedo of the ground.
+    //[[ attr2 ]]
     Vector3 groundAlbedo;
 
     /// Atmosphere
