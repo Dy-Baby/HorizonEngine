@@ -17,7 +17,7 @@ Inspired by [Halcyon](https://www.ea.com/seed/news/khronos-munich-2018-halcyon-v
 ![image](/Docs/rendering_architecture.png)
 
 Implemented features:
-* Fiber-based Job System
+* Fiber-Based Job System
 * Bindless
 * Render Graph
 * ECS (Entity-Component-System)
