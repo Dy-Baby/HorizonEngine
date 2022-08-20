@@ -4,6 +4,6 @@
 #include "EcilaMath.h"
 #include "Camera.h"
 #include "Film.h"
-#include "Scene.h"
+#include "RenderScene.h"
 #include "EcilaRenderEngine.h"
 #include "Framebuffer.h" 

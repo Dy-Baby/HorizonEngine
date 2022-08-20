@@ -87,7 +87,9 @@ filter "platforms:Win64"
         "/utf-8",
     }
     linkoptions {
-        "/ignore:4006"
+        "/ignore:4006",
+    }
+    disablewarnings {
     }
 
 group "Source"

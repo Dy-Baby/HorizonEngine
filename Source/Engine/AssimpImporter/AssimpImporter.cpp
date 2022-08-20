@@ -11,17 +11,17 @@ HE_ENABLE_WARNINGS
 namespace HE
 {
 
-bool ImportOBJ(const char* filename, OBJImportSettings settings, Scene* scene)
+bool ImportOBJ(const char* filename, OBJImportSettings settings, RenderScene* scene)
 {
 	return false;
 }
 
-bool ImportFBX(const char* filename, FBXImportSettings settings, Scene* scene)
+bool ImportFBX(const char* filename, FBXImportSettings settings, RenderScene* scene)
 {
 	return false;
 }
 
-bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, Scene* scene)
+bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, RenderScene* scene)
 {
 	HE_LOG_INFO("Import scene: {0}", filename);
 

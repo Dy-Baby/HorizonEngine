@@ -86,7 +86,7 @@ bool ModelViewerApp::Init()
 	uiRenderer = new UIRenderer(window->handle, renderBackend, shaderCompiler);
 	uiRenderer->Init();
 
-	scene = new Scene();
+	scene = new RenderScene();
 
 	GLTF2ImportSettings settings;
 	HE::ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);

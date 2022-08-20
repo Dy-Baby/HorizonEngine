@@ -23,12 +23,12 @@ struct Camera
 
 struct RenderContext;
 class RenderPipeline;
-class Scene;
+class RenderScene;
 struct SceneView
 {
 	SceneView() = default;
 	RenderPipeline* renderPipeline;
-	Scene* scene;
+	RenderScene* scene;
 	Camera camera;
 	uint32 targetWidth;
 	uint32 targetHeight;

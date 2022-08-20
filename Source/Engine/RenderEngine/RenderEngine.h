@@ -8,10 +8,6 @@
 #include "RenderEngine/RenderPipeline.h"
 #include "RenderEngine/ShaderCompiler.h"
 #include "RenderEngine/Material.h"
-#include "RenderEngine/Scene.h"
+#include "RenderEngine/RenderScene.h"
 #include "RenderEngine/SceneView.h"
 #include "RenderEngine/UIRenderer.h"
-
-namespace HE
-{
-}

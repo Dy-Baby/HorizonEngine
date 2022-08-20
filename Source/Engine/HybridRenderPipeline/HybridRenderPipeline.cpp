@@ -187,7 +187,6 @@ void HybridRenderPipeline::Init()
 	};
 	rayTracingShadowsSBT = RenderBackendCreateRayTracingShaderBindingTable(renderBackend, deviceMask, &rayTracingShadowsSBTDesc, "rayTracingShadowsSBT");
 
-#if 0
 	RenderBackendShaderDesc svgfReprojectCSDesc;
 	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/SVGF.hsf", source);
 	CompileShader(
@@ -229,7 +228,6 @@ void HybridRenderPipeline::Init()
 		&svgfAtrousCSDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
 	svgfAtrousCSDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "SVGFAtrousCS";
 	svgfAtrousCS = RenderBackendCreateShader(renderBackend, deviceMask, &svgfAtrousCSDesc, "SVGFAtrousCS");
-#endif 
 	
 	SkyAtmosphereConfig config;
 	skyAtmosphere = CreateSkyAtmosphere(renderBackend, shaderCompiler, &config);
@@ -299,20 +297,6 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		.targetResolutionHeight = view->targetHeight,
 	};
 	frameIndex++;
-	//perFrameData.data.cameraPosition = {0.00, -1.00, 0.50};
-	//perFrameData.data.viewProjectionMatrix = {
-	//	{ -0.85633, 0.00, 0.00, 0.00 },
-	//	{ 0.00, 0.00, 1.52236, -0.76118 },
-	//	{ 0.00, 1.00001, 0.00, 0.90 },
-	//	{ 0.00, 1.00, 0.00, 1.00 }
-	//};
-
-	//perFrameData.data.invViewProjectionMatrix = {
-	//	{ -1.16778, 0.00, 0.00, 0.00 },
-	//	{0.00, 0.00, 9.99995, -9.00},
-	//	{0.00, 0.65688, -4.99997, 5.00},
-	//	{0.00, 0.00, -9.99995, 10.00}
-	//};
 
 	perFrameData.buffer = perFrameDataBuffer;
 	RenderBackendWriteBuffer(renderBackend, perFrameDataBuffer, 0, &perFrameData, sizeof(PerFrameData));
@@ -419,7 +403,6 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		renderBRDFLut = false;
 	}
 /*
-
 	if ()
 	{
 		renderGraph->AddPass("Equirectangular To Cube Pass", RenderGraphPassFlags::Compute,
@@ -685,18 +668,26 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
+	auto svgfFilteredIllumination = renderGraph->CreateTexture(RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::RGBA32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
+		"SVGF Filtered Illumination");
+
 	renderGraph->AddPass("SVFG Filter Moments Pass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
 
-		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource); 
-		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
-		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
-		= builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
-
-		shadowMask = builder.WriteTexture(shadowMask, RenderBackendResourceState::UnorderedAccess);
+		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
+		auto linearDepthBuffer = builder.ReadTexture(gbufferData.gbuffer3, RenderBackendResourceState::ShaderResource);
+		svgfIllumination = builder.ReadTexture(svgfIllumination, RenderBackendResourceState::UnorderedAccess);
+		svgfMoments = builder.ReadTexture(svgfMoments, RenderBackendResourceState::UnorderedAccess);
+		svgfHistoryLength = builder.ReadTexture(svgfHistoryLength, RenderBackendResourceState::UnorderedAccess);
+		
+		svgfFilteredIllumination = builder.WriteTexture(svgfFilteredIllumination, RenderBackendResourceState::UnorderedAccess);
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
@@ -705,9 +696,16 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
-			shaderArguments.BindAS(1, view->scene->topLevelAS);
-			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
-			shaderArguments.BindTextureUAV(3, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(shadowMask), 0));
+			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
+			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(linearDepthBuffer)));
+			shaderArguments.BindTextureUAV(9, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfIllumination), 0));
+			shaderArguments.BindTextureUAV(10, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfMoments), 0));
+			shaderArguments.BindTextureUAV(11, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfHistoryLength), 0));
+			shaderArguments.BindTextureUAV(12, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(svgfFilteredIllumination), 0));
+			shaderArguments.PushConstants(0, phiColor);
+			shaderArguments.PushConstants(1, phiNormal);
+			shaderArguments.PushConstants(2, alpha);
+			shaderArguments.PushConstants(3, momentsAlpha);
 
 			commandList.Dispatch2D(
 				svgfFilterMomentsCS,
@@ -923,8 +921,6 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
-			//RenderBackendBarrier transition = RenderBackendBarrier(registry.GetRenderBackendTexture(finalTexture), TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::RenderTarget);
-			//commandList.Transitions(&transition, 1);
 			uiRenderer->Render(commandList, registry.GetRenderBackendTexture(finalTexture));
 		};
 	});

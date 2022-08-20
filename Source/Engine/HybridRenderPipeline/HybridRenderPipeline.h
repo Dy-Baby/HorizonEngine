@@ -56,7 +56,6 @@ private:
 	RenderBackendShaderHandle svgfReprojectCS;
 	RenderBackendShaderHandle svgfFilterMomentsCS;
 	RenderBackendShaderHandle svgfAtrousCS;
-	
 
 	SkyAtmosphere* skyAtmosphere;
 };

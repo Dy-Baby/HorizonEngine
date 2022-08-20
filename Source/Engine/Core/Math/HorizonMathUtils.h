@@ -13,7 +13,12 @@ namespace Math
 
 FORCEINLINE bool IsPowerOfTwo(uint32 n)
 {
-    return (n != 0) && ((n & -n) == n);
+    return (n > 0) && ((n & (n - 1)) == 0);
+}
+
+FORCEINLINE bool IsPowerOfTwo(int32 n)
+{
+    return (n > 0) && ((n & (n - 1)) == 0);
 }
 
 FORCEINLINE double Cos(double radians)
@@ -76,11 +81,6 @@ FORCEINLINE float Length(const Vector3& v)
 FORCEINLINE float LengthSquared(const Vector3& v)
 {
     return v.x * v.x + v.y * v.y + v.z * v.z;
-}
-
-FORCEINLINE bool IsPowerOfTwo(uint32_t value)
-{
-    return (value > 0) && ((value & (value - 1)) == 0);
 }
 
 FORCEINLINE Matrix4x4 Transpose(const Matrix4x4& matrix)

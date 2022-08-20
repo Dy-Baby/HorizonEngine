@@ -1,5 +1,0 @@
-
-float3 Tonemap(float3 linearColor) 
-{
-    
-}

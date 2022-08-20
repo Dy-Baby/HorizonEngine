@@ -1,6 +1,6 @@
 #include "Integrator.h"
 #include "Interaction.h"
-#include "Scene.h"
+#include "RenderScene.h"
 #include "BSDF.h"
 #include "MathUtil.h"
 

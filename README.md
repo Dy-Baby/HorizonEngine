@@ -41,6 +41,7 @@ Features:
 * [DirectX-Headers](https://github.com/microsoft/DirectX-Headers)
 * [D3D12MemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
 * [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
+* [OpenEXR](https://github.com/AcademySoftwareFoundation/openexr)
 * [premake](https://github.com/premake/premake-core)
 
 ## Documentation

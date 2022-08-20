@@ -56,7 +56,7 @@ private:
 
 	MainWindow* window;
 
-	HE::Scene* scene;
+	HE::RenderScene* scene;
 
 	HE::EntityHandle mainCamera;
 	HE::EntityHandle sky;

@@ -1,4 +1,4 @@
-#include "Scene.h"
+#include "RenderScene.h"
 #include "Mesh.h"
 #include "Light.h"
 #include "Ray.h"
