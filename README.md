@@ -25,6 +25,7 @@ Implemented features:
 * Path Tracing
 
 Main features to come:
+* Visibility Buffer (Also Called Deferred Texturing or Deferred Material Shading)
 * High-fidelity Physically-Based Rendering
 * Native Graphics API Support (Direct3D 12, Metal 2)
 * Multi-GPU Rendering
