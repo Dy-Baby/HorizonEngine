@@ -1,20 +1,46 @@
 # Horizon Engine
-Horizon Engine is a 3D real-time render engine.
+
+Horizon Engine is an open-source 3D rendering engine, focusing on modern rendering engine architecture and rendering techniques. Serving a different purpose than game engines, this project aims to build a highly scalable rendering framework to improve the productivity of prototype projects and academic research, but also to serve as an educational tool for teaching rendering engine design and implementation from scratch.
+
+Horizon Engine is currently only supported on Windows and only target modern graphics APIs (Direct3D 12, Vulkan, Metal).
 
 ## Introduction
-Features:
+
+Goals:
+* Efficent and Flexible Rendering
+* Fast Rendering Techniques Experimentation, eg. Hybrid Rendering with DXR or Vulkan Raytracing
+
+Rendering Architecture:
+Inspired by [Halcyon](https://www.ea.com/seed/news/khronos-munich-2018-halcyon-vulkan)
+![image](/Doc/rendering_architecture.png)
+
+Implemented features:
 * Fiber-based Job System
 * Bindless
 * Render Graph
 * ECS (Entity-Component-System)
 * Hybrid Render Pipeline
+* Path Tracing
+
+Main features to come:
+* High-fidelity Physically-Based Rendering
+* Native Graphics API Support (Direct3D 12, Metal 2)
+* Multi-GPU Rendering
+* Plugin System (Live-Reloadable Plugins)
+* Physics Engine Integration (PhysX)
+* Audio System
+* Machine Learning
+* VR/AR Support
+* Cross-Platform (MacOS and Linux Support)
 
 ## Samples
+
 ![image](/Screenshots/screenshot_editor.png)
 ![image](/Screenshots/screenshot_sky_atmosphere.png)
 ![image](/Screenshots/screenshot_particle_system.png)
 
 ## Requirements
+
 * Windows 10
 * NIVIDIA Graphics Cards (Geforce RTX 20-series or 30-series) and keep your graphics drivers up to date (https://www.nvidia.com/Download/index.aspx)
 * Vulkan SDK 1.3.216.0, this repository tries to always be up to date with the latest Vulkan SDK (https://vulkan.lunarg.com/sdk/home)
@@ -23,11 +49,14 @@ Features:
 
 ## Getting Started
 
-1. Clone this repository: git clone https://github.com/harukumo/HorizonEngine
+1. Clone this repository
+
+`git clone https://github.com/harukumo/HorizonEngine`
 
 2. Run "GenerateProjects.bat"
 
 ## Third Party
+
 * [assimp](https://github.com/assimp/assimp)
 * [imgui](https://github.com/ocornut/imgui)
 * [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
@@ -45,6 +74,7 @@ Features:
 * [premake](https://github.com/premake/premake-core)
 
 ## Documentation
+
 
 ## Debug Tools
 
