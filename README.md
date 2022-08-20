@@ -74,6 +74,7 @@ Main features to come:
 * [D3D12MemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
 * [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 * [OpenEXR](https://github.com/AcademySoftwareFoundation/openexr)
+* [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 * [premake](https://github.com/premake/premake-core)
 
 ## Documentation
