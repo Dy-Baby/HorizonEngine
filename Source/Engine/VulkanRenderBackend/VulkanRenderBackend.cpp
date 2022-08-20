@@ -1,9 +1,14 @@
-#include "VulkanRenderBackend.h"
+module;
+
 #include "VulkanCommon.h"
 #include "VulkanUtils.h"
 
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
+
+module VulkanRenderBackend;
+
+#define DEBUG_ONLY_RAY_TRACING_ENBALE 1
 
 namespace HE
 {

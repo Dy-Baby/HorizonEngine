@@ -26,6 +26,7 @@ function sourcedirs(dirs)
         dir .. "/**.c", 
         dir .. "/**.hpp",
         dir .. "/**.cpp",
+        dir .. "/**.cppm",
         dir .. "/**.inl",
         dir .. "/**.hsf",
     }
@@ -58,6 +59,9 @@ workspace "Horizon"
 	}
     startproject "EditorLauncher"
 
+filter { 'files:**.cppm' }
+    buildaction 'ClCompile'
+
 filter "configurations:Debug"
     defines { 
         "HE_CONFIG_DEBUG",
@@ -71,6 +75,7 @@ filter "configurations:Release"
     }
     optimize "On"
 
+ 
 filter "system:windows"
     platforms "Win64"
     systemversion "latest"

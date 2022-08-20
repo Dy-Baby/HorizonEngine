@@ -1,3 +1,5 @@
+import VulkanRenderBackend;
+
 #include "ModelViewer.h"
 #include "MainWindow.h"
 #include "HybridRenderPipeline/HybridRenderPipeline.h"

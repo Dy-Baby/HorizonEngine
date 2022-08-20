@@ -5,6 +5,7 @@
 !*.c
 !*.cc
 !*.cpp
+!*.cppm
 !*.h
 !*.hpp
 !*.inl
