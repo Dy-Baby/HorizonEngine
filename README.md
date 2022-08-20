@@ -11,6 +11,7 @@ Goals:
 * Fast Rendering Techniques Experimentation, eg. Hybrid Rendering with DXR or Vulkan Raytracing
 
 Rendering Architecture:
+
 Inspired by [Halcyon](https://www.ea.com/seed/news/khronos-munich-2018-halcyon-vulkan)
 
 ![image](/Docs/rendering_architecture.png)
