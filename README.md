@@ -12,6 +12,7 @@ Goals:
 
 Rendering Architecture:
 Inspired by [Halcyon](https://www.ea.com/seed/news/khronos-munich-2018-halcyon-vulkan)
+
 ![image](/Doc/rendering_architecture.png)
 
 Implemented features:
@@ -87,5 +88,3 @@ Main features to come:
 Contributions are welcome.
 
 ## Lisence
-
-## Support
