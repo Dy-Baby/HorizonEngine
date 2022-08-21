@@ -75,6 +75,7 @@ Main features to come:
 * [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler)
 * [OpenEXR](https://github.com/AcademySoftwareFoundation/openexr)
 * [yaml-cpp](https://github.com/jbeder/yaml-cpp)
+* [LLVM](https://github.com/llvm/llvm-project)
 * [premake](https://github.com/premake/premake-core)
 
 ## Documentation
