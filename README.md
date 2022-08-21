@@ -90,4 +90,7 @@ Main features to come:
 
 Contributions are welcome.
 
+## Sponsors
+
+
 ## Lisence

@@ -6,7 +6,7 @@ module;
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
-module VulkanRenderBackend;
+module HorizonEngine.Render.VulkanRenderBackend;
 
 #define DEBUG_ONLY_RAY_TRACING_ENBALE 1
 

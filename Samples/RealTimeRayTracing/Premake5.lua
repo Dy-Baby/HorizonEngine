@@ -15,9 +15,6 @@ project "RealTimeRayTracing"
         "**.inl",
         "**.hsf",
     }
-
-    dependson {
-    }
     
     links {
         "Core", 

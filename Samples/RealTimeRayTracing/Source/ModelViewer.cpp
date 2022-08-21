@@ -1,4 +1,4 @@
-import VulkanRenderBackend;
+import HorizonEngine.Render.VulkanRenderBackend;
 
 #include "ModelViewer.h"
 #include "MainWindow.h"
@@ -73,6 +73,21 @@ bool ModelViewerApp::Init()
 
 	shaderCompiler = CreateDxcShaderCompiler();
 
+	/*const auto vulkanRenderBackendDLL = OpenDLL("VulkanRenderBackend.dll");
+	if (vulkanRenderBackendDLL)
+	{
+	    return false;
+	}
+	
+	PFN_VulkanRenderBackendCreateBackend VulkanRenderBackendCreateBackend = reinterpret_cast<PFN_VulkanRenderBackendCreateBackend>(GetSymbolFromDLL(vulkanRenderBackendDLL, "VulkanRenderBackendCreateBackend"));
+	PFN_VulkanRenderBackendDestroyBackend VulkanRenderBackendDestroyBackend = reinterpret_cast<PFN_VulkanRenderBackendDestroyBackend>(GetSymbolFromDLL(vulkanRenderBackendDLL, "VulkanRenderBackendDestroyBackend"));
+	if (!VulkanRenderBackendCreateBackend || !VulkanRenderBackendDestroyBackend)
+	{
+	    HE_LOG_ERROR("Failed to load VulkanRenderBackend.dll. VulkanRenderBackendCreateBackend() / VulkanRenderBackendDestroyBackend() not found.");
+	    CloseDLL(vulkanRenderBackendDLL);
+	    return false;
+	}*/
+	
 	// int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
 	int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
 	renderBackend = VulkanRenderBackendCreateBackend(flags);
