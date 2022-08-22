@@ -4,9 +4,13 @@ Horizon Engine is an open-source 3D rendering engine, focusing on modern renderi
 
 Horizon Engine is currently only supported on Windows and only target modern graphics APIs (Direct3D 12, Vulkan, Metal).
 
+<!--
 [![Bilibili]()]()
-[![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)]()
-[![Patreon](https://badgen.net/badge/icon/patreon?icon=patreon&label)]()
+-->
+[![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/nepzQHf2jv)
+<!--
+# [![Patreon](https://badgen.net/badge/icon/patreon?icon=patreon&label)]()
+-->
 
 ## Introduction
 
