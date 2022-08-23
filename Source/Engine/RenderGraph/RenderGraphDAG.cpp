@@ -1,5 +1,6 @@
 #include "RenderGraphDAG.h"
-#include "RenderGraph.h"
+
+import HorizonEngine.Render.RenderGraph;
 
 namespace HE
 {

@@ -1,5 +1,8 @@
-#include "RenderGraph.h"
+module;
+
 #include "RenderGraphResources.h"
+
+module HorizonEngine.Render.RenderGraph;
 
 namespace HE
 {

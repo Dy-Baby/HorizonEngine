@@ -1,16 +1,16 @@
-#pragma once
+export module HorizonEngine.Render.RenderGraph;
 
-#include "RenderGraph/RenderGraphDefinitions.h"
-#include "RenderGraph/RenderGraphHandles.h"
-#include "RenderGraph/RenderGraphDAG.h"
-#include "RenderGraph/RenderGraphBlackboard.h"
-#include "RenderGraph/RenderGraphBuilder.h"
-#include "RenderGraph/RenderGraphRegistry.h"
-#include "RenderGraph/RenderGraphPass.h"
-#include "RenderGraph/RenderGraphResources.h"
-#include "RenderGraph/RenderGraphResourcePool.h"
+export import "RenderGraph/RenderGraphDefinitions.h";
+export import "RenderGraph/RenderGraphHandles.h";
+export import "RenderGraph/RenderGraphDAG.h";
+export import "RenderGraph/RenderGraphBlackboard.h";
+export import "RenderGraph/RenderGraphBuilder.h";
+export import "RenderGraph/RenderGraphRegistry.h";
+export import "RenderGraph/RenderGraphPass.h";
+export import "RenderGraph/RenderGraphResources.h";
+export import "RenderGraph/RenderGraphResourcePool.h";
 
-namespace HE
+export namespace HE
 {
 
 class RenderGraph

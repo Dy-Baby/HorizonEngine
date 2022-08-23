@@ -18,6 +18,7 @@ export namespace HE
         extern bool gIsLoggingEnabled;
         extern std::shared_ptr<spdlog::logger> gLogger;
     }
+
     enum class LogLevel
     {
         Verbose,
@@ -26,6 +27,8 @@ export namespace HE
         Error,
         Fatal,
     };
+
     extern bool LogSystemInit();
+
     extern void LogSystemExit();
 }
