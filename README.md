@@ -35,6 +35,7 @@ Implemented features:
 Main features to come:
 * Visibility Buffer (Also Called Deferred Texturing or Deferred Material Shading)
 * High-fidelity Physically-Based Rendering
+* Surfle GI
 * Native Graphics API Support (Direct3D 12, Metal 2)
 * Multi-GPU Rendering
 * Plugin System (Live-Reloadable Plugins)
@@ -46,8 +47,16 @@ Main features to come:
 
 ## Samples
 
+Scene Editor
 ![image](/Screenshots/screenshot_editor.png)
+
+FSR
+![image](/Screenshots/screenshot_fsr.png)
+
+Sky Atomsphere
 ![image](/Screenshots/screenshot_sky_atmosphere.png)
+
+Particle System
 ![image](/Screenshots/screenshot_particle_system.png)
 
 ## Requirements
