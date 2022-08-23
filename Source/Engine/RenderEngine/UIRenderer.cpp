@@ -119,12 +119,12 @@ bool UIRenderer::Init()
     std::vector<uint8> source;
     std::vector<const wchar*> includeDirs;
     std::vector<const wchar*> defines;
-    includeDirs.push_back(TEXT("../../../Shaders"));
+    includeDirs.push_back(HE_TEXT("../../../Shaders"));
     LoadShaderSourceFromFile("../../../Shaders/ImGui.hsf", source);
     CompileShader(
         shaderCompiler,
         source,
-        TEXT("ImGuiVS"),
+        HE_TEXT("ImGuiVS"),
         RenderBackendShaderStage::Vertex,
         ShaderRepresentation::SPIRV,
         includeDirs,
@@ -134,7 +134,7 @@ bool UIRenderer::Init()
     CompileShader(
         shaderCompiler,
         source,
-        TEXT("ImGuiPS"),
+        HE_TEXT("ImGuiPS"),
         RenderBackendShaderStage::Pixel,
         ShaderRepresentation::SPIRV,
         includeDirs,

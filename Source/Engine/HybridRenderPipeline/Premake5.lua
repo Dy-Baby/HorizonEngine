@@ -8,6 +8,7 @@ project "HybridRenderPipeline"
         
     links {
         "Core",
+        "RenderGraph",
     }
 
     files {

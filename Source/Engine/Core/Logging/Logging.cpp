@@ -1,7 +1,6 @@
 module;
 
 #include "Core/CoreCommon.h"
-#include "Core/Logging/LoggingDefines.h"
 
 HE_DISABLE_WARNINGS
 #include <spdlog/spdlog.h>
@@ -36,13 +35,10 @@ namespace HE
 		LogSystem::gLogger->set_level(spdlog::level::debug);
 		LogSystem::gLogger->flush_on(spdlog::level::debug);
 		LogSystem::gIsLoggingEnabled = true;
-
-		HE_LOG_INFO("Log system init.");
 		return true;
 	}
 
 	void LogSystemExit()
 	{
-		HE_LOG_INFO("Log system exit.");
 	}
 }

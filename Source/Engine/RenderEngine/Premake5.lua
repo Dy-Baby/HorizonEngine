@@ -8,6 +8,7 @@ project "RenderEngine"
         
     links {
         "Core",
+        "RenderGraph",
     }
 
     files {

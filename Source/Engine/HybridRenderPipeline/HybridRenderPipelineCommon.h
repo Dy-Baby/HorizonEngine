@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Core/Core.h"
-#include "RenderGraph/RenderGraph.h"
+
+import HorizonEngine.Render.RenderGraph;
 
 namespace HE
 {

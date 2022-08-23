@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Core.h"
+import HorizonEngine.Core;
 
 namespace HE
 {

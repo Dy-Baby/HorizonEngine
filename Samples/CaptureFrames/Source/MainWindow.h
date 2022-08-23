@@ -4,6 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <Windows.h>
+
 enum class WindowState
 {
 	Normal,

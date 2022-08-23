@@ -1,4 +1,5 @@
 #include "ShaderCompiler.h"
+#include "Core/Logging/LoggingDefines.h"
 
 namespace HE
 {

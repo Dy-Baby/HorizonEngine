@@ -3,7 +3,8 @@
 #include "RenderContext.h"
 #include "RenderCommandList.h"
 #include "RenderPipeline.h"
-#include "RenderGraph/RenderGraph.h"
+
+import HorizonEngine.Render.RenderGraph;
 
 namespace HE
 {
@@ -34,10 +35,10 @@ void RenderSceneView(
         renderContext->commandLists.clear();
         renderGraph.Execute(renderContext);
 
-        if (false)
+        /*if (false)
         {
             HE_LOG_INFO(renderGraph.Graphviz());
-        }
+        }*/
     }
 
     uint32 numCommandLists = (uint32)renderContext->commandLists.size();

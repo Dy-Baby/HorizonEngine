@@ -46,14 +46,14 @@ void HybridRenderPipeline::Init()
 	std::vector<uint8> source;
 	std::vector<const wchar*> includeDirs;
 	std::vector<const wchar*> defines;
-	includeDirs.push_back(TEXT("../../../Shaders/HybridRenderPipeline"));
+	includeDirs.push_back(HE_TEXT("../../../Shaders/HybridRenderPipeline"));
 
 	RenderBackendShaderDesc brdfLutShaderDesc;
 	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/BRDFLut.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("BRDFLutCS"),
+		HE_TEXT("BRDFLutCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -66,7 +66,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("GBufferVS"),
+		HE_TEXT("GBufferVS"),
 		RenderBackendShaderStage::Vertex,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -76,7 +76,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler, 
 		source,
-		TEXT("GBufferPS"),
+		HE_TEXT("GBufferPS"),
 		RenderBackendShaderStage::Pixel,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -90,7 +90,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("LightingCS"),
+		HE_TEXT("LightingCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -104,7 +104,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("DepthOfFieldCS"),
+		HE_TEXT("DepthOfFieldCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -118,7 +118,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler, 
 		source,
-		TEXT("TonemappingCS"),
+		HE_TEXT("TonemappingCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -132,7 +132,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("FxaaCS"),
+		HE_TEXT("FxaaCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -154,7 +154,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("RayTracingShadowsRayGen"),
+		HE_TEXT("RayTracingShadowsRayGen"),
 		RenderBackendShaderStage::RayGen,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -168,7 +168,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("RayTracingShadowsMiss"),
+		HE_TEXT("RayTracingShadowsMiss"),
 		RenderBackendShaderStage::Miss,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -192,7 +192,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("SVGFReprojectCS"),
+		HE_TEXT("SVGFReprojectCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -206,7 +206,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("SVGFFilterMomentsCS"),
+		HE_TEXT("SVGFFilterMomentsCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,
@@ -220,7 +220,7 @@ void HybridRenderPipeline::Init()
 	CompileShader(
 		shaderCompiler,
 		source,
-		TEXT("SVGFAtrousCS"),
+		HE_TEXT("SVGFAtrousCS"),
 		RenderBackendShaderStage::Compute,
 		ShaderRepresentation::SPIRV,
 		includeDirs,

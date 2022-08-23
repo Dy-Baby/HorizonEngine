@@ -299,14 +299,14 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     std::vector<uint8> source;
     std::vector<const wchar*> includeDirs;
     std::vector<const wchar*> defines;
-    includeDirs.push_back(TEXT("../../../Shaders/HybridRenderPipeline"));
+    includeDirs.push_back(HE_TEXT("../../../Shaders/HybridRenderPipeline"));
 
     LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/SkyAtmosphereTransmittanceLut.hsf", source);
     RenderBackendShaderDesc transmittanceLutShaderDesc;
     CompileShader(
         compiler,
         source,
-        TEXT("SkyAtmosphereTransmittanceLutCS"),
+        HE_TEXT("SkyAtmosphereTransmittanceLutCS"),
         RenderBackendShaderStage::Compute,
         ShaderRepresentation::SPIRV,
         includeDirs,
@@ -320,7 +320,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     CompileShader(
         compiler,
         source,
-        TEXT("SkyAtmosphereMultipleScatteringLutCS"),
+        HE_TEXT("SkyAtmosphereMultipleScatteringLutCS"),
         RenderBackendShaderStage::Compute,
         ShaderRepresentation::SPIRV,
         includeDirs,
@@ -334,7 +334,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     CompileShader(
         compiler,
         source,
-        TEXT("SkyAtmosphereSkyViewLutCS"),
+        HE_TEXT("SkyAtmosphereSkyViewLutCS"),
         RenderBackendShaderStage::Compute,
         ShaderRepresentation::SPIRV,
         includeDirs,
@@ -348,7 +348,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     CompileShader(
         compiler,
         source,
-        TEXT("SkyAtmosphereAerialPerspectiveVolumeCS"),
+        HE_TEXT("SkyAtmosphereAerialPerspectiveVolumeCS"),
         RenderBackendShaderStage::Compute,
         ShaderRepresentation::SPIRV,
         includeDirs,
@@ -362,7 +362,7 @@ SkyAtmosphere* CreateSkyAtmosphere(RenderBackend* renderBackend, ShaderCompiler*
     CompileShader(
         compiler,
         source,
-        TEXT("SkyAtmosphereRenderSkyCS"),
+        HE_TEXT("SkyAtmosphereRenderSkyCS"),
         RenderBackendShaderStage::Compute,
         ShaderRepresentation::SPIRV,
         includeDirs,
