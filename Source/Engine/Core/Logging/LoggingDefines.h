@@ -1,11 +1,6 @@
 #pragma once
 
-HE_DISABLE_WARNINGS
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
-HE_ENABLE_WARNINGS
 
 #define HE_LOG(level, ...)
 #define HE_LOG_VERBOSE(...)    ::HE::LogSystem::gLogger->debug(__VA_ARGS__);

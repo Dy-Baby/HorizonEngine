@@ -1,13 +1,7 @@
 module;
 
 #include "Core/CoreCommon.h"
-
-HE_DISABLE_WARNINGS
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
-HE_ENABLE_WARNINGS
 
 export module HorizonEngine.Core.Logging;
 

@@ -34,9 +34,6 @@
 
 #define HE_DEFAULT_ALIGNMENT uint64(8)
 
-namespace HE
-{
-
 #define CORE_API
 
 #define STATIC_ASSERT(expression) static_assert(expression)
@@ -78,5 +75,3 @@ namespace HE
 #define HE_DECLARE_HANDLE(object) typedef struct object##_T* object;
 
 #define HE_TEXT(quote) L##quote
-
-}

@@ -6,7 +6,6 @@ module;
 #include <Windows.h>
 #include <MPMCQueue.h>
 
-
 module HorizonEngine.Core.JobSystem;
 
 import HorizonEngine.Core.Logging;

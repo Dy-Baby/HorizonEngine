@@ -4,8 +4,6 @@ module;
 
 export module HorizonEngine.Core.JobSystem;
 
-export using JOB_SYSTEM_JOB_ENTRY_POINT = void(*)(void*);
-
 export namespace HE
 {
     enum
@@ -31,5 +29,4 @@ export namespace HE
     extern void JobSystemWaitForCounter(JobSystemAtomicCounterHandle counterHandle, uint32 condition);
     extern void JobSystemWaitForCounterAndFree(JobSystemAtomicCounterHandle counterHandle, uint32 condition);
     extern void JobSystemWaitForCounterAndFreeWithoutFiber(JobSystemAtomicCounterHandle counterHandle);
-
 }
