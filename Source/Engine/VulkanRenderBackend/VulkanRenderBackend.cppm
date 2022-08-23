@@ -1,12 +1,9 @@
-module;
-
-#include "Core/Core.h"
-#include "RenderEngine/RenderEngine.h"
-
 export module HorizonEngine.Render.VulkanRenderBackend;
 
 export namespace HE
 {
+	struct RenderBackend;
+	
 	enum VulkanRenderBackendCreateFlags
 	{
 		VULKAN_RENDER_BACKEND_CREATE_FLAGS_NONE = 0,

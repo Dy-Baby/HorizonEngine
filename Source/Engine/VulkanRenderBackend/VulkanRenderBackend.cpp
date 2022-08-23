@@ -1,5 +1,7 @@
 module;
 
+#include "Core/Core.h"
+#include "Core/Logging/LoggingDefines.h"
 #include "VulkanCommon.h"
 #include "VulkanUtils.h"
 
@@ -1173,8 +1175,8 @@ static void GetRenderPassDescAndClearValues(VulkanDevice* device, const RenderPa
 	}
 
 	outRenderPassDesc->depthStencilLayout = depthStencilLayout;
-	outRenderPassDesc->renderPassCompatibleHash = Crc::Crc32(&compatibleHashInfo, sizeof(compatibleHashInfo));
-	outRenderPassDesc->renderPassFullHash = Crc::Crc32(&fullHashInfo, sizeof(fullHashInfo), outRenderPassDesc->renderPassCompatibleHash);
+	outRenderPassDesc->renderPassCompatibleHash = Crc32(&compatibleHashInfo, sizeof(compatibleHashInfo));
+	outRenderPassDesc->renderPassFullHash = Crc32(&fullHashInfo, sizeof(fullHashInfo), outRenderPassDesc->renderPassCompatibleHash);
 }
 
 void VulkanDevice::Tick()
@@ -2333,7 +2335,7 @@ VulkanFramebuffer* VulkanDevice::FindOrCreateFramebuffer(const RenderPassInfo& r
 	{
 		mipLevelsAndArrayLayers[index] = ((uint64)renderPassInfo.colorRenderTargets[index].arrayLayer << (uint64)32) | (uint64)renderPassInfo.colorRenderTargets[index].mipLevel;
 	}
-	uint32 framebufferHash = Crc::Crc32(mipLevelsAndArrayLayers, MaxNumSimultaneousColorRenderTargets * sizeof(uint64), renderPassCompatibleHash);
+	uint32 framebufferHash = Crc32(mipLevelsAndArrayLayers, MaxNumSimultaneousColorRenderTargets * sizeof(uint64), renderPassCompatibleHash);
 
 	FramebufferList* framebufferList = nullptr;
 	if (cachedFramebuffers.find(framebufferHash) != cachedFramebuffers.end())
@@ -2407,7 +2409,7 @@ VulkanFramebuffer* VulkanDevice::FindOrCreateFramebuffer(const RenderPassInfo& r
 
 VkPipelineLayout VulkanDevice::FindOrCreatePipelineLayout(uint32 pushConstantSize, RenderBackendPipelineType pipelineType)
 {	
-	uint64 layoutHash = Crc::Crc32(&pushConstantSize, sizeof(uint32), (uint32)pipelineType);
+	uint64 layoutHash = Crc32(&pushConstantSize, sizeof(uint32), (uint32)pipelineType);
 	if (pipelineManager.pipelineLayoutMap.find(layoutHash) != pipelineManager.pipelineLayoutMap.end())
 	{
 		return pipelineManager.pipelineLayoutMap[layoutHash];
@@ -2452,7 +2454,7 @@ VkPipelineLayout VulkanDevice::FindOrCreatePipelineLayout(uint32 pushConstantSiz
 
 VulkanPipeline* VulkanDevice::FindOrCreateComputePipeline(VulkanShader* shader, uint32 pushConstantSize)
 {
-	uint32 pipelineHash = Crc::Crc32(shader, sizeof(PipelineState), pushConstantSize);
+	uint32 pipelineHash = Crc32(shader, sizeof(PipelineState), pushConstantSize);
 
 	if (pipelineManager.pipelineMap.find(pipelineHash) != pipelineManager.pipelineMap.end())
 	{
@@ -2480,9 +2482,9 @@ VulkanPipeline* VulkanDevice::FindOrCreateComputePipeline(VulkanShader* shader, 
 
 VulkanPipeline* VulkanDevice::FindOrCreateGraphicsPipeline(VulkanShader* shader, VkRenderPass renderPass, PrimitiveTopology topology, uint32 pushConstantSize)
 {
-	uint32 pipelineStateHash = Crc::Crc32(shader, sizeof(VulkanShader));
+	uint32 pipelineStateHash = Crc32(shader, sizeof(VulkanShader));
 	uint64 values[] = { (uint64)renderPass, (uint64)topology, (uint64)pushConstantSize };
-	uint64 pipelineHash = (uint64(Crc::Crc32(values, 3 * sizeof(uint64))) << 32);
+	uint64 pipelineHash = (uint64(Crc32(values, 3 * sizeof(uint64))) << 32);
 
 	if (pipelineManager.pipelineMap.find(pipelineHash) != pipelineManager.pipelineMap.end())
 	{

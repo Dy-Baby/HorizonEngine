@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Core/CoreDesfinitons.h"
-#include "Core/Misc/StdHeaders.h"
-
 using int8 = signed char;
 using int16 = short;
 using int32 = int;

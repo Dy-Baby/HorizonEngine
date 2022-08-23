@@ -1,26 +1,30 @@
-#include "Guid.h"
+module;
+
+#include "Core/CoreCommon.h"
+
+#include <Windows.h>
+
+module HorizonEngine.Core.Misc;
 
 namespace HE
 {
-
 #if defined(HE_PLATFORM_WINDOWS)
 #include <objbase.h>
-	void GenerateUuidImpl(Guid* uuid)
+	void GenerateGuidImpl(Guid* guid)
 	{
-		ASSERT(CoCreateGuid((GUID*)uuid) == S_OK);
+		ASSERT(CoCreateGuid((GUID*)guid) == S_OK);
 	}
 #endif
 
-Guid Guid::Generate()
-{
-	Guid uuid;
-	GenerateUuidImpl(&uuid);
-	return uuid;
-}
+	Guid Guid::Generate()
+	{
+		Guid guid;
+		GenerateGuidImpl(&guid);
+		return guid;
+	}
 
-std::string Guid::ToString(const Guid& guid)
-{
-	return std::string();
-}
-
+	std::string Guid::ToString(const Guid& guid)
+	{
+		return std::string();
+	}
 }

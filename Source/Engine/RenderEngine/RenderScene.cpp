@@ -163,7 +163,7 @@ namespace HE
 		worldMatrices.resize(numMeshes);
 		for (uint32 i = 0; i < numMeshes; i++)
 		{
-			worldMatrices[i] = HE::Math::Compose(HE::Vector3(0.0f, 0.0f, 0.0f), HE::Quaternion(HE::Math::DegreesToRadians(HE::Vector3(180.0f, 0.0f, 0.0f))), HE::Vector3(1.0f, 1.0f, 1.0f));
+			worldMatrices[i] = HE::Math::Compose(Vector3(0.0f, 0.0f, 0.0f), Quaternion(HE::Math::DegreesToRadians(Vector3(180.0f, 0.0f, 0.0f))), Vector3(1.0f, 1.0f, 1.0f));
 		}
 		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), numMeshes * sizeof(Matrix4x4));
 

@@ -1,5 +1,6 @@
 #include "AssimpImporter.h"
 #include "RenderEngine/RenderEngine.h"
+#include "Core/Logging/LoggingDefines.h"
 
 HE_DISABLE_WARNINGS
 #include <assimp/scene.h>

@@ -5,6 +5,10 @@ project "VulkanRenderBackend"
     staticruntime "on"
     location "%{wks.location}/%{prj.name}"
     targetdir "%{wks.location}/Bin/%{cfg.buildcfg}"
+
+    links {
+        "Core",
+    }
     
     files {
         "**.h",

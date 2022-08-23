@@ -1,5 +1,7 @@
 #include "MemoryArena.h"
 
+import HorizonEngine.Core.Math;
+
 namespace HE
 {
 

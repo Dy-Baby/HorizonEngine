@@ -1,4 +1,5 @@
 #include "DxcShaderCompiler.h"
+#include "Core/Logging/LoggingDefines.h"
 
 #include <Windows.h>
 #include <atlbase.h>

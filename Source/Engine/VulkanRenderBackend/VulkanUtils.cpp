@@ -1,4 +1,5 @@
 #include "VulkanUtils.h"
+#include "Core/Logging/LoggingDefines.h"
 
 namespace HE
 {

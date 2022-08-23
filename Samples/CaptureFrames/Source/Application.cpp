@@ -95,6 +95,7 @@ bool Application::Init()
 	HE::ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
 
 	//ImportGLTF2("../../../Assets/Models/Sponza/glTF/Sponza.gltf", settings, scene);
+
 	scene->renderBackend = renderBackend;
 	scene->UploadResources();
 
@@ -161,6 +162,16 @@ void Application::Exit()
 	delete arena;
 }
 
+float Application::CalculateDeltaTime()
+{
+	static std::chrono::steady_clock::time_point previousTimePoint{ std::chrono::steady_clock::now() };
+	std::chrono::steady_clock::time_point timePoint = std::chrono::steady_clock::now();
+	std::chrono::duration<float> timeDuration = std::chrono::duration_cast<std::chrono::duration<float>>(timePoint - previousTimePoint);
+	float deltaTime = timeDuration.count();
+	previousTimePoint = timePoint;
+	return deltaTime;
+}
+
 void Application::Update(float deltaTime)
 {
 	auto& cameraTransform = scene->GetEntityManager()->GetComponent<HE::TransformComponent>(mainCamera);
@@ -218,12 +229,7 @@ int Application::Run()
 			continue;
 		}
 
-		static std::chrono::steady_clock::time_point previousTimePoint{ std::chrono::steady_clock::now() };
-		std::chrono::steady_clock::time_point timePoint = std::chrono::steady_clock::now();
-		std::chrono::duration<float> timeDuration = std::chrono::duration_cast<std::chrono::duration<float>>(timePoint - previousTimePoint);
-		float deltaTime = timeDuration.count();
-		previousTimePoint = timePoint;
-
+		float deltaTime = CalculateDeltaTime();
 		Update(deltaTime);
 
 		uint32 width = window->GetWidth();

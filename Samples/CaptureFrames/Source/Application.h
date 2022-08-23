@@ -28,8 +28,10 @@ public:
 	bool Init();
 	void Exit();
 
+
 	int Run();
 
+	float CalculateDeltaTime();
 	void Update(float deltaTime);
 	void Render();
 	void OnImGui();

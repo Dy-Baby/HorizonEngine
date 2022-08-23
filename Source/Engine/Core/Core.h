@@ -1,12 +1,11 @@
 #pragma once
 
-#include "Core/CoreTypes.h"
-#include "Core/CoreGlobals.h"
-#include "Core/Logging/Logging.h"
-#include "Core/JobSystem/JobSystem.h"
-#include "Core/Misc/Singleton.h"
-#include "Core/Misc/Crc.h"
-#include "Core/Misc/Timestep.h"
-#include "Core/Misc/Guid.h"
-#include "Core/Math/HorizonMath.h"
-#include "Core/Memory/MemoryArena.h"
+#include "Core/CoreCommon.h"
+#include "Core/Math/MathCommon.h"
+
+// import HorizonEngine.Core;
+import HorizonEngine.Core.Math;
+import HorizonEngine.Core.Memory;
+import HorizonEngine.Core.JobSystem;
+import HorizonEngine.Core.Logging;
+import HorizonEngine.Core.Misc;

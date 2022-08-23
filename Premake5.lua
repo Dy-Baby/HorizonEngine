@@ -85,10 +85,12 @@ filter "platforms:Win64"
         "HE_PLATFORM_WINDOWS",
         "_CRT_SECURE_NO_WARNINGS",
         "_ITERATOR_DEBUG_LEVEL=0",
+        "_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING",
     }
     staticruntime "On"
     architecture "x64"
     buildoptions {
+        "/wd5105",
         "/utf-8",
     }
     linkoptions {

@@ -18,13 +18,11 @@
 
 namespace HE
 {
-
-extern uint64 gMainThreadID;
-extern bool IsInMainThread();
-namespace CoreGlobals
-{
-extern void Init();
-extern void Shutdown();
-}
-
+	extern uint64 gMainThreadID;
+	extern bool IsInMainThread();
+	namespace CoreGlobals
+	{
+		extern void Init();
+		extern void Shutdown();
+	}
 }
