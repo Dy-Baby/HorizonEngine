@@ -16,6 +16,7 @@ project "RenderGraph"
         "**.c", 
         "**.hpp",
         "**.cpp",
+        "**.cppm",
         "**.inl",
         "**.hsf",
     }
