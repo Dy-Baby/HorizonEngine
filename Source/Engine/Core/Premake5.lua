@@ -11,6 +11,7 @@ project "Core"
         "**.c", 
         "**.hpp",
         "**.cpp",
+        "**.cppm",
         "**.inl",
         "**.hsf",
     }
