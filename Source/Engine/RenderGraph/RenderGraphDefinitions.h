@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Core/CoreCommon.h"
-
 namespace HE
 {
 

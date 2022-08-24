@@ -1,12 +1,9 @@
-#pragma once
+export module HorizonEngine.Render.VulkanRenderBackend;
 
-#include "Core/Core.h"
-#include "RenderEngine/RenderEngine.h"
-
-namespace HE
+export namespace HE
 {
-	extern "C"
-	{
+	struct RenderBackend;
+
 		enum D3D12RenderBackendCreateFlags
 		{
 			D3D12_RENDER_BACKEND_CREATE_FLAGS_NONE = 0,
@@ -16,5 +13,4 @@ namespace HE
 
 		RenderBackend* D3D12RenderBackendCreateBackend(D3D12RenderBackendCreateFlags flags);
 		void D3D12RenderBackendDestroyBackend(RenderBackend* backend);
-	}
 }

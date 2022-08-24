@@ -1,14 +1,16 @@
-#include "D3D12RenderBackend.h"
+module;
+
+#include "D3D12Common.h"
 #include "D3D12MemAlloc.h"
 #include "D3D12Utils.h"
-
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <dxgidebug.h>
 
 //#pragma comment(lib, "d3d12.lib")
 //#pragma comment(lib, "dxgi.lib")
 //#pragma comment(lib, "dxguid.lib")
+
+module HorizonEngine.Render.D3D12RenderBackend;
+
+import HorizonEngine.Core;
 
 namespace HE
 {
