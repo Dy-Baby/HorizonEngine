@@ -1,9 +1,10 @@
-#include "MainWindow.h"
-#include "Core/Logging/LoggingDefines.h"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
+
+#include "MainWindow.h"
+#include "Core/Logging/LoggingDefines.h"
 
 static void ErrorCallback(int errorCode, const char* description)
 {
@@ -113,9 +114,9 @@ MainWindow::~MainWindow()
 	}
 }
 
-HWND MainWindow::GetNativeHandle()
+uint64 MainWindow::GetNativeHandle()
 {
-	return glfwGetWin32Window(handle);
+	return (uint64)glfwGetWin32Window(handle);
 }
 
 void MainWindow::ProcessEvents()

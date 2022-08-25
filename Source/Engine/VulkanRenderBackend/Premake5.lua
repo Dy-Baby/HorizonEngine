@@ -5,14 +5,15 @@ project "VulkanRenderBackend"
     staticruntime "on"
     location "%{wks.location}/%{prj.name}"
     targetdir "%{wks.location}/Bin/%{cfg.buildcfg}"
-
+        
     links {
         "Core",
+        "Render",
     }
-    
+
     files {
-        "**.h",
-        "**.c",
+        "**.h",  
+        "**.c", 
         "**.hpp",
         "**.cpp",
         "**.cppm",
@@ -22,29 +23,20 @@ project "VulkanRenderBackend"
 
     includedirs {
         enginepath(""),
-        enginepath("VulkanRenderBackend"),
-        enginepath("AssimpImporter"),
-        thirdpartypath("assimp/include"),
-        thirdpartypath("entt/include"),
-        thirdpartypath("dxc/include"),
-        thirdpartypath("glfw/include"),
-        thirdpartypath("glm/include"),
         thirdpartypath("spdlog/include"),
-        thirdpartypath("vma/include"),
         thirdpartypath("vulkan/include"),
-        thirdpartypath("mpmc/include"),
-        thirdpartypath("imgui/include"),
+        thirdpartypath("vma/include"),
     }
 
     filter "system:windows"
         systemversion "latest"
 
     filter "configurations:Debug"
-        defines "HORIZON_DEBUG_MODE"
+        defines "HE_DEBUG_MODE"
         runtime "Debug"
         symbols "on"
 
     filter "configurations:Release"
-        defines "HORIZON_RELEASE_MODE"
+        defines "HE_RELEASE_MODE"
         runtime "Release"
         optimize "on"

@@ -1,16 +1,29 @@
 module;
 
-#include "Core/Core.h"
-#include "Core/Logging/LoggingDefines.h"
-#include "VulkanCommon.h"
-#include "VulkanUtils.h"
-
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
+#include "Core/Logging/LoggingDefines.h"
+
 module HorizonEngine.Render.VulkanRenderBackend;
 
+__pragma(warning(push, 0))
+import <VulkanRenderBackend/VulkanCommon.h>;
+import HorizonEngine.Core;
+import HorizonEngine.Render.Core;
+import :Utils;
+__pragma(warning(pop))
+
 #define DEBUG_ONLY_RAY_TRACING_ENBALE 1
+
+#define VK_CHECK(VkFunction) { const VkResult result = VkFunction; if (result != VK_SUCCESS) { VerifyVkResult(result, #VkFunction, __FILE__, __LINE__); } }
+#define VK_CHECK_RESULT(result) { if (result != VK_SUCCESS) { VerifyVkResult(result, __FUNCTION__, __FILE__, __LINE__); } }
+
+#define VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_SAMPLED_IMAGES          0
+#define VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_SAMPLERS                1
+#define VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_STORAGE_IMAGES          2
+#define VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_STORAGE_BUFFERS         3
+#define VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_ACCELERATION_STRUCTURES 4
 
 namespace HE
 {
@@ -1106,8 +1119,8 @@ static void GetRenderPassDescAndClearValues(VulkanDevice* device, const RenderPa
 		VkAttachmentDescription& attachmentDesc = outRenderPassDesc->attachmentDescriptions[outRenderPassDesc->numAttachmentDescriptions];
 		attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 		attachmentDesc.format = texture->format;
-		attachmentDesc.loadOp = ToVkAttachmentLoadOp(colorRenderTarget.loadOp);
-		attachmentDesc.storeOp = ToVkAttachmentStoreOp(colorRenderTarget.storeOp);
+		attachmentDesc.loadOp = ConvertToVkAttachmentLoadOp(colorRenderTarget.loadOp);
+		attachmentDesc.storeOp = ConvertToVkAttachmentStoreOp(colorRenderTarget.storeOp);
 		attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -1153,10 +1166,10 @@ static void GetRenderPassDescAndClearValues(VulkanDevice* device, const RenderPa
 		VkAttachmentDescription& attachmentDesc = outRenderPassDesc->attachmentDescriptions[outRenderPassDesc->numAttachmentDescriptions];
 		attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 		attachmentDesc.format = texture->format;
-		attachmentDesc.loadOp = ToVkAttachmentLoadOp(depthStencilRenderTarget.depthLoadOp);
-		attachmentDesc.storeOp = ToVkAttachmentStoreOp(depthStencilRenderTarget.depthStoreOp);
-		attachmentDesc.stencilLoadOp = ToVkAttachmentLoadOp(depthStencilRenderTarget.stencilLoadOp);
-		attachmentDesc.stencilStoreOp = ToVkAttachmentStoreOp(depthStencilRenderTarget.stencilStoreOp);
+		attachmentDesc.loadOp = ConvertToVkAttachmentLoadOp(depthStencilRenderTarget.depthLoadOp);
+		attachmentDesc.storeOp = ConvertToVkAttachmentStoreOp(depthStencilRenderTarget.depthStoreOp);
+		attachmentDesc.stencilLoadOp = ConvertToVkAttachmentLoadOp(depthStencilRenderTarget.stencilLoadOp);
+		attachmentDesc.stencilStoreOp = ConvertToVkAttachmentStoreOp(depthStencilRenderTarget.stencilStoreOp);
 		attachmentDesc.initialLayout = depthStencilLayout;
 		attachmentDesc.finalLayout = depthStencilLayout;
 
@@ -1390,7 +1403,7 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 		textures.emplace_back();
 	}
 
-	VkFormat format = ToVkFormat(desc->format);
+	VkFormat format = ConvertToVkFormat(desc->format);
 
 	VulkanTexture& texture = textures[textureIndex];
 	texture = {
@@ -1401,7 +1414,7 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 		.arrayLayers = desc->arrayLayers,
 		.mipLevels = desc->mipLevels,
 		.format = format,
-		.type = ToVkImageType(desc->type),
+		.type = ConvertToVkImageType(desc->type),
 		.t = desc->type,
 		.aspectMask = GetVkImageAspectFlags(format),
 		.clearValue = *(VkClearValue*)&desc->clearValue,
@@ -1445,7 +1458,7 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 		VkImageViewCreateInfo imageViewInfo = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 			.image = texture.handle,
-			.viewType = ToVkImageViewType(desc->type, false),
+			.viewType = ConvertToVkImageViewType(desc->type, false),
 			.format = texture.format,
 			.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 			.subresourceRange = { texture.aspectMask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS }
@@ -1474,7 +1487,7 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 		VkImageViewCreateInfo imageViewInfo = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 			.image = texture.handle,
-			.viewType = ToVkImageViewType(desc->type, false),
+			.viewType = ConvertToVkImageViewType(desc->type, false),
 			.format = texture.format,
 			.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 			.subresourceRange = { texture.aspectMask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS }
@@ -1503,7 +1516,7 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 		VkImageViewCreateInfo imageViewInfo = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 			.image = texture.handle,
-			.viewType = ToVkImageViewType(desc->type, false),
+			.viewType = ConvertToVkImageViewType(desc->type, false),
 			.format = texture.format,
 			.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 			.subresourceRange = { texture.aspectMask, 0, 1, 0, 1 }
@@ -1515,7 +1528,7 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 		VkImageViewCreateInfo imageViewInfo = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 			.image = texture.handle,
-			.viewType = ToVkImageViewType(desc->type, false),
+			.viewType = ConvertToVkImageViewType(desc->type, false),
 			.format = texture.format,
 			.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 			.subresourceRange = { texture.aspectMask, 0, 1, 0, 1 }
@@ -1625,7 +1638,7 @@ uint32 VulkanDevice::CreateTextureSRV(uint32 textureIndex, const RenderBackendTe
 	VkImageViewCreateInfo imageViewInfo = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.image = texture.handle,
-		.viewType = ToVkImageViewType(texture.t, desc->numArrayLayers > 1),
+		.viewType = ConvertToVkImageViewType(texture.t, desc->numArrayLayers > 1),
 		.format = texture.format,
 		.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 		.subresourceRange = { texture.aspectMask, desc->baseMipLevel, desc->numMipLevels, desc->baseArrayLayer, desc->numArrayLayers }
@@ -1662,7 +1675,7 @@ uint32 VulkanDevice::CreateTextureUAV(uint32 textureIndex, const RenderBackendTe
 	VkImageViewCreateInfo imageViewInfo = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.image = texture.handle,
-		.viewType = ToVkImageViewType(texture.t, false),
+		.viewType = ConvertToVkImageViewType(texture.t, false),
 		.format = texture.format,
 		.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 		.subresourceRange = { texture.aspectMask, desc->mipLevel, 1, 0, 1 }
@@ -1748,13 +1761,13 @@ uint32 VulkanDevice::CreateSampler(const RenderBackendSamplerDesc* desc, const c
 		.magFilter = minFilter,
 		.minFilter = magFilter,
 		.mipmapMode = mipmapMode,
-		.addressModeU = ToVkSamplerAddressMode(desc->addressModeU),
-		.addressModeV = ToVkSamplerAddressMode(desc->addressModeV),
-		.addressModeW = ToVkSamplerAddressMode(desc->addressModeW),
+		.addressModeU = ConvertToVkSamplerAddressMode(desc->addressModeU),
+		.addressModeV = ConvertToVkSamplerAddressMode(desc->addressModeV),
+		.addressModeW = ConvertToVkSamplerAddressMode(desc->addressModeW),
 		.mipLodBias = desc->mipLodBias,
-		.anisotropyEnable = ToVkBool(anisotropyEnable),
+		.anisotropyEnable = ConvertToVkBool(anisotropyEnable),
 		.maxAnisotropy = (float)desc->maxAnisotropy,
-		.compareEnable = ToVkBool(compareEnable),
+		.compareEnable = ConvertToVkBool(compareEnable),
 		.compareOp = VK_COMPARE_OP_NEVER,
 		.minLod = desc->minLod,
 		.maxLod = desc->maxLod,
@@ -1810,7 +1823,7 @@ static void InitRasterizationStateInfo(const RasterizationState& state, VkPipeli
 	outInfo.depthBiasSlopeFactor = state.depthBiasSlopeFactor;
 	outInfo.rasterizerDiscardEnable = VK_FALSE;
 	outInfo.polygonMode = state.fillMode == RasterizationFillMode::Solid ? VK_POLYGON_MODE_FILL : VK_POLYGON_MODE_LINE;
-	outInfo.cullMode = ToVkCullModeFlags(state.cullMode);
+	outInfo.cullMode = ConvertToVkCullModeFlags(state.cullMode);
 	outInfo.frontFace = state.frontFaceCounterClockwise ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
 	outInfo.lineWidth = 1.0f;
 }
@@ -1818,13 +1831,13 @@ static void InitRasterizationStateInfo(const RasterizationState& state, VkPipeli
 static void InitDepthStencilStateInfo(const DepthStencilState& state, VkPipelineDepthStencilStateCreateInfo& outInfo)
 {
 	outInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	outInfo.depthTestEnable = ToVkBool(state.depthTestEnable);
-	outInfo.depthWriteEnable = ToVkBool(state.depthWriteEnable);
+	outInfo.depthTestEnable = ConvertToVkBool(state.depthTestEnable);
+	outInfo.depthWriteEnable = ConvertToVkBool(state.depthWriteEnable);
 	outInfo.depthBoundsTestEnable = VK_FALSE;
 	outInfo.depthCompareOp = (VkCompareOp)state.depthCompareOp;
-	outInfo.stencilTestEnable = ToVkBool(state.stencilTestEnable);
-	outInfo.front = ToVkStencilOpState(state.front);
-	outInfo.back = ToVkStencilOpState(state.back);
+	outInfo.stencilTestEnable = ConvertToVkBool(state.stencilTestEnable);
+	outInfo.front = ConvertToVkStencilOpState(state.front);
+	outInfo.back = ConvertToVkStencilOpState(state.back);
 }
 
 static void InitColorBlendStateInfo(const ColorBlendState& state, VkPipelineColorBlendAttachmentState* attachmentStates, VkPipelineColorBlendStateCreateInfo& outInfo)
@@ -1832,7 +1845,7 @@ static void InitColorBlendStateInfo(const ColorBlendState& state, VkPipelineColo
 	uint32 attachmentCount = state.numColorAttachments;
 	for (uint32 i = 0; i < attachmentCount; i++)
 	{
-		attachmentStates[i].blendEnable = ToVkBool(state.attachmentStates[i].blendEnable);
+		attachmentStates[i].blendEnable = ConvertToVkBool(state.attachmentStates[i].blendEnable);
 		attachmentStates[i].srcColorBlendFactor = (VkBlendFactor)state.attachmentStates[i].srcColorBlendFactor;
 		attachmentStates[i].dstColorBlendFactor = (VkBlendFactor)state.attachmentStates[i].dstColorBlendFactor;
 		attachmentStates[i].colorBlendOp = (VkBlendOp)state.attachmentStates[i].colorBlendOp;
@@ -1880,7 +1893,7 @@ uint32 VulkanDevice::CreateShader(const RenderBackendShaderDesc* desc, const cha
 		VkPipelineShaderStageCreateInfo& shaderStageInfo = shader.stages[shader.numStages];
 		shaderStageInfo = {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.stage = ToVkShaderStageFlagBits(stage),
+			.stage = ConvertToVkShaderStageFlagBits(stage),
 			.pName = shader.entryPoints[stageIndex].c_str(),
 		};
 		VkShaderModuleCreateInfo shaderModuleInfo = {
@@ -2072,7 +2085,7 @@ uint32 VulkanDevice::CreateAccelerationStructure(VulkanRayTracingAccelerationStr
 uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* desc, const char* name)
 {
 	VulkanRayTracingAccelerationStructure accelerationStructure;
-	accelerationStructure.buildFlags = ToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
+	accelerationStructure.buildFlags = ConvertToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
 	accelerationStructure.blasDesc = *desc;
 
 	std::vector<uint32> primitiveCounts(desc->numGeometries);
@@ -2082,7 +2095,7 @@ uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* d
 		VkAccelerationStructureGeometryKHR geometry = {
 		   .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
 		   .geometryType = (VkGeometryTypeKHR)geometryDesc.type,
-		   .flags = ToVkGeometryFlagsKHR(geometryDesc.flags),
+		   .flags = ConvertToVkGeometryFlagsKHR(geometryDesc.flags),
 		};
 		if (geometry.geometryType == VK_GEOMETRY_TYPE_TRIANGLES_KHR)
 		{
@@ -2119,7 +2132,7 @@ uint32 VulkanDevice::CreateBottomLevelAS(const RenderBackendBottomLevelASDesc* d
 uint32 VulkanDevice::CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, const char* name)
 {
 	VulkanRayTracingAccelerationStructure accelerationStructure = {};
-	accelerationStructure.buildFlags = ToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
+	accelerationStructure.buildFlags = ConvertToVkBuildAccelerationStructureFlagsKHR(desc->buildFlags);
 	accelerationStructure.tlasDesc = *desc;
 
 	std::vector<VkAccelerationStructureInstanceKHR> instances;
@@ -2132,7 +2145,7 @@ uint32 VulkanDevice::CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, c
 			.instanceCustomIndex = desc->instances[i].instanceID,
 			.mask = desc->instances[i].instanceMask,
 			.instanceShaderBindingTableRecordOffset = desc->instances[i].instanceContributionToHitGroupIndex,
-			.flags = ToVkGeometryInstanceFlagsKHR(desc->instances[i].flags),
+			.flags = ConvertToVkGeometryInstanceFlagsKHR(desc->instances[i].flags),
 			.accelerationStructureReference = GetAccelerationStructure(desc->instances[i].blas)->deviceAddress,
 		});
 	}
@@ -2180,7 +2193,7 @@ uint32 VulkanDevice::CreateTopLevelAS(const RenderBackendTopLevelASDesc* desc, c
                 },
 			}, 
 		},
-		.flags = ToVkGeometryFlagsKHR(desc->geometryFlags),
+		.flags = ConvertToVkGeometryFlagsKHR(desc->geometryFlags),
 	};
 	accelerationStructure.geometries.emplace_back(geometry);
 
@@ -2514,7 +2527,7 @@ VulkanPipeline* VulkanDevice::FindOrCreateGraphicsPipeline(VulkanShader* shader,
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.topology = ToVkPrimitiveTopology(topology),
+		.topology = ConvertToVkPrimitiveTopology(topology),
 		.primitiveRestartEnable = (topology == PrimitiveTopology::TriangleStrip || topology == PrimitiveTopology::TriangleFan) ? 1u : 0u,
 	};
 
@@ -4602,7 +4615,7 @@ RenderBackendRayTracingPipelineStateHandle CreateRayTracingPipelineState(void* i
 		{
 			shaderStageCreateInfos[shaderIndex] = {
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				.stage = ToVkShaderStageFlagBits(desc->shaders[shaderIndex].stage),
+				.stage = ConvertToVkShaderStageFlagBits(desc->shaders[shaderIndex].stage),
 				.pName = desc->shaders[shaderIndex].entry.c_str(),
 			};
 			VkShaderModuleCreateInfo shaderModuleCreateInfo = {

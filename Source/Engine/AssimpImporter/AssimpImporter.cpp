@@ -1,13 +1,11 @@
-#include "AssimpImporter.h"
-#include "RenderEngine/RenderEngine.h"
-#include "Core/Logging/LoggingDefines.h"
-
-HE_DISABLE_WARNINGS
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 #include <assimp/Exceptional.h>
-HE_ENABLE_WARNINGS
+
+#include "AssimpImporter.h"
+#include "Render/Render.h"
+#include "Core/Logging/LoggingDefines.h"
 
 namespace HE
 {

@@ -1,9 +1,25 @@
 module;
 
 #include "Core/CoreCommon.h"
-#include "Core/Math/MathCommon.h"
+
+#define GLM_FORCE_CTOR_INIT
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/compatibility.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
+#include <chrono>
 
 export module HorizonEngine.Core.Math;
+
+export import "Core/Math/MathDefinitions.h";
 
 export namespace HE
 {

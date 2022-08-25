@@ -68,6 +68,8 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float metallic = gbuffer0Data.w;
 	float roughness = gbuffer1Data.w;
 
+	// Microfacet Cook-Torrance BRDF
+
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
 	sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
 }

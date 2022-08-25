@@ -8,6 +8,7 @@ project "DxcShaderCompiler"
         
     links {
         "Core",
+        "Render",
     }
 
     files {
@@ -22,19 +23,9 @@ project "DxcShaderCompiler"
     includedirs {
         enginepath(""),
         enginepath("Core"),
-        enginepath("DxcShaderCompiler"),
-        enginepath("VulkanRenderBackend"),
-        enginepath("AssimpImporter"),
-        thirdpartypath("assimp/include"),
-        thirdpartypath("entt/include"),
         thirdpartypath("dxc/include"),
-        thirdpartypath("glfw/include"),
         thirdpartypath("glm/include"),
         thirdpartypath("spdlog/include"),
-        thirdpartypath("vma/include"),
-        thirdpartypath("vulkan/include"),
-        thirdpartypath("mpmc/include"),
-        thirdpartypath("imgui/include"),
     }
 
     filter "system:windows"

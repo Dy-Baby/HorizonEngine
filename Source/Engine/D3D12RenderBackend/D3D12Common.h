@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
-#include <dxgidebug.h>
 
-#include "D3D12RenderBackend/D3D12Defines.h"
+
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")

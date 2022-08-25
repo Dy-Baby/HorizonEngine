@@ -2,7 +2,6 @@ module;
 
 #include "D3D12Common.h"
 #include "D3D12MemAlloc.h"
-#include "D3D12Utils.h"
 
 //#pragma comment(lib, "d3d12.lib")
 //#pragma comment(lib, "dxgi.lib")
@@ -11,6 +10,19 @@ module;
 module HorizonEngine.Render.D3D12RenderBackend;
 
 import HorizonEngine.Core;
+
+#define D3D12_CHECK(func)                                                      \
+	do                                                                         \
+	{                                                                          \
+		HRESULT hr = (func);                                                   \
+		if (!SUCCEEDED(hr))                                                    \
+		{                                                                      \
+			HE_LOG_ERROR("{}: Failed with HRESULT: {}", #func, (uint32)hr);    \
+			ASSERT(false);                                                     \
+		}                                                                      \
+	} while (0)
+
+#define D3D12_SAFE_RELEASE(ptr)   if(ptr) { (ptr)->Release(); (ptr) = NULL; }
 
 namespace HE
 {

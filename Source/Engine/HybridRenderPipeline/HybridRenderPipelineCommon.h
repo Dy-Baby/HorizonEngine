@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 
-import HorizonEngine.Render.RenderGraph;
+import HorizonEngine.Render;
 
 namespace HE
 {

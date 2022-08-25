@@ -21,13 +21,12 @@ project "CaptureFrames"
     }
     
     links {
-        "Core", 
+        "Core",
+        "Render",
         "ECS",
         "Input",
         "VulkanRenderBackend",
         "DxcShaderCompiler",
-        "RenderEngine",
-        "RenderGraph",
         "HybridRenderPipeline",
         "AssimpImporter",
         thirdpartypath("glfw/lib/glfw3.lib"),

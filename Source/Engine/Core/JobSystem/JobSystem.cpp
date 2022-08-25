@@ -3,7 +3,7 @@ module;
 #include "Core/CoreCommon.h"
 #include "Core/Logging/LoggingDefines.h"
 
-#include <Windows.h>
+#include <windows.h>
 #include <MPMCQueue.h>
 
 module HorizonEngine.Core.JobSystem;

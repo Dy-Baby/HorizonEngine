@@ -1,6 +1,6 @@
 #include "HybridRenderPipeline.h"
 #include "PostProcessCommon.h"
-#include "RenderEngine/RenderEngine.h"
+#include "Render/Render.h"
 #include "ECS/ECS.h"
 
 namespace HE

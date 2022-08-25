@@ -111,7 +111,6 @@ group ""
 
 group "Samples"
     include "Samples/CaptureFrames"
-    include "Samples/ParticleSystem"
     include "Samples/SkyAtmosphere"
     include "Samples/ModelViewer"
     include "Samples/PathTracing"

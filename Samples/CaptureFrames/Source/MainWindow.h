@@ -1,10 +1,7 @@
 #pragma once
 
-#include <HorizonEngine.h>
-
-#include <GLFW/glfw3.h>
-
-#include <Windows.h>
+import <windows.h>;
+import HorizonEngine.Core;
 
 enum class WindowState
 {
@@ -30,6 +27,7 @@ struct WindowCreateInfo
 	WindowFlags flags;
 };
 
+struct GLFWwindow;
 class MainWindow
 {
 public:
@@ -50,7 +48,7 @@ public:
 		return state;
 	}
 
-	HWND GetNativeHandle();
+	uint64 GetNativeHandle();
 	void ProcessEvents();
 	bool ShouldClose() const;
 
