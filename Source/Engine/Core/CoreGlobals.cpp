@@ -1,7 +1,3 @@
-#pragma once
-
-#include "CoreTypes.h"
-
 //#define malloc(size) printf("Allocated %d bytes.\n", size); malloc(size);
 //#define free(ptr) printf("Free %d bytes.\n", sizeof(ptr)); free(ptr);
 //inline void* operator new(size_t size)
@@ -16,13 +12,13 @@
 //	free(ptr);
 //}
 
-namespace HE
-{
-	extern uint64 gMainThreadID;
-	extern bool IsInMainThread();
-	namespace CoreGlobals
-	{
-		extern void Init();
-		extern void Shutdown();
-	}
-}
+//namespace HE
+//{
+//	extern uint64 gMainThreadID;
+//	extern bool IsInMainThread();
+//	namespace CoreGlobals
+//	{
+//		extern void Init();
+//		extern void Shutdown();
+//	}
+//}

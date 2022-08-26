@@ -3,9 +3,9 @@
 #include <assimp/Importer.hpp>
 #include <assimp/Exceptional.h>
 
+#include <map>
+
 #include "AssimpImporter.h"
-#include "Render/Render.h"
-#include "Core/Logging/LoggingDefines.h"
 
 namespace HE
 {

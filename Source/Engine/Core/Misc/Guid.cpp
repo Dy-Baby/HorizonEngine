@@ -2,7 +2,7 @@ module;
 
 #include "Core/CoreCommon.h"
 
-#include <Windows.h>
+#include <windows.h>
 
 module HorizonEngine.Core.Misc;
 

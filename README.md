@@ -105,7 +105,7 @@ Particle System
 
 [RenderDoc](https://renderdoc.org/)
 
-## Contributing
+## Contribution
 
 Contributions are welcome.
 

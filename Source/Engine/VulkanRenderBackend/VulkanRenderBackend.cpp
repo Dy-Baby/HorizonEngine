@@ -1,13 +1,19 @@
 module;
 
+#include <map>
+#include <unordered_map>
+#include <vector>
+#include <queue>
+#include <array>
+
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
 module HorizonEngine.Render.VulkanRenderBackend;
 
 __pragma(warning(push, 0))
-import <VulkanRenderBackend/VulkanCommon.h>;
-import HorizonEngine.Core;
+import <VulkanCommon.h>;
+import HorizonEngine.Core; 
 import HorizonEngine.Render.Core;
 import :Utils;
 __pragma(warning(pop))
@@ -856,7 +862,7 @@ void VulkanRenderBackend::EnumeratePhysicalDevices()
 
 		HE_LOG_INFO("Found physical device (name: {}, type: {}, vendor id: {}, device id: {}, support vulkan version: {}.{}.{})",
 			physicalDevice.properties.deviceName,
-			physicalDevice.properties.deviceType,
+			(int32)physicalDevice.properties.deviceType,
 			physicalDevice.properties.vendorID,
 			physicalDevice.properties.deviceID,
 			VK_API_VERSION_MAJOR(physicalDevice.properties.apiVersion),

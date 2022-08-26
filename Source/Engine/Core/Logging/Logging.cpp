@@ -1,6 +1,6 @@
 module;
 
-#include "Core/CoreCommon.h"
+#include "CoreCommon.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
@@ -8,12 +8,6 @@ module;
 #include <spdlog/sinks/basic_file_sink.h>
 
 module HorizonEngine.Core.Logging;
-
-namespace HE::LogSystem
-{
-	bool gIsLoggingEnabled = false;
-	std::shared_ptr<spdlog::logger> gLogger = nullptr;
-}
 
 namespace HE
 {
@@ -28,16 +22,15 @@ namespace HE
 		color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 		color_sink->set_color(spdlog::level::warn, FOREGROUND_RED | FOREGROUND_GREEN);
 		color_sink->set_color(spdlog::level::err, FOREGROUND_RED);
-		LogSystem::gLogger = std::make_shared<spdlog::logger>("Console Logger", begin(sinks), end(sinks));
-		spdlog::register_logger(LogSystem::gLogger);
-		LogSystem::gLogger->set_level(spdlog::level::debug);
-		LogSystem::gLogger->flush_on(spdlog::level::debug);
-		LogSystem::gIsLoggingEnabled = true;
+		gLogger = std::make_shared<spdlog::logger>("Console Logger", begin(sinks), end(sinks));
+		spdlog::register_logger(gLogger);
+		gLogger->set_level(spdlog::level::debug);
+		gLogger->flush_on(spdlog::level::debug);
 		return true;
 	}
 
 	void LogSystemExit()
 	{
-		LogSystem::gLogger = nullptr;
+		gLogger = nullptr;
 	}
 }

@@ -1,5 +1,6 @@
 #include "DxcShaderCompiler.h"
 
+#include <vector>
 #include <windows.h>
 #include <atlbase.h>
 #include <dxc/dxcapi.h>

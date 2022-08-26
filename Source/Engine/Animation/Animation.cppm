@@ -1,3 +1,7 @@
+module;
+
+#include <vector>
+
 export module HorizonEngine.Animation;
 
 import HorizonEngine.Core;

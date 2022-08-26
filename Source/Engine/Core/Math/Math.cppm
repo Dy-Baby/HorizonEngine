@@ -1,11 +1,14 @@
 module;
 
-#include "Core/CoreCommon.h"
+#include "CoreCommon.h"
+
 #include <chrono>
 
 export module HorizonEngine.Core.Math;
 
-export import "Core/Math/MathDefinitions.h";
+export import "MathDefinitions.h";
+
+import HorizonEngine.Core.Types;
 
 export namespace HE
 {

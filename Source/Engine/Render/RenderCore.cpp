@@ -1,3 +1,7 @@
+module;
+
+#include <fstream>
+
 module HorizonEngine.Render.Core;
 
 namespace HE

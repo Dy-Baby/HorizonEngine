@@ -1,6 +1,6 @@
 module;
 
-#include "Core/CoreCommon.h"
+#include "CoreCommon.h"
 
 module HorizonEngine.Core.Misc;
 

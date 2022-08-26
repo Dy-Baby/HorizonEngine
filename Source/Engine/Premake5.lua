@@ -13,3 +13,14 @@ include "MetaParser"
 include "Animation"
 include "ParticleSystem"
 include "SceneManagement"
+
+project "HorizonEngine"
+    kind "StaticLib"
+    language "C++"
+    cppdialect "C++20"
+    staticruntime "on"
+    location "%{wks.location}/%{prj.name}"
+    targetdir "%{wks.location}/Bin/%{cfg.buildcfg}"
+    files {
+        "HorizonEngine.cppm"
+    }

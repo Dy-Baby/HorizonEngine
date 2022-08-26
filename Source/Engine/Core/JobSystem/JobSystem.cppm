@@ -1,8 +1,6 @@
-module;
-
-#include "Core/CoreTypes.h"
-
 export module HorizonEngine.Core.JobSystem;
+
+import HorizonEngine.Core.Types;
 
 export namespace HE
 {
@@ -23,10 +21,10 @@ export namespace HE
         void* data;
     };
 
-    extern void JobSystemInit(uint32 numWorkerThreads, uint32 numFibers, uint32 fiberStackSize);
-    extern void JobSystemExit();
-    extern JobSystemAtomicCounterHandle JobSystemRunJobs(JobSystemJobDecl* jobDecls, uint32 numJobs);
-    extern void JobSystemWaitForCounter(JobSystemAtomicCounterHandle counterHandle, uint32 condition);
-    extern void JobSystemWaitForCounterAndFree(JobSystemAtomicCounterHandle counterHandle, uint32 condition);
-    extern void JobSystemWaitForCounterAndFreeWithoutFiber(JobSystemAtomicCounterHandle counterHandle);
+    void JobSystemInit(uint32 numWorkerThreads, uint32 numFibers, uint32 fiberStackSize);
+    void JobSystemExit();
+    JobSystemAtomicCounterHandle JobSystemRunJobs(JobSystemJobDecl* jobDecls, uint32 numJobs);
+    void JobSystemWaitForCounter(JobSystemAtomicCounterHandle counterHandle, uint32 condition);
+    void JobSystemWaitForCounterAndFree(JobSystemAtomicCounterHandle counterHandle, uint32 condition);
+    void JobSystemWaitForCounterAndFreeWithoutFiber(JobSystemAtomicCounterHandle counterHandle);
 }

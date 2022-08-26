@@ -1,4 +1,4 @@
-#include "RenderGraphPass.h"
+module HorizonEngine.Render.RenderGraph;
 
 namespace HE
 {

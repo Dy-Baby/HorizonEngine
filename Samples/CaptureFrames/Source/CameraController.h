@@ -1,6 +1,6 @@
 #pragma once
 
-#include <HorizonEngine.h>
+import HorizonEngine.Core;
 
 class SimpleFirstPersonCameraController
 {

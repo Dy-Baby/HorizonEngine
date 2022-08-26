@@ -22,6 +22,7 @@ project "VulkanRenderBackend"
     }
 
     includedirs {
+        "",
         enginepath(""),
         thirdpartypath("vulkan/include"),
         thirdpartypath("vma/include"),

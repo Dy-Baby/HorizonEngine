@@ -5,7 +5,7 @@ module;
 export module HorizonEngine.Render.VulkanRenderBackend:Utils;
 
 __pragma(warning(push, 0))
-import <VulkanRenderBackend/VulkanCommon.h>;
+import <VulkanCommon.h>;
 import HorizonEngine.Core;
 import HorizonEngine.Render.Core;
 __pragma(warning(pop))

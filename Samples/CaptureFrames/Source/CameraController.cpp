@@ -1,5 +1,7 @@
 #include "CameraController.h"
 
+import HorizonEngine.Input;
+
 using namespace HE;
 
 void SimpleFirstPersonCameraController::Update(float deltaTime, Vector3& outCameraPosition, Vector3& outCameraEuler)

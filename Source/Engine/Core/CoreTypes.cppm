@@ -1,6 +1,6 @@
-#pragma once
+export module HorizonEngine.Core.Types;
 
-namespace HE
+export namespace HE
 {
 	using int8 = signed char;
 	using int16 = short;

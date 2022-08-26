@@ -1,56 +1,52 @@
-#include "RenderGraphRegistry.h"
-
-import HorizonEngine.Render.RenderGraph;
+module HorizonEngine.Render.RenderGraph;
 
 namespace HE
-{	
-
-RenderGraphTexture* RenderGraphRegistry::GetTexture(RenderGraphTextureHandle handle) const
 {
-	return renderGraph->textures[handle.GetIndex()];
-}
-
-RenderGraphBuffer* RenderGraphRegistry::GetBuffer(RenderGraphBufferHandle handle) const
-{
-	return renderGraph->buffers[handle.GetIndex()];
-}
-
-RenderGraphTexture* RenderGraphRegistry::GetExternalTexture(RenderBackendTextureHandle handle) const
-{
-	if (renderGraph->externalTextures.find(handle) == renderGraph->externalTextures.end())
+	RenderGraphTexture* RenderGraphRegistry::GetTexture(RenderGraphTextureHandle handle) const
 	{
-		return nullptr;
+		return renderGraph->textures[handle.GetIndex()];
 	}
-	return GetTexture(renderGraph->externalTextures[handle]);
-}
 
-RenderGraphBuffer* RenderGraphRegistry::GetExternalBuffer(RenderBackendBufferHandle handle) const
-{
-	if (renderGraph->externalBuffers.find(handle) == renderGraph->externalBuffers.end())
+	RenderGraphBuffer* RenderGraphRegistry::GetBuffer(RenderGraphBufferHandle handle) const
 	{
-		return nullptr;
+		return renderGraph->buffers[handle.GetIndex()];
 	}
-	return GetBuffer(renderGraph->externalBuffers[handle]);
-}
 
-const RenderBackendTextureDesc& RenderGraphRegistry::GetTextureDesc(RenderGraphTextureHandle handle) const
-{
-	return GetTexture(handle)->GetDesc();
-}
+	RenderGraphTexture* RenderGraphRegistry::GetExternalTexture(RenderBackendTextureHandle handle) const
+	{
+		if (renderGraph->externalTextures.find(handle) == renderGraph->externalTextures.end())
+		{
+			return nullptr;
+		}
+		return GetTexture(renderGraph->externalTextures[handle]);
+	}
 
-const RenderBackendBufferDesc& RenderGraphRegistry::GetBufferDesc(RenderGraphBufferHandle handle) const
-{
-	return GetBuffer(handle)->GetDesc();
-}
+	RenderGraphBuffer* RenderGraphRegistry::GetExternalBuffer(RenderBackendBufferHandle handle) const
+	{
+		if (renderGraph->externalBuffers.find(handle) == renderGraph->externalBuffers.end())
+		{
+			return nullptr;
+		}
+		return GetBuffer(renderGraph->externalBuffers[handle]);
+	}
 
-RenderBackendTextureHandle RenderGraphRegistry::GetRenderBackendTexture(RenderGraphTextureHandle handle) const
-{
-	return GetTexture(handle)->GetRenderBackendTexture();
-}
+	const RenderBackendTextureDesc& RenderGraphRegistry::GetTextureDesc(RenderGraphTextureHandle handle) const
+	{
+		return GetTexture(handle)->GetDesc();
+	}
 
-RenderBackendBufferHandle RenderGraphRegistry::GetRenderBackendBuffer(RenderGraphBufferHandle handle) const
-{
-	return GetBuffer(handle)->GetRenderBackendBuffer();
-}
+	const RenderBackendBufferDesc& RenderGraphRegistry::GetBufferDesc(RenderGraphBufferHandle handle) const
+	{
+		return GetBuffer(handle)->GetDesc();
+	}
 
+	RenderBackendTextureHandle RenderGraphRegistry::GetRenderBackendTexture(RenderGraphTextureHandle handle) const
+	{
+		return GetTexture(handle)->GetRenderBackendTexture();
+	}
+
+	RenderBackendBufferHandle RenderGraphRegistry::GetRenderBackendBuffer(RenderGraphBufferHandle handle) const
+	{
+		return GetBuffer(handle)->GetRenderBackendBuffer();
+	}
 }

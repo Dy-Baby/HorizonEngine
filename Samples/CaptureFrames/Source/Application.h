@@ -1,8 +1,10 @@
 #pragma once
 
-#include <HorizonEngine.h>
-
 #include "CameraController.h"
+#include "ECS/ECS.h"
+#include "HybridRenderPipeline/HybridRenderPipeline.h"
+#include "AssimpImporter/AssimpImporter.h"
+#include "DxcShaderCompiler/DxcShaderCompiler.h"
 
 #define HE_APPLICATION_NAME "Model Viewer"
 #define HE_APPLICATION_VERSION HE_MAKE_VERSION(1, 0, 0)

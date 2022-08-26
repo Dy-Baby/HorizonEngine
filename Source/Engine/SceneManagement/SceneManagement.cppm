@@ -1,3 +1,10 @@
+module;
+
+#include <string>
+#include <map>
+#include <string>
+#include <memory>
+
 export module HorizonEngine.SceneManagement;
 
 import HorizonEngine.Core;

@@ -1,4 +1,4 @@
-project "Editor"
+project "HorizonEditor"
     kind "StaticLib"
     language "C++"
     cppdialect "C++20"
@@ -11,11 +11,12 @@ project "Editor"
         "**.c", 
         "**.hpp",
         "**.cpp",
+        "**.cppm",
         "**.inl",
         "**.hsf",
     }
     dependson {
-        "Engine",
+        "HorizonEngine",
     }
 
     links {

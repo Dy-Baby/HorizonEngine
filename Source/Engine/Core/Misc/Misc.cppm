@@ -6,6 +6,8 @@ module;
 
 export module HorizonEngine.Core.Misc;
 
+import HorizonEngine.Core.Types;
+
 export namespace HE
 {
 	template<class T>
