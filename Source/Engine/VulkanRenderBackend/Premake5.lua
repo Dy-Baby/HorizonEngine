@@ -23,7 +23,6 @@ project "VulkanRenderBackend"
 
     includedirs {
         enginepath(""),
-        thirdpartypath("spdlog/include"),
         thirdpartypath("vulkan/include"),
         thirdpartypath("vma/include"),
     }

@@ -25,7 +25,6 @@ project "Render"
         thirdpartypath("entt/include"),
         thirdpartypath("imgui/include"),
         thirdpartypath("glm/include"),
-        thirdpartypath("spdlog/include"),
         thirdpartypath("stb/include"),
     }
 

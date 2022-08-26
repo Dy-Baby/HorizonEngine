@@ -1,7 +1,6 @@
 module;
 
 #include "Core/CoreCommon.h"
-#include "Core/Logging/LoggingDefines.h"
 
 #include <windows.h>
 #include <MPMCQueue.h>

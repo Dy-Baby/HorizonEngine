@@ -9,14 +9,14 @@ module;
 
 module HorizonEngine.Core.Logging;
 
+namespace HE::LogSystem
+{
+	bool gIsLoggingEnabled = false;
+	std::shared_ptr<spdlog::logger> gLogger = nullptr;
+}
+
 namespace HE
 {
-	namespace LogSystem
-	{
-		bool gIsLoggingEnabled = false;
-		std::shared_ptr<spdlog::logger> gLogger = nullptr;
-	}
-
 	bool LogSystemInit()
 	{
 		std::vector<spdlog::sink_ptr> sinks;
@@ -38,5 +38,6 @@ namespace HE
 
 	void LogSystemExit()
 	{
+		LogSystem::gLogger = nullptr;
 	}
 }

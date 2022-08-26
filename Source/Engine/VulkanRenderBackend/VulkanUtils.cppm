@@ -1,7 +1,6 @@
 module;
 
 #include <vma/vk_mem_alloc.h>
-#include "Core/Logging/LoggingDefines.h"
 
 export module HorizonEngine.Render.VulkanRenderBackend:Utils;
 

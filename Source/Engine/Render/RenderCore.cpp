@@ -1,7 +1,5 @@
 module HorizonEngine.Render.Core;
 
-// #include "Core/Logging/LoggingDefines.h"
-
 namespace HE
 {
     const PixelFormatDesc GPixelFormatTable[] =
@@ -420,7 +418,7 @@ namespace HE
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 		if (!file.is_open())
 		{
-			// HE_LOG_ERROR("Failed to open shader source file.");
+			HE_LOG_ERROR("Failed to open shader source file.");
 			return;
 		}
 		size_t fileSize = (size_t)file.tellg();

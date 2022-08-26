@@ -5,14 +5,16 @@ module;
 
 export module HorizonEngine.Core.Logging;
 
+export import "LoggingDefinitions.h";
+
+namespace HE::LogSystem
+{
+   bool gIsLoggingEnabled;
+    std::shared_ptr<spdlog::logger> gLogger;
+}
+
 export namespace HE
 {
-    namespace LogSystem
-    {
-        extern bool gIsLoggingEnabled;
-        extern std::shared_ptr<spdlog::logger> gLogger;
-    }
-
     enum class LogLevel
     {
         Verbose,
@@ -22,37 +24,37 @@ export namespace HE
         Fatal,
     };
 
-    extern bool LogSystemInit();
+    bool LogSystemInit();
 
-    extern void LogSystemExit();
+    void LogSystemExit();
 
     template<typename... Args>
-    void LogVerbose(const std::shared_ptr<spdlog::logger>& logger, Args&&... args)
+    void LogVerbose(Args&&... args)
     {
-        logger->debug(std::forward<Args>(args)...);
+        LogSystem::gLogger->debug(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void LogInfo(const std::shared_ptr<spdlog::logger>& logger, Args&&... args)
+    void LogInfo(Args&&... args)
     {
-        logger->info(std::forward<Args>(args)...);
+        LogSystem::gLogger->info(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void LogWarning(const std::shared_ptr<spdlog::logger>& logger, Args&&... args)
+    void LogWarning(Args&&... args)
     {
-        logger->warn(std::forward<Args>(args)...);
+        LogSystem::gLogger->warn(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void LogError(const std::shared_ptr<spdlog::logger>& logger, Args&&... args)
+    void LogError(Args&&... args)
     {
-        logger->error(std::forward<Args>(args)...);
+        LogSystem::gLogger->error(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    void LogFatal(const std::shared_ptr<spdlog::logger>& logger, Args&&... args)
+    void LogFatal(Args&&... args)
     {
-        logger->critical(std::forward<Args>(args)...);
+        LogSystem::gLogger->critical(std::forward<Args>(args)...);
     }
 }

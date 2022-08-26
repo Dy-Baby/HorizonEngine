@@ -3,8 +3,6 @@ module;
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
-#include "Core/Logging/LoggingDefines.h"
-
 module HorizonEngine.Render.VulkanRenderBackend;
 
 __pragma(warning(push, 0))
