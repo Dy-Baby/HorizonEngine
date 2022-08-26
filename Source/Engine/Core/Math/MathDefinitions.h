@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Core/CoreTypes.h"
-
 #define GLM_FORCE_CTOR_INIT
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -14,8 +12,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/compatibility.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
-
-#include <chrono>
 
 #define M_PI 				  (3.1415926535897932f)	
 #define INV_PI			      (0.31830988618f)

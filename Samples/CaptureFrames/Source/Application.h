@@ -7,76 +7,79 @@
 #define HE_APPLICATION_NAME "Model Viewer"
 #define HE_APPLICATION_VERSION HE_MAKE_VERSION(1, 0, 0)
 
-class MainWindow;
-class Application
+namespace HE
 {
-public:
-
-	static Application* Instance;
-
-	static Application* GetInstance()
+	class MainWindow;
+	class Application
 	{
-		return Instance;
-	}
+	public:
 
-	Application();
-	~Application();
+		static Application* Instance;
 
-	Application(const Application&) = delete;
-	Application& operator=(const Application&) = delete;
+		static Application* GetInstance()
+		{
+			return Instance;
+		}
 
-	bool Init();
-	void Exit();
+		Application();
+		~Application();
+
+		Application(const Application&) = delete;
+		Application& operator=(const Application&) = delete;
+
+		bool Init();
+		void Exit();
 
 
-	int Run();
+		int Run();
 
-	float CalculateDeltaTime();
-	void Update(float deltaTime);
-	void Render();
-	void OnImGui();
+		float CalculateDeltaTime();
+		void Update(float deltaTime);
+		void Render();
+		void OnImGui();
 
-	bool IsExitRequest() const
-	{ 
-		return isExitRequested;
-	}
+		bool IsExitRequest() const
+		{
+			return isExitRequested;
+		}
 
-	MainWindow* GetMainWindow()
-	{
-		return window;
-	}
+		MainWindow* GetMainWindow()
+		{
+			return window;
+		}
 
-private:
+	private:
 
-	HE::MemoryArena* arena;
+		HE::MemoryArena* arena;
 
-	const char* name;
+		const char* name;
 
-	bool isExitRequested;
+		bool isExitRequested;
 
-	uint64 frameCounter; 
+		uint64 frameCounter;
 
-	MainWindow* window;
+		MainWindow* window;
 
-	HE::RenderScene* scene;
+		HE::RenderScene* scene;
 
-	HE::EntityHandle mainCamera;
-	HE::EntityHandle sky;
+		HE::EntityHandle mainCamera;
+		HE::EntityHandle sky;
 
-	HE::RenderBackendSwapChainHandle swapChain;
-	uint32 swapChainWidth;
-	uint32 swapChainHeight;
+		HE::RenderBackendSwapChainHandle swapChain;
+		uint32 swapChainWidth;
+		uint32 swapChainHeight;
 
-	HE::ShaderCompiler* shaderCompiler;
-	HE::RenderBackend* renderBackend;
-	HE::UIRenderer* uiRenderer;
+		HE::ShaderCompiler* shaderCompiler;
+		HE::RenderBackend* renderBackend;
+		HE::UIRenderer* uiRenderer;
 
-	HE::RenderContext* renderContext;
+		HE::RenderContext* renderContext;
 
-	SimpleFirstPersonCameraController cameraController;
+		SimpleFirstPersonCameraController cameraController;
 
-	HE::SceneView* sceneView;
-	HE::HybridRenderPipeline* renderPipeline;
-};
+		HE::SceneView* sceneView;
+		HE::HybridRenderPipeline* renderPipeline;
+	};
 
-extern int ApplicationMain();
+	extern int ApplicationMain();
+}

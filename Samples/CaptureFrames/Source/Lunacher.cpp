@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 {
 	HE::LogSystemInit();
 	HE::JobSystemInit(16, HE_JOB_SYSTEM_NUM_FIBIERS, HE_JOB_SYSTEM_FIBER_STACK_SIZE);
-	int exit = ApplicationMain();
+	int exit = HE::ApplicationMain();
 	HE::JobSystemExit();
 	HE::LogSystemExit();
 	return exit;
