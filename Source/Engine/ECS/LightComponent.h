@@ -4,20 +4,9 @@
 
 namespace HE
 {
-
-enum class LightType
-{
-	Directional,
-	Count
-};
-
-struct LightComponent
-{
-	LightType type;
-	Vector3 color;
-	float intensity;
-	// Directional Light
-	Vector3 direction;
-};
-
+	struct DirectionalLightComponent
+	{
+		Vector3 color;
+		float intensity;
+	};
 }

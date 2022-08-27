@@ -40,13 +40,13 @@ export namespace HE
 	};
 
 	/**
-	 * Implements a Universally Unique Identifier.
+	 * Implements a Global Unique Identifier.
 	 */
 	struct Guid
 	{
-		/** Generate a new Uuid. */
+		/** Generate a new Guid. */
 		static Guid Generate();
-		/** Convert Uuid to std::string. */
+		/** Convert Guid to std::string. */
 		static std::string ToString(const Guid& uuid);
 		/** The first component. */
 		uint32 a;

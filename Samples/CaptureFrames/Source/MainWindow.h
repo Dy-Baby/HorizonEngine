@@ -2,9 +2,7 @@
 
 import HorizonEngine.Core;
 
-#pragma warning(push, 0)
 #include <windows.h>
-#pragma pop(0)
 
 struct GLFWwindow;
 

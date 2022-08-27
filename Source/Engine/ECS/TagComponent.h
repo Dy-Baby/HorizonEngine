@@ -3,34 +3,32 @@
 #include "ECS/ECSCommon.h"
 #include "ECS/Entity.h"
 
-namespace HE
-{
-
 #define TAG_COMPONENT_MAX_NUM_TAGS 32
 
-struct Tag
+namespace HE
 {
-    EntityHandle entity;
-    std::pmr::string tag;
-    union
+    struct Tag
     {
-        uint32 next_by_entity;
-        uint32 next_free;
+        EntityHandle entity;
+        std::pmr::string tag;
+        union
+        {
+            uint32 next_by_entity;
+            uint32 next_free;
+        };
+        uint32 prev_by_entity;
+        uint32 next_by_tag;
+        uint32 prev_by_tag;
     };
-    uint32 prev_by_entity;
-    uint32 next_by_tag;
-    uint32 prev_by_tag;
-};
 
-struct TagComponent
-{
-	uint32 fistTagIndex;
-};
+    struct TagComponent
+    {
+	    uint32 fistTagIndex;
+    };
 
-void AddTag();
-void RemoveTag();
-bool HasTag();
-void FindAllEntities();
-EntityHandle FindFirstEntity();
-
+    void AddTag();
+    void RemoveTag();
+    bool HasTag();
+    void FindAllEntities();
+    EntityHandle FindFirstEntity();
 }

@@ -17,18 +17,17 @@ project "CaptureFrames"
         "**.hsf",
     }
 
-    dependson {
-    }
-    
     links {
         "Core",
         "Render",
         "ECS",
         "Input",
+        "SceneManagement",
         "VulkanRenderBackend",
         "DxcShaderCompiler",
         "HybridRenderPipeline",
         "AssimpImporter",
+        "yaml-cpp",
         thirdpartypath("glfw/lib/glfw3.lib"),
         thirdpartypath("assimp/lib/assimp-vc143-mt.lib"),
         thirdpartypath("dxc/lib/dxcompiler.lib"),

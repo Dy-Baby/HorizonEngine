@@ -175,7 +175,6 @@ namespace HE
 				{
 					std::string type = std::string(data.type().info().name());
 					std::string name = data.prop("Name"_hs).value().cast<std::string>();
-					auto g = data.get(skyAtmosphereComponent);
 					void* value = data.get(skyAtmosphereComponent).data();
 					uiCreator[type](name, value);
 				}

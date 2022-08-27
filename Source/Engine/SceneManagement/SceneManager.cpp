@@ -2,39 +2,48 @@ module HorizonEngine.SceneManagement;
 
 namespace HE
 {
-	uint32 SceneManager::kLoadedSceneCount = 0;
-	Scene* SceneManager::kActiveScene = nullptr;
-	std::map<std::string, std::shared_ptr<Scene>> SceneManager::kSceneMapByName;
+	uint32 SceneManager::LoadedSceneCount = 0;
+	Scene* SceneManager::ActiveScene = nullptr;
+	std::map<std::string, std::shared_ptr<Scene>> SceneManager::SceneMapByName;
 
 	Scene* SceneManager::CreateScene(const std::string& name)
 	{
 		auto scene = new Scene();
-		kSceneMapByName[name] = (std::shared_ptr<Scene>)scene;
+		scene->name = name;
+		SceneMapByName[name] = (std::shared_ptr<Scene>)scene;
 		return scene;
 	}
 
 	Scene* SceneManager::GetActiveScene()
 	{
-		return kActiveScene;
+		return ActiveScene;
 	}
 
 	Scene* SceneManager::GetSceneByName(const std::string& name)
 	{
-		// TODO
-		return nullptr;
+		if (SceneMapByName.find(name) == SceneMapByName.end())
+		{
+			return nullptr;
+		}
+		return SceneMapByName[name].get();
 	}
 
 	void SceneManager::SetActiveScene(Scene* scene)
 	{
-		kActiveScene = scene;
+		ActiveScene = scene;
 	}
 
-	void SceneManager::LoadScene(const std::string& filename)
+	void SceneManager::LoadScene(const std::string& name)
 	{
-		// TODO
+		if (SceneMapByName.find(name) == SceneMapByName.end())
+		{
+			return;
+		}
+		
+		
 	}
 
-	void SceneManager::LoadSceneAsync(const std::string& filename)
+	void SceneManager::LoadSceneAsync(const std::string& name)
 	{
 		// TODO
 	}
@@ -47,5 +56,15 @@ namespace HE
 	void SceneManager::MergeScenes(Scene* dstScene, Scene* srcScene)
 	{
 		// TODO
+	}
+
+	Scene::Scene()
+	{
+		entityManager = new EntityManager();
+	}
+
+	Scene::~Scene()
+	{
+		delete entityManager;
 	}
 }

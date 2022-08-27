@@ -101,34 +101,64 @@ namespace HE
 
 		//ImportGLTF2("../../../Assets/Models/Sponza/glTF/Sponza.gltf", settings, scene);
 
+		activeScene = SceneManager::CreateScene("DefaultScene");
+		SceneManager::SetActiveScene(activeScene);
+
+		{
+			auto entityManager = activeScene->GetEntityManager();
+			CameraComponent cameraComponent;
+			cameraComponent.type = CameraType::Perpective;
+			cameraComponent.nearPlane = 0.1;
+			cameraComponent.farPlane = 3000.0;
+			cameraComponent.fieldOfView = 60.0;
+
+			TransformComponent cameraTransform;
+			cameraTransform.position = Vector3(5.0, 0.0, 5.0);
+			cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
+			cameraTransform.scale = Vector3(1.0);
+
+			mainCamera = entityManager->CreateEntity("Main Camera");
+			entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
+			entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
+			entityManager->AddComponent<HierarchyComponent>(mainCamera);
+		}
+		{
+			SceneSerializer serializer(activeScene);
+			serializer.Serialize("../../../Assets/Scenes/DefaultScene.horizon");
+		}
+
+		Scene* tScene = SceneManager::CreateScene("TestScene");
+		{
+			SceneSerializer serializer(tScene);
+			serializer.Deserialize("../../../Assets/Scenes/DefaultScene.horizon");
+		}
+
+
 		scene->renderBackend = renderBackend;
 		scene->UploadResources();
 
 		auto entityManager = scene->GetEntityManager();
 
 		auto directionalLight = entityManager->CreateEntity("Directional Light");
-		LightComponent lightComponent = {
-			.type = LightType::Directional,
+		DirectionalLightComponent lightComponent = {
 			.color = Vector4(1.0f),
 			.intensity = 1.0f,
-			.direction = Vector4(),
 		};
-		entityManager->AddComponent<LightComponent>(directionalLight, lightComponent);
+		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, lightComponent);
 		entityManager->AddComponent<TransformComponent>(directionalLight);
 		entityManager->AddComponent<HierarchyComponent>(directionalLight);
 
-		CameraComponent cameraComponent = {
-			.type = CameraType::Perpective,
-			.nearPlane = 0.1,
-			.farPlane = 3000.0,
-			.fieldOfView = 60.0,
-		};
+		CameraComponent cameraComponent;
+		cameraComponent.type = CameraType::Perpective;
+		cameraComponent.nearPlane = 0.1;
+		cameraComponent.farPlane = 3000.0;
+		cameraComponent.fieldOfView = 60.0;
 
-		TransformComponent cameraTransform = {
-			.position = Vector3(5.0, 0.0, 5.0),
-			.rotation = Vector3(0.0, 0.0, 0.0),
-			.scale = Vector3(1.0),
-		};
+		TransformComponent cameraTransform;
+		cameraTransform.position = Vector3(5.0, 0.0, 5.0);
+		cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
+		cameraTransform.scale = Vector3(1.0);
+
 		mainCamera = entityManager->CreateEntity("Main Camera");
 		entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 		entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);

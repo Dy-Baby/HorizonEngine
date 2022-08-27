@@ -106,7 +106,7 @@ group "Source"
 group ""
 
 group "ThirdParty"
-    
+    include "ThirdParty/yaml-cpp"
 group ""
 
 group "Samples"

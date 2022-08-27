@@ -9,6 +9,8 @@
 #define HE_APPLICATION_NAME "Model Viewer"
 #define HE_APPLICATION_VERSION HE_MAKE_VERSION(1, 0, 0)
 
+import HorizonEngine.SceneManagement;
+
 namespace HE
 {
 	class MainWindow;
@@ -61,6 +63,8 @@ namespace HE
 		uint64 frameCounter;
 
 		MainWindow* window;
+
+		Scene* activeScene;
 
 		HE::RenderScene* scene;
 

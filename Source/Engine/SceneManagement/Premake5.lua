@@ -8,6 +8,7 @@ project "SceneManagement"
         
     links {
         "Core",
+        "ECS",
     }
 
     files {
@@ -24,7 +25,7 @@ project "SceneManagement"
         enginepath(""),
         thirdpartypath("entt/include"),
         thirdpartypath("glm/include"),
-        thirdpartypath("spdlog/include"),
+        thirdpartypath("yaml-cpp/include"),
     }
 
     filter "system:windows"

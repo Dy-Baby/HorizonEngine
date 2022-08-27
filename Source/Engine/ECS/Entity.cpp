@@ -1,10 +1,12 @@
 #include "Entity.h"
+#include "NameComponent.h"
 
 namespace HE
 {
 	EntityHandle EntityManager::CreateEntity(const char* name)
 	{
 		EntityHandle entity(registry.create());
+		AddComponent<NameComponent>(entity, name);
 		return entity;
 	}
 
