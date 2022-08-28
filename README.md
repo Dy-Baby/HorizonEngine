@@ -94,6 +94,7 @@ Particle System
 * [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 * [LLVM](https://github.com/llvm/llvm-project)
 * [MPMCQueue](https://github.com/rigtorp/MPMCQueue)
+* [PhysX](https://github.com/NVIDIAGameWorks/PhysX)
 * [premake](https://github.com/premake/premake-core)
 
 ## Documentation
