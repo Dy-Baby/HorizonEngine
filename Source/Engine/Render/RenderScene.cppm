@@ -11,6 +11,36 @@ import HorizonEngine.Render.RenderPipeline;
 
 export namespace HE
 {
+	struct RenderBackend;
+	
+	struct PBRMaterialShaderParameters
+	{
+		Vector4 baseColor;
+		float metallic;
+		float roughness;
+		uint32 baseColorMapIndex;
+		uint32 normalMapIndex;
+		uint32 metallicRoughnessMapIndex;
+	};
+
+	class RenderScene
+	{
+	public:
+		RenderScene();
+		~RenderScene();
+
+		RenderBackend* renderBackend;
+
+		std::vector<RenderBackendTextureHandle> textures;
+		RenderBackendBufferHandle materialBuffer;
+
+		RenderBackendBufferHandle worldMatrixBuffer;
+		RenderBackendBufferHandle prevWorldMatrixBuffer;
+
+		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
+		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
+	};
+
 	struct Camera
 	{
 		float fieldOfView;
@@ -23,105 +53,6 @@ export namespace HE
 		Matrix4x4 invViewMatrix;
 		Matrix4x4 projectionMatrix;
 		Matrix4x4 invProjectionMatrix;
-	};
-
-	struct CameraTransform
-	{
-		Matrix4x4 view = Matrix4x4(1);
-		Matrix4x4 proj = Matrix4x4(1);
-		Matrix4x4 viewProj = Matrix4x4(1);
-		Matrix4x4 invViewProj = Matrix4x4(1);
-		Vector3 position = Vector3(0, 0, 0);
-		Vector3 targetPoint = Vector3(0, 0, -1);
-		Quaternion rotation = Quaternion(1, 0, 0, 0); // Unit glm::quat is (w = 1, x = 0, y = 0, z = 0).
-		Vector3 U = Vector3(1, 0, 0);
-		Vector3 V = Vector3(0, 1, 0);
-		Vector3 W = Vector3(0, 0, 1);
-	};
-
-	struct CameraParameters
-	{
-		float aspectRatio = 16.0f / 9.0f;
-		float farZ = 1000.0f;
-		float nearZ = 0.1f;
-		float yFov = M_PI / 2.0f;
-		float aperture = 0.0f;
-		float focalLength = 1.0f;
-		float focalDistance = 30.0f;
-		float padding;
-	};
-
-	struct RenderBackend;
-	
-	struct MaterialInstanceData
-	{
-		Vector4 baseColor;
-		float metallic;
-		float roughness;
-		uint32 baseColorMapIndex;
-		uint32 normalMapIndex;
-		uint32 metallicRoughnessMapIndex;
-	};
-
-	struct Mesh
-	{
-		std::vector<Vector3> positions;
-		std::vector<Vector3> normals;
-		std::vector<Vector4> tangents;
-		std::vector<Vector2> texCoords;
-		std::vector<uint32> indices;
-
-		uint32 numIndices;
-		uint32 numVertices;
-		uint32 vertexStrides[4];
-		uint32 materialID;
-	};
-
-	struct Renderable
-	{
-		RenderBackendBufferHandle vertexBuffers[4];
-		RenderBackendBufferHandle indexBuffer;
-	};
-
-	class RenderScene
-	{
-	public:
-		RenderScene();
-		~RenderScene();
-
-		void AddRenderable(RenderableComponent* renderable);
-		void RemoveRenderable(RenderableComponent* renderable);
-
-		RenderBackend* renderBackend;
-
-		uint32 numMeshes = 0;
-		std::vector<Mesh> meshes;
-		std::vector<Matrix4x4> worldMatrices;
-
-		uint32 numMaterials = 0;
-		std::vector<Material> materials;
-
-		uint32 numTextures = 0;
-		std::vector<std::string> texturePaths;
-		std::vector<RenderBackendTextureHandle> textures;
-
-		RenderBackendBufferHandle worldMatrixBuffer;
-		RenderBackendBufferHandle prevWorldMatrixBuffer;
-		RenderBackendBufferHandle materialBuffer;
-
-		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
-		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
-
-		void Update();
-
-		void UploadResources();
-
-		EntityManager* GetEntityManager()
-		{
-			return entityManager;
-		}
-	private:
-		EntityManager* entityManager;
 	};
 
 	struct SceneView
@@ -174,5 +105,4 @@ export namespace HE
 		RenderCommandList** commandLists = renderContext->commandLists.data();
 		RenderBackendSubmitRenderCommandLists(renderBackend, commandLists, numCommandLists);
 	}
-
 }

@@ -32,6 +32,6 @@ namespace HE
     class AssimpImporter : public AssetImporter
     {
     public:
-        uint64 ImportAsset(const char* filename) override;
+        void ImportAsset(const char* filename) override;
     };
 }

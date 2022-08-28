@@ -11,12 +11,10 @@ namespace HE
 {
 	RenderScene::RenderScene()
 	{
-		entityManager = new EntityManager();
 	}
 
 	RenderScene::~RenderScene()
 	{
-		delete entityManager;
 	}
 
 	RenderBackendTextureHandle LoadTextureFromFile(RenderBackend* renderBackend, const char* filename)
@@ -212,10 +210,5 @@ namespace HE
 			.instances = &geometryInstance,
 		};
 		topLevelAS = RenderBackendCreateTopLevelAS(renderBackend, deviceMask, &topLevelASDesc, "TopLevelAS");
-	}
-
-	void RenderScene::Update()
-	{
-
 	}
 }

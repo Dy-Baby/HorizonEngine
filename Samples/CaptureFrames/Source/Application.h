@@ -54,7 +54,7 @@ namespace HE
 
 	private:
 
-		HE::MemoryArena* arena;
+		MemoryArena* arena;
 
 		const char* name;
 
@@ -66,25 +66,25 @@ namespace HE
 
 		Scene* activeScene;
 
-		HE::RenderScene* scene;
+		RenderScene* scene;
 
-		HE::EntityHandle mainCamera;
-		HE::EntityHandle sky;
+		EntityHandle mainCamera;
+		EntityHandle sky;
 
-		HE::RenderBackendSwapChainHandle swapChain;
+		RenderBackendSwapChainHandle swapChain;
 		uint32 swapChainWidth;
 		uint32 swapChainHeight;
 
-		HE::ShaderCompiler* shaderCompiler;
-		HE::RenderBackend* renderBackend;
-		HE::UIRenderer* uiRenderer;
+		ShaderCompiler* shaderCompiler;
+		RenderBackend* renderBackend;
+		UIRenderer* uiRenderer;
 
-		HE::RenderContext* renderContext;
+		RenderContext* renderContext;
 
 		SimpleFirstPersonCameraController cameraController;
 
-		HE::SceneView* sceneView;
-		HE::HybridRenderPipeline* renderPipeline;
+		SceneView* sceneView;
+		HybridRenderPipeline* renderPipeline;
 	};
 
 	extern int ApplicationMain();

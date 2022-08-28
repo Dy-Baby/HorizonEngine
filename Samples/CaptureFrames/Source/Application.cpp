@@ -95,9 +95,6 @@ namespace HE
 
 		scene = new RenderScene();
 
-		AssimpImporter assimpImporter;
-		assimpImporter.ImportAsset("../../../Assets/Models/Sponza/glTF/Sponza.gltf");
-		
 		//GLTF2ImportSettings settings;
 		//HE::ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
 		//HE::ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
@@ -137,10 +134,17 @@ namespace HE
 		lightComponent.intensity = 1.0f;
 		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, lightComponent);
 
+		auto mesh = entityManager->CreateEntity("Mesh");
+
+		StaticMeshComponent staticMeshComponent;
+		staticMeshComponent.filename = "../../../Assets/Models/Sponza/glTF/Sponza.gltf";
+		entityManager->AddComponent<StaticMeshComponent>(mesh, staticMeshComponent);
+
 		{
 			SceneSerializer serializer(activeScene);
 			serializer.Serialize("../../../Assets/Scenes/Sponza.horizon");
 		}
+
 
 		Scene* tScene = SceneManager::CreateScene("Sponza");
 		{
