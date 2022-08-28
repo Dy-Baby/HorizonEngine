@@ -95,80 +95,62 @@ namespace HE
 
 		scene = new RenderScene();
 
-		GLTF2ImportSettings settings;
-		HE::ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
-		HE::ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
-
+		AssimpImporter assimpImporter;
+		assimpImporter.ImportAsset("../../../Assets/Models/Sponza/glTF/Sponza.gltf");
+		
+		//GLTF2ImportSettings settings;
+		//HE::ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
+		//HE::ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
 		//ImportGLTF2("../../../Assets/Models/Sponza/glTF/Sponza.gltf", settings, scene);
+		
+		//sky = entityManager->CreateEntity("Sky");
+		//entityManager->AddComponent<TransformComponent>(sky);
+		//entityManager->AddComponent<HierarchyComponent>(sky);
+		//auto& skyAtmosphereComponent = entityManager->AddComponent<SkyAtmosphereComponent>(sky);
+		//SetupEarthAtmosphere(&skyAtmosphereComponent);
 
 		activeScene = SceneManager::CreateScene("DefaultScene");
 		SceneManager::SetActiveScene(activeScene);
+		
+		auto entityManager = activeScene->GetEntityManager();
 
-		{
-			auto entityManager = activeScene->GetEntityManager();
-			CameraComponent cameraComponent;
-			cameraComponent.type = CameraType::Perpective;
-			cameraComponent.nearPlane = 0.1;
-			cameraComponent.farPlane = 3000.0;
-			cameraComponent.fieldOfView = 60.0;
-
-			TransformComponent cameraTransform;
-			cameraTransform.position = Vector3(5.0, 0.0, 5.0);
-			cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
-			cameraTransform.scale = Vector3(1.0);
-
-			mainCamera = entityManager->CreateEntity("Main Camera");
-			entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
-			entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
-			entityManager->AddComponent<HierarchyComponent>(mainCamera);
-		}
-		{
-			SceneSerializer serializer(activeScene);
-			serializer.Serialize("../../../Assets/Scenes/DefaultScene.horizon");
-		}
-
-		Scene* tScene = SceneManager::CreateScene("TestScene");
-		{
-			SceneSerializer serializer(tScene);
-			serializer.Deserialize("../../../Assets/Scenes/DefaultScene.horizon");
-		}
-
-
-		scene->renderBackend = renderBackend;
-		scene->UploadResources();
-
-		auto entityManager = scene->GetEntityManager();
-
-		auto directionalLight = entityManager->CreateEntity("Directional Light");
-		DirectionalLightComponent lightComponent = {
-			.color = Vector4(1.0f),
-			.intensity = 1.0f,
-		};
-		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, lightComponent);
-		entityManager->AddComponent<TransformComponent>(directionalLight);
-		entityManager->AddComponent<HierarchyComponent>(directionalLight);
+		mainCamera = entityManager->CreateEntity("Main Camera");
 
 		CameraComponent cameraComponent;
 		cameraComponent.type = CameraType::Perpective;
 		cameraComponent.nearPlane = 0.1;
 		cameraComponent.farPlane = 3000.0;
 		cameraComponent.fieldOfView = 60.0;
+		entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 
 		TransformComponent cameraTransform;
 		cameraTransform.position = Vector3(5.0, 0.0, 5.0);
 		cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
 		cameraTransform.scale = Vector3(1.0);
-
-		mainCamera = entityManager->CreateEntity("Main Camera");
-		entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 		entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
 		entityManager->AddComponent<HierarchyComponent>(mainCamera);
 
-		sky = entityManager->CreateEntity("Sky");
-		entityManager->AddComponent<TransformComponent>(sky);
-		entityManager->AddComponent<HierarchyComponent>(sky);
-		auto& skyAtmosphereComponent = entityManager->AddComponent<SkyAtmosphereComponent>(sky);
-		SetupEarthAtmosphere(&skyAtmosphereComponent);
+		auto directionalLight = entityManager->CreateEntity("Directional Light");
+
+		DirectionalLightComponent lightComponent;
+		lightComponent.color = Vector4(1.0f);
+		lightComponent.intensity = 1.0f;
+		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, lightComponent);
+
+		{
+			SceneSerializer serializer(activeScene);
+			serializer.Serialize("../../../Assets/Scenes/Sponza.horizon");
+		}
+
+		Scene* tScene = SceneManager::CreateScene("Sponza");
+		{
+			SceneSerializer serializer(tScene);
+			serializer.Deserialize("../../../Assets/Scenes/Sponza.horizon");
+			serializer.Serialize("../../../Assets/Scenes/DefaultScene.horizon");
+		}
+
+		scene->renderBackend = renderBackend;
+		scene->UploadResources();
 
 		renderContext = new RenderContext();
 		renderContext->arena = arena;

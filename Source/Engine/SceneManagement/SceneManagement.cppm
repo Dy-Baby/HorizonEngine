@@ -14,6 +14,47 @@ import HorizonEngine.Core;
 
 export namespace HE
 {
+	struct Material
+	{
+		Vector4 baseColor;
+		float metallic;
+		float specular;
+		float roughness;
+		Vector4 emission;
+		float emissionStrength;
+		float alpha;
+		int32 baseColorMapIndex;
+		int32 normalMapIndex;
+		int32 metallicRoughnessMapIndex;
+	};
+
+	struct MeshElement
+	{
+		std::string name;
+		uint32 baseVertex;
+		uint32 baseIndex;
+		uint32 materialIndex;
+		uint32 numIndices;
+		uint32 numVertices;
+		Matrix4x4 localToWorld;
+	};
+
+	class Mesh : public Asset
+	{
+	public:
+
+	private:
+		std::vector<Vector3> positions;
+		std::vector<Vector3> normals;
+		std::vector<Vector4> tangents;
+		std::vector<Vector2> texCoords;
+		std::vector<uint32> indices;
+
+		std::vector<Material> materials;
+		std::vector<std::string> textures;
+		std::vector<MeshElement> elements;
+	};
+
 	/**
 	 * Run-time data structure for *.horizon file.
 	 */
@@ -23,7 +64,7 @@ export namespace HE
 		Scene();
 		~Scene();
 		std::string name;
-		std::string path;
+		std::string url;
 		bool isLoaded;
 		bool isDirty;
 		EntityManager* GetEntityManager()

@@ -50,22 +50,9 @@ export namespace HE
 		float focalDistance = 30.0f;
 		float padding;
 	};
-	class EntityManager;
-	struct RenderBackend;
-	struct Material
-	{
-		Vector4 baseColor;
-		float metallic;
-		float specular;
-		float roughness;
-		Vector4 emission;
-		float emissionStrength;
-		float alpha;
-		int32 baseColorMapIndex;
-		int32 normalMapIndex;
-		int32 metallicRoughnessMapIndex;
-	};
 
+	struct RenderBackend;
+	
 	struct MaterialInstanceData
 	{
 		Vector4 baseColor;
@@ -84,13 +71,16 @@ export namespace HE
 		std::vector<Vector2> texCoords;
 		std::vector<uint32> indices;
 
-		RenderBackendBufferHandle vertexBuffers[4];
-		RenderBackendBufferHandle indexBuffer;
-
 		uint32 numIndices;
 		uint32 numVertices;
 		uint32 vertexStrides[4];
 		uint32 materialID;
+	};
+
+	struct Renderable
+	{
+		RenderBackendBufferHandle vertexBuffers[4];
+		RenderBackendBufferHandle indexBuffer;
 	};
 
 	class RenderScene
@@ -98,6 +88,9 @@ export namespace HE
 	public:
 		RenderScene();
 		~RenderScene();
+
+		void AddRenderable(RenderableComponent* renderable);
+		void RemoveRenderable(RenderableComponent* renderable);
 
 		RenderBackend* renderBackend;
 

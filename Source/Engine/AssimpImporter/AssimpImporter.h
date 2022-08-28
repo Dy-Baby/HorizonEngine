@@ -2,6 +2,7 @@
 
 import HorizonEngine.Core;
 import HorizonEngine.Render;
+import HorizonEngine.SceneManagement;
 
 namespace HE
 {
@@ -27,4 +28,10 @@ namespace HE
     };
 
     extern bool ImportGLTF2(const char* filename, GLTF2ImportSettings settings, RenderScene* scene);
+
+    class AssimpImporter : public AssetImporter
+    {
+    public:
+        uint64 ImportAsset(const char* filename) override;
+    };
 }

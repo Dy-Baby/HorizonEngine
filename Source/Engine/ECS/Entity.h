@@ -38,13 +38,13 @@ namespace HE
 		bool HasEntity(EntityHandle entity);
 
 		template<typename... Components>
-		auto GetGroup() 
+		auto GetGroup() const
 		{ 
 			return registry.group<Components ...>(); 
 		}
 
 		template<typename... Components>
-		auto GetView() 
+		auto GetView() const
 		{ 
 			return registry.view<Components ...>(); 
 		}

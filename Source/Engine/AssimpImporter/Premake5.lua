@@ -9,6 +9,8 @@ project "AssimpImporter"
     links {
         "Core",
         "Render",
+        "ECS",
+        "SceneManagement",
     }
 
     files {

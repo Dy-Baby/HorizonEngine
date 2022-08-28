@@ -1,5 +1,6 @@
 module;
 
+#include <ranges>
 #include <fstream>
 #include <functional>
 #include <unordered_map>
@@ -196,7 +197,7 @@ namespace HE
 
 			auto view = scene->entityManager->GetView<NameComponent>();
 
-			for (auto entity : view)
+			for (auto entity : view | std::views::reverse)
 			{
 				using namespace entt;
 				auto& name = scene->entityManager->GetComponent<NameComponent>(entity);
@@ -221,6 +222,7 @@ namespace HE
 
 					out << YAML::EndMap;
 				}
+
 				if (scene->entityManager->HasComponent<CameraComponent>(entity))
 				{
 					const auto& camera = scene->entityManager->GetComponent<CameraComponent>(entity);
@@ -233,6 +235,42 @@ namespace HE
 						std::string type = std::string(data.type().info().name());
 						std::string name = data.prop("Name"_hs).value().cast<std::string>();
 						auto value = data.get(camera);
+						SerializeAny[type](out, name, value);
+					}
+
+					out << YAML::EndMap;
+				}
+
+				if (scene->entityManager->HasComponent<DirectionalLightComponent>(entity))
+				{
+					const auto& camera = scene->entityManager->GetComponent<DirectionalLightComponent>(entity);
+
+					out << YAML::Key << "DirectionalLightComponent";
+					out << YAML::BeginMap;
+
+					for (auto data : entt::resolve<DirectionalLightComponent>().data())
+					{
+						std::string type = std::string(data.type().info().name());
+						std::string name = data.prop("Name"_hs).value().cast<std::string>();
+						auto value = data.get(camera);
+						SerializeAny[type](out, name, value);
+					}
+
+					out << YAML::EndMap;
+				}
+
+				if (scene->entityManager->HasComponent<StaticMeshComponent>(entity))
+				{
+					const auto& transform = scene->entityManager->GetComponent<StaticMeshComponent>(entity);
+
+					out << YAML::Key << "StaticMeshComponent";
+					out << YAML::BeginMap;
+
+					for (auto data : entt::resolve<StaticMeshComponent>().data())
+					{
+						std::string type = std::string(data.type().info().name());
+						std::string name = data.prop("Name"_hs).value().cast<std::string>();
+						auto value = data.get(transform);
 						SerializeAny[type](out, name, value);
 					}
 
@@ -266,7 +304,7 @@ namespace HE
 		std::string sceneName = data["Scene"].as<std::string>();
 		HE_LOG_INFO("Deserializing scene '{0}'", sceneName);
 
-		if (sceneName == "UntitledScene")
+		if (sceneName == "Untitled Scene")
 		{
 			std::filesystem::path path = filename;
 			sceneName = path.stem().string();
@@ -286,7 +324,6 @@ namespace HE
 				auto transformComponent = entityValue["TransformComponent"];
 				if (transformComponent)
 				{
-					// Entities always have transforms
 					auto& transform = scene->entityManager->AddComponent<TransformComponent>(entity);
 					transform.position = transformComponent["Position"].as<Vector3>();
 					transform.rotation = transformComponent["Rotation"].as<Vector3>();
@@ -309,6 +346,13 @@ namespace HE
 					auto& directionalLight = scene->entityManager->AddComponent<DirectionalLightComponent>(entity);
 					directionalLight.intensity = directionalLightComponent["Intensity"].as<float>(1.0f);
 					directionalLight.color = directionalLightComponent["Color"].as<Vector3>(Vector3(1.0f));
+				}
+
+				auto staticMeshComponent = entityValue["StaticMeshComponent"];
+				if (staticMeshComponent)
+				{
+					auto& staticMesh = scene->entityManager->AddComponent<StaticMeshComponent>(entity);
+					staticMesh.filename = staticMeshComponent["filename"].as<std::string>();
 				}
 			}
 		}
