@@ -43,6 +43,7 @@
 !*.jpg
 !*.tga
 !*.hdr
+!*.horizon
 
 !README
 !LICENSE

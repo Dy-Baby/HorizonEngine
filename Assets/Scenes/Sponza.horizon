@@ -1,0 +1,16 @@
+Scene: DefaultScene
+Entities:
+  - Entity: Main Camera
+    TransformComponent:
+      Position: [5, 0, 5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Near Plane: 0.100000001
+      Far Plane: 3000
+      Field of View: 60
+      Aspect Ratio: -107374176
+  - Entity: Directional Light
+    DirectionalLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 1
