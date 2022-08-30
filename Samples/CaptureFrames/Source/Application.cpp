@@ -25,7 +25,7 @@ namespace HE
 		Instance = nullptr;
 	}
 
-	void SetupEarthAtmosphere(HE::SkyAtmosphereComponent* component)
+	void SetupEarthAtmosphere(SkyAtmosphereComponent* component)
 	{
 		// Values shown here are the result of integration over wavelength power spectrum integrated with paricular function.
 		// Refer to https://github.com/ebruneton/precomputed_atmospheric_scattering for details.
@@ -54,7 +54,7 @@ namespace HE
 		component->absorptionDensity[0] = { 25.0f, 0.0f, 0.0f, 1.0f / 15.0f, -2.0f / 3.0f };
 		component->absorptionDensity[1] = { 0.0f, 0.0f, 0.0f, -1.0f / 15.0f, 8.0f / 3.0f };
 		component->absorptionExtinction = { 0.000650f, 0.001881f, 0.000085f }; // 1/km
-		component->cosMaxSunZenithAngle = (float)HE::Math::Cos(maxSunZenithAngle);
+		component->cosMaxSunZenithAngle = (float)Math::Cos(maxSunZenithAngle);
 	}
 
 	bool Application::Init()
@@ -84,7 +84,7 @@ namespace HE
 
 		uint32 deviceMask;
 		uint32 physicalDeviceID = 0;
-		HE::RenderBackendCreateRenderDevices(renderBackend, &physicalDeviceID, 1, &deviceMask);
+		RenderBackendCreateRenderDevices(renderBackend, &physicalDeviceID, 1, &deviceMask);
 
 		swapChain = RenderBackendCreateSwapChain(renderBackend, deviceMask, (uint64)window->GetNativeHandle());
 		swapChainWidth = window->GetWidth();
@@ -96,8 +96,8 @@ namespace HE
 		scene = new RenderScene();
 
 		//GLTF2ImportSettings settings;
-		//HE::ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
-		//HE::ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
+		//ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
+		//ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
 		//ImportGLTF2("../../../Assets/Models/Sponza/glTF/Sponza.gltf", settings, scene);
 		
 		//sky = entityManager->CreateEntity("Sky");
@@ -195,7 +195,7 @@ namespace HE
 
 	void Application::Update(float deltaTime)
 	{
-		auto& cameraTransform = scene->GetEntityManager()->GetComponent<HE::TransformComponent>(mainCamera);
+		auto& cameraTransform = scene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		cameraController.Update(deltaTime, cameraTransform.position, cameraTransform.rotation);
 
 		scene->Update();
@@ -207,12 +207,12 @@ namespace HE
 		OnImGui();
 		uiRenderer->EndFrame();
 
-		auto& camera = scene->GetEntityManager()->GetComponent<HE::CameraComponent>(mainCamera);
+		auto& camera = scene->GetEntityManager()->GetComponent<CameraComponent>(mainCamera);
 		camera.aspectRatio = (float)swapChainWidth / (float)swapChainHeight;
-		auto& cameraTransform = scene->GetEntityManager()->GetComponent<HE::TransformComponent>(mainCamera);
+		auto& cameraTransform = scene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		sceneView->renderPipeline = renderPipeline;
-		sceneView->target = HE::RenderBackendGetActiveSwapChainBuffer(renderBackend, swapChain);
-		sceneView->targetDesc = HE::RenderBackendTextureDesc::Create2D(swapChainWidth, swapChainHeight, HE::PixelFormat::BGRA8Unorm, HE::TextureCreateFlags::Present);
+		sceneView->target = RenderBackendGetActiveSwapChainBuffer(renderBackend, swapChain);
+		sceneView->targetDesc = RenderBackendTextureDesc::Create2D(swapChainWidth, swapChainHeight, PixelFormat::BGRA8Unorm, TextureCreateFlags::Present);
 		sceneView->targetWidth = swapChainWidth;
 		sceneView->targetHeight = swapChainHeight;
 		sceneView->camera.aspectRatio = camera.aspectRatio;
@@ -221,14 +221,14 @@ namespace HE
 		sceneView->camera.zFar = camera.farPlane;
 		sceneView->camera.position = cameraTransform.position;
 		sceneView->camera.euler = cameraTransform.rotation;
-		static HE::Quaternion zUpQuat = glm::rotate(glm::quat(), HE::Math::DegreesToRadians(90.0), HE::Vector3(0.0, 1.0, 0.0)) * glm::rotate(glm::quat(), HE::Math::DegreesToRadians(90.0), HE::Vector3(0.0, 0.0, 1.0));
-		sceneView->camera.invViewMatrix = HE::Math::Compose(sceneView->camera.position, HE::Quaternion(HE::Math::DegreesToRadians(sceneView->camera.euler)) * zUpQuat, HE::Vector3(1.0f, 1.0f, 1.0f));
-		sceneView->camera.viewMatrix = HE::Math::Inverse(sceneView->camera.invViewMatrix);
-		sceneView->camera.projectionMatrix = glm::perspectiveRH_ZO(HE::Math::DegreesToRadians(camera.fieldOfView), camera.aspectRatio, camera.nearPlane, camera.farPlane);
-		sceneView->camera.invProjectionMatrix = HE::Math::Inverse(sceneView->camera.projectionMatrix);
+		static Quaternion zUpQuat = glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(0.0, 1.0, 0.0)) * glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(0.0, 0.0, 1.0));
+		sceneView->camera.invViewMatrix = Math::Compose(sceneView->camera.position, Quaternion(Math::DegreesToRadians(sceneView->camera.euler)) * zUpQuat, Vector3(1.0f, 1.0f, 1.0f));
+		sceneView->camera.viewMatrix = Math::Inverse(sceneView->camera.invViewMatrix);
+		sceneView->camera.projectionMatrix = glm::perspectiveRH_ZO(Math::DegreesToRadians(camera.fieldOfView), camera.aspectRatio, camera.nearPlane, camera.farPlane);
+		sceneView->camera.invProjectionMatrix = Math::Inverse(sceneView->camera.projectionMatrix);
 		RenderSceneView(renderContext, sceneView);
 
-		HE::gRenderGraphResourcePool->Tick();
+		gRenderGraphResourcePool->Tick();
 
 	}
 
@@ -257,16 +257,16 @@ namespace HE
 			uint32 height = window->GetHeight();
 			if (width != swapChainWidth || height != swapChainHeight)
 			{
-				HE::RenderBackendResizeSwapChain(renderBackend, swapChain, &width, &height);
+				RenderBackendResizeSwapChain(renderBackend, swapChain, &width, &height);
 				swapChainWidth = width;
 				swapChainHeight = height;
 			}
 
 			Render();
 
-			HE::RenderBackendPresentSwapChain(renderBackend, swapChain);
+			RenderBackendPresentSwapChain(renderBackend, swapChain);
 
-			((HE::LinearArena*)arena)->Reset();
+			((LinearArena*)arena)->Reset();
 
 			frameCounter++;
 		}

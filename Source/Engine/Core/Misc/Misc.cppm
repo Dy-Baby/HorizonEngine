@@ -40,7 +40,7 @@ export namespace HE
 	};
 
 	/**
-	 * Implements a Global Unique Identifier.
+	 * Implements a Universal Unique Identifier.
 	 */
 	struct Guid
 	{

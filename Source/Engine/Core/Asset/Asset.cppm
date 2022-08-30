@@ -33,7 +33,7 @@ namespace HE
 		template<typename T>
 		static T* GetAsset(const std::string& assetHandle)
 		{
-			if (ImportedAssets.find(assetHandle) == assetHandle.end())
+			if (ImportedAssets.find(assetHandle) == ImportedAssets.end())
 			{
 				return nullptr;
 			}

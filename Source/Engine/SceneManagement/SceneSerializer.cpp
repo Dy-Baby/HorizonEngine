@@ -352,7 +352,7 @@ namespace HE
 				if (staticMeshComponent)
 				{
 					auto& staticMesh = scene->entityManager->AddComponent<StaticMeshComponent>(entity);
-					staticMesh.filename = staticMeshComponent["filename"].as<std::string>();
+					staticMesh.meshSource = staticMeshComponent["Mesh Source"].as<std::string>();
 				}
 			}
 		}

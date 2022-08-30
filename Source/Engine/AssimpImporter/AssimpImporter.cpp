@@ -154,7 +154,7 @@ namespace HE
 				if (!aiMesh->HasPositions() || !aiMesh->HasNormals() || !aiMesh->HasTangentsAndBitangents())
 				{
 					HE_LOG_ERROR("Failed to import mesh {}.", i);
-					return false;
+					return;
 				}
 
 				MeshElement& element = mesh->elements.emplace_back();

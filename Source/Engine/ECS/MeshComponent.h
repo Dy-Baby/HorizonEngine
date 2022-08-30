@@ -6,14 +6,14 @@ namespace HE
 {
 	struct StaticMeshComponent
 	{
-		std::string filename;
+		std::string meshSource;
 
 		StaticMeshComponent()
 		{
 			using namespace entt;
 			auto factory = entt::meta<StaticMeshComponent>();
-			factory.data<&StaticMeshComponent::filename, entt::as_ref_t>("filename"_hs)
-				.prop("Name"_hs, std::string("filename"));
+			factory.data<&StaticMeshComponent::meshSource, entt::as_ref_t>("Mesh Source"_hs)
+				.prop("Name"_hs, std::string("Mesh Source"));
 		}
 	};
 }
