@@ -56,7 +56,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	Texture2D gbuffer1 = GetGBuffer1SRV();
 	Texture2D gbuffer2 = GetGBuffer2SRV();
 	
-	Texture2D shadowBuffer = GetShadowBufferSRV();
+	// Texture2D shadowBuffer = GetShadowBufferSRV();
 
 	float4 gbuffer0Data = gbuffer0[coord];
 	float4 gbuffer1Data = gbuffer1[coord];
@@ -71,7 +71,8 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	// Microfacet Cook-Torrance BRDF
 
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
-	sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
+	// sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
+	sceneColor[coord] = float4(baseColor.rgb, 1.0);
 }
 
 // Material material = BindlessBuffers[5].Load<Material>(0);

@@ -31,6 +31,11 @@ namespace HE
 
 		void Clear();
 
+		entt::registry* Get()
+		{
+			return &registry;
+		}
+
 		EntityHandle CreateEntity(const char* name);
 
 		void DestroyEntity(EntityHandle entity);

@@ -10,7 +10,7 @@ export module HorizonEngine.Core.Asset;
 import HorizonEngine.Core.Types;
 import HorizonEngine.Core.Math;
 
-namespace HE
+export namespace HE
 {
 	struct Asset
 	{
@@ -26,7 +26,7 @@ namespace HE
 	class AssetManager
 	{
 	public:
-		void AddAsset(const std::string& path, Asset* asset)
+		static void AddAsset(const std::string& path, Asset* asset)
 		{
 			ImportedAssets.emplace(path, asset);
 		}
@@ -37,13 +37,14 @@ namespace HE
 			{
 				return nullptr;
 			}
-			return (T*)ImportedAssets[assetHandle];
+			return (T*)(ImportedAssets[assetHandle].get());
 		}
 		static std::unordered_map<std::string, std::shared_ptr<Asset>> ImportedAssets;
 	};
 
 	struct Material
 	{
+		std::string name;
 		Vector4 baseColor;
 		float metallic;
 		float specular;
@@ -72,7 +73,9 @@ namespace HE
 	{
 	public:
 
-	private:
+		uint32 numVertices;
+		uint32 numIndices;
+
 		std::vector<Vector3> positions;
 		std::vector<Vector3> normals;
 		std::vector<Vector4> tangents;
@@ -82,4 +85,9 @@ namespace HE
 		std::vector<Material> materials;
 		std::vector<MeshElement> elements;
 	};
+}
+
+namespace HE
+{
+	std::unordered_map<std::string, std::shared_ptr<Asset>> AssetManager::ImportedAssets;
 }

@@ -162,27 +162,27 @@ namespace HE
 
 		ImGui::Begin("Settings");
 		{
-			auto& skyAtmosphereComponent = scene->GetEntityManager()->GetComponent<SkyAtmosphereComponent>(sky);
-			// DrawComponent<SkyAtmosphereComponent>(skyAtmosphereComponent);
+			//auto& skyAtmosphereComponent = activeScene->GetEntityManager()->GetComponent<SkyAtmosphereComponent>(sky);
+			//// DrawComponent<SkyAtmosphereComponent>(skyAtmosphereComponent);
 
-			if (ImGui::CollapsingHeader("Sky Atmosphere"))
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-				ImGui::Columns(2);
-				ImGui::Separator();
+			//if (ImGui::CollapsingHeader("Sky Atmosphere"))
+			//{
+			//	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+			//	ImGui::Columns(2);
+			//	ImGui::Separator();
 
-				for (auto data : entt::resolve<SkyAtmosphereComponent>().data())
-				{
-					std::string type = std::string(data.type().info().name());
-					std::string name = data.prop("Name"_hs).value().cast<std::string>();
-					void* value = data.get(skyAtmosphereComponent).data();
-					uiCreator[type](name, value);
-				}
+			//	for (auto data : entt::resolve<SkyAtmosphereComponent>().data())
+			//	{
+			//		std::string type = std::string(data.type().info().name());
+			//		std::string name = data.prop("Name"_hs).value().cast<std::string>();
+			//		void* value = data.get(skyAtmosphereComponent).data();
+			//		uiCreator[type](name, value);
+			//	}
 
-				ImGui::Columns(1);
-				ImGui::Separator();
-				ImGui::PopStyleVar();
-			}
+			//	ImGui::Columns(1);
+			//	ImGui::Separator();
+			//	ImGui::PopStyleVar();
+			//}
 
 #if 0
 			if (ImGui::CollapsingHeader("Sky Atmosphere"))

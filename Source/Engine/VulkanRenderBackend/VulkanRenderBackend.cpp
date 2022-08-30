@@ -18,8 +18,6 @@ import HorizonEngine.Render.Core;
 import :Utils;
 __pragma(warning(pop))
 
-#define DEBUG_ONLY_RAY_TRACING_ENBALE 1
-
 #define VK_CHECK(VkFunction) { const VkResult result = VkFunction; if (result != VK_SUCCESS) { VerifyVkResult(result, #VkFunction, __FILE__, __LINE__); } }
 #define VK_CHECK_RESULT(result) { if (result != VK_SUCCESS) { VerifyVkResult(result, __FUNCTION__, __FILE__, __LINE__); } }
 

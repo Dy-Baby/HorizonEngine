@@ -1,6 +1,6 @@
 module;
 
-#include "ECS/Entity.h"
+#include <ECS/ECS.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -81,118 +81,152 @@ namespace HE
 		return texture;
 	}
 
-	void RenderScene::UploadResources()
+	void RenderScene::UploadResources(Scene* scene)
 	{
 		uint32 deviceMask = ~0u;
 
-		for (uint32 i = 0; i < numMeshes; i++)
-		{
-			RenderBackendBufferDesc vertexBuffer0Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector3));
-			meshes[i].vertexBuffers[0] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer0Desc, "VertexPosition");
-			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[0], 0, meshes[i].positions.data(), meshes[i].numVertices * sizeof(Vector3));
-
-			RenderBackendBufferDesc vertexBuffer1Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector3));
-			meshes[i].vertexBuffers[1] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer1Desc, "VertexNormal");
-			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[1], 0, meshes[i].normals.data(), meshes[i].numVertices * sizeof(Vector3));
-
-			RenderBackendBufferDesc vertexBuffer2Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector4));
-			meshes[i].vertexBuffers[2] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer2Desc, "VertexTangent");
-			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[2], 0, meshes[i].tangents.data(), meshes[i].numVertices * sizeof(Vector4));
-
-			RenderBackendBufferDesc vertexBuffer3Desc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numVertices * sizeof(Vector2));
-			meshes[i].vertexBuffers[3] = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer3Desc, "VertexTexcoord");
-			RenderBackendWriteBuffer(renderBackend, meshes[i].vertexBuffers[3], 0, meshes[i].texCoords.data(), meshes[i].numVertices * sizeof(Vector2));
-
-			RenderBackendBufferDesc indexBufferDesc = RenderBackendBufferDesc::CreateByteAddress(meshes[i].numIndices * sizeof(uint32));
-			meshes[i].indexBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &indexBufferDesc, "IndexBuffer");
-			RenderBackendWriteBuffer(renderBackend, meshes[i].indexBuffer, 0, meshes[i].indices.data(), meshes[i].numIndices * sizeof(uint32));
-		}
-
-		textures.resize(numTextures);
-		for (uint32 i = 0; i < numTextures; i++)
-		{
-			textures[i] = LoadTextureFromFile(renderBackend, texturePaths[i].c_str());
-		}
-
-		RenderBackendBufferDesc materialBufferDesc = RenderBackendBufferDesc::CreateByteAddress(materials.size() * sizeof(MaterialInstanceData));
-		materialBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &materialBufferDesc, "MaterialBuffer");
-
-		std::vector<MaterialInstanceData> materialInstances(numMaterials);
-		for (uint32 i = 0; i < (uint32)materials.size(); i++)
-		{
-			Material& material = materials[i];
-
-			materialInstances[i].baseColor = material.baseColor;
-			materialInstances[i].metallic = material.metallic;
-			materialInstances[i].roughness = material.roughness;
-
-			if (material.baseColorMapIndex < 0)
-			{
-				materialInstances[i].baseColorMapIndex = 0;
-			}
-			else
-			{
-				materialInstances[i].baseColorMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.baseColorMapIndex]);
-			}
-			if (material.normalMapIndex < 0)
-			{
-				materialInstances[i].normalMapIndex = 0;
-			}
-			else
-			{
-				materialInstances[i].normalMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.normalMapIndex]);
-			}
-			if (material.metallicRoughnessMapIndex < 0)
-			{
-				materialInstances[i].metallicRoughnessMapIndex = 0;
-			}
-			else
-			{
-				materialInstances[i].metallicRoughnessMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, textures[material.metallicRoughnessMapIndex]);
-			}
-			//RenderBackendTextureSRVHandle baseColorMapSRV = CreateTextureSRV(renderBackend, deviceMask, &RenderBackendTextureSRVDesc::Create(textures[material.baseColorMapIndex]), "BaseColorMapSRV");
-			//RenderBackendTextureSRVHandle normalMapSRV = CreateTextureSRV(renderBackend, deviceMask, &RenderBackendTextureSRVDesc::Create(textures[material.normalMapIndex]), "NormalMapSRV");
-			//RenderBackendTextureSRVHandle metallicRoughnessMapSRV = CreateTextureSRV(renderBackend, deviceMask, &RenderBackendTextureSRVDesc::Create(textures[material.metallicRoughnessMapIndex]), "metallicRoughnessMapSRV");
-		}
-		RenderBackendWriteBuffer(renderBackend, materialBuffer, 0, materialInstances.data(), numMaterials * sizeof(MaterialInstanceData));
-
-		RenderBackendBufferDesc worldMatrixBufferDesc = RenderBackendBufferDesc::CreateByteAddress(numMeshes * sizeof(Matrix4x4));
-		worldMatrixBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &worldMatrixBufferDesc, "WorldMatrixBuffer");
+		this->scene = scene;
 		
-		worldMatrices.resize(numMeshes);
-		for (uint32 i = 0; i < numMeshes; i++)
+		auto group = scene->GetEntityManager()->Get()->group<StaticMeshComponent>(entt::get<TransformComponent>);
+		for (auto entity : group)
 		{
-			worldMatrices[i] = HE::Math::Compose(Vector3(0.0f, 0.0f, 0.0f), Quaternion(HE::Math::DegreesToRadians(Vector3(180.0f, 0.0f, 0.0f))), Vector3(1.0f, 1.0f, 1.0f));
-		}
-		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), numMeshes * sizeof(Matrix4x4));
+			auto [transformComponent, staticMeshComponent] = group.get<TransformComponent, StaticMeshComponent>(entity);
+			Mesh* meshSource = AssetManager::GetAsset<Mesh>(staticMeshComponent.meshSource);
+			if (meshSource)
+			{
+				RenderBackendBufferDesc vertexBuffer0Desc = RenderBackendBufferDesc::CreateByteAddress(meshSource->numVertices * sizeof(Vector3));
+				RenderBackendBufferHandle vertexBuffer0 = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer0Desc, "VertexPosition");
+				RenderBackendWriteBuffer(renderBackend, vertexBuffer0, 0, meshSource->positions.data(), meshSource->numVertices * sizeof(Vector3));
 
-		std::vector<RenderBackendGeometryDesc> geometryDescs(numMeshes);
-		for (uint32 i = 0; i < numMeshes; i++)
+				RenderBackendBufferDesc vertexBuffer1Desc = RenderBackendBufferDesc::CreateByteAddress(meshSource->numVertices * sizeof(Vector3));
+				RenderBackendBufferHandle vertexBuffer1 = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer1Desc, "VertexNormal");
+				RenderBackendWriteBuffer(renderBackend, vertexBuffer1, 0, meshSource->normals.data(), meshSource->numVertices * sizeof(Vector3));
+
+				RenderBackendBufferDesc vertexBuffer2Desc = RenderBackendBufferDesc::CreateByteAddress(meshSource->numVertices * sizeof(Vector4));
+				RenderBackendBufferHandle vertexBuffer2 = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer2Desc, "VertexTangent");
+				RenderBackendWriteBuffer(renderBackend, vertexBuffer2, 0, meshSource->tangents.data(), meshSource->numVertices * sizeof(Vector4));
+
+				RenderBackendBufferDesc vertexBuffer3Desc = RenderBackendBufferDesc::CreateByteAddress(meshSource->numVertices * sizeof(Vector2));
+				RenderBackendBufferHandle vertexBuffer3 = RenderBackendCreateBuffer(renderBackend, deviceMask, &vertexBuffer3Desc, "VertexTexcoord");
+				RenderBackendWriteBuffer(renderBackend, vertexBuffer3, 0, meshSource->texCoords.data(), meshSource->numVertices * sizeof(Vector2));
+
+				RenderBackendBufferDesc indexBufferDesc = RenderBackendBufferDesc::CreateByteAddress(meshSource->numIndices * sizeof(uint32));
+				RenderBackendBufferHandle indexBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &indexBufferDesc, "IndexBuffer");
+				RenderBackendWriteBuffer(renderBackend, indexBuffer, 0, meshSource->indices.data(), meshSource->numIndices * sizeof(uint32));
+
+				uint32 vertexBufferIndex = (uint32)vertexBuffers[0].size();
+				uint32 indexBufferIndex = (uint32)indexBuffers.size();
+
+				vertexBuffers[0].push_back(vertexBuffer0);
+				vertexBuffers[1].push_back(vertexBuffer1);
+				vertexBuffers[2].push_back(vertexBuffer2);
+				vertexBuffers[3].push_back(vertexBuffer3);
+				indexBuffers.push_back(indexBuffer);
+
+				uint32 baseMaterialIndex = (uint32)materials.size();
+				for (uint32 i = 0; i < (uint32)meshSource->materials.size(); i++)
+				{
+					PBRMaterialShaderParameters& material = materials.emplace_back();
+
+					material.baseColor = meshSource->materials[i].baseColor;
+					material.metallic = meshSource->materials[i].metallic;
+					material.roughness = meshSource->materials[i].roughness;
+
+					if (meshSource->materials[i].baseColorMap == "")
+					{
+						material.baseColorMapIndex = 0;
+					}
+					else
+					{
+						RenderBackendTextureHandle texture = LoadTextureFromFile(renderBackend, meshSource->materials[i].baseColorMap.c_str());
+						textures.push_back(texture);
+						material.baseColorMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, texture);
+					}
+					if (meshSource->materials[i].normalMap == "")
+					{
+						material.normalMapIndex = 0;
+					}
+					else
+					{
+						RenderBackendTextureHandle texture = LoadTextureFromFile(renderBackend, meshSource->materials[i].normalMap.c_str());
+						textures.push_back(texture);
+						material.normalMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, texture);
+					}
+					if (meshSource->materials[i].metallicRoughnessMap == "")
+					{
+						material.metallicRoughnessMapIndex = 0;
+					}
+					else
+					{
+						RenderBackendTextureHandle texture = LoadTextureFromFile(renderBackend, meshSource->materials[i].metallicRoughnessMap.c_str());
+						textures.push_back(texture);
+						material.metallicRoughnessMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, texture);
+					}
+					if (meshSource->materials[i].emissiveMap == "")
+					{
+						material.emissiveMapIndex = 0;
+					}
+					else
+					{
+						RenderBackendTextureHandle texture = LoadTextureFromFile(renderBackend, meshSource->materials[i].emissiveMap.c_str());
+						textures.push_back(texture);
+						material.emissiveMapIndex = RenderBackendGetTextureSRVDescriptorIndex(renderBackend, deviceMask, texture);
+					}
+				}
+
+				for (const auto& element : meshSource->elements)
+				{
+					uint32 transformIndex = (uint32)worldMatrices.size();
+					worldMatrices.push_back(transformComponent.world);
+
+					auto& renderable = renderables.emplace_back();
+					renderable.firstVertex = element.baseVertex;
+					renderable.firstIndex = element.baseIndex;
+					renderable.numIndices = element.numIndices;
+					renderable.numVertices = element.numVertices;
+					renderable.vertexBufferIndex = vertexBufferIndex;
+					renderable.indexBufferIndex = indexBufferIndex;
+					renderable.materialIndex = baseMaterialIndex + element.materialIndex;
+					renderable.transformIndex = transformIndex;
+				}
+			}
+		}
+
+		RenderBackendBufferDesc materialBufferDesc = RenderBackendBufferDesc::CreateByteAddress(materials.size() * sizeof(PBRMaterialShaderParameters));
+		materialBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &materialBufferDesc, "MaterialBuffer");
+		RenderBackendWriteBuffer(renderBackend, materialBuffer, 0, materials.data(), materials.size() * sizeof(PBRMaterialShaderParameters));
+
+		RenderBackendBufferDesc worldMatrixBufferDesc = RenderBackendBufferDesc::CreateByteAddress(worldMatrices.size() * sizeof(Matrix4x4));
+		worldMatrixBuffer = RenderBackendCreateBuffer(renderBackend, deviceMask, &worldMatrixBufferDesc, "WorldMatrixBuffer");
+		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), worldMatrices.size() * sizeof(Matrix4x4));
+
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
+		std::vector<RenderBackendGeometryDesc> geometryDescs(renderables.size());
+		for (uint32 i = 0; i < (uint32)geometryDescs.size(); i++)
 		{
 			geometryDescs[i] = {
 				.type = RenderBackendGeometryType::Triangles, 
 				.flags = RenderBackendGeometryFlags::Opaque, 
 				.triangleDesc = {
-					.numIndices = meshes[i].numIndices,
-					.numVertices = meshes[i].numVertices,
+					.numIndices = renderables[i].numIndices,
+					.numVertices = renderables[i].numVertices,
 					.vertexStride = 3 * sizeof(float),
-					.vertexBuffer = meshes[i].vertexBuffers[0],
-					.vertexOffset = 0,
-					.indexBuffer = meshes[i].indexBuffer,
-					.indexOffset = 0,
+					.vertexBuffer = vertexBuffers[0][renderables[i].vertexBufferIndex],
+					.vertexOffset = renderables[i].firstVertex * 3 * sizeof(float),
+					.indexBuffer = indexBuffers[renderables[i].indexBufferIndex],
+					.indexOffset = renderables[i].firstIndex * sizeof(uint32),
 					.transformBuffer = worldMatrixBuffer,
-					.transformOffset = i * 16 * (uint32)sizeof(float),
+					.transformOffset = renderables[i].transformIndex * 16 * (uint32)sizeof(float),
 				}
 			};
 		}
 		
 		RenderBackendBottomLevelASDesc bottomLevelASDesc = {
 			.buildFlags = RenderBackendAccelerationStructureBuildFlags::PreferFastTrace,
-			.numGeometries = numMeshes,
+			.numGeometries = (uint32)geometryDescs.size(),
 			.geometryDescs = geometryDescs.data(),
 		};
 		bottomLevelAS = RenderBackendCreateBottomLevelAS(renderBackend, deviceMask, &bottomLevelASDesc, "BottomLevelAS");
-
 
 		RenderBackendRayTracingInstance geometryInstance = {
 			.transformMatrix = Matrix4x4(1.0),
@@ -210,5 +244,6 @@ namespace HE
 			.instances = &geometryInstance,
 		};
 		topLevelAS = RenderBackendCreateTopLevelAS(renderBackend, deviceMask, &topLevelASDesc, "TopLevelAS");
+#endif
 	}
 }

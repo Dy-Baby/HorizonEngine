@@ -1,4 +1,4 @@
-project "Render"
+project "DefaultRenderPipeline"
     kind "StaticLib"
     language "C++"
     cppdialect "C++20"
@@ -8,8 +8,7 @@ project "Render"
         
     links {
         "Core",
-        "ECS",
-        "SceneManagement",
+        "Render",
     }
 
     files {
@@ -17,17 +16,22 @@ project "Render"
         "**.c", 
         "**.hpp",
         "**.cpp",
-        "**.cppm",
         "**.inl",
         "**.hsf",
     }
-
+    
     includedirs {
         enginepath(""),
+        thirdpartypath("assimp/include"),
         thirdpartypath("entt/include"),
-        thirdpartypath("imgui/include"),
+        thirdpartypath("dxc/include"),
+        thirdpartypath("glfw/include"),
         thirdpartypath("glm/include"),
-        thirdpartypath("stb/include"),
+        thirdpartypath("spdlog/include"),
+        thirdpartypath("vma/include"),
+        thirdpartypath("vulkan/include"),
+        thirdpartypath("mpmc/include"),
+        thirdpartypath("imgui/include"),
     }
 
     filter "system:windows"

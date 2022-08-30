@@ -1,6 +1,7 @@
 include "AssimpImporter"
 include "Core"
 include "D3D12RenderBackend"
+include "DefaultRenderPipeline"
 include "HybridRenderPipeline"
 include "DxcShaderCompiler"
 include "ECS"

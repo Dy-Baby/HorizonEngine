@@ -93,8 +93,6 @@ namespace HE
 		uiRenderer = new UIRenderer(window->handle, renderBackend, shaderCompiler);
 		uiRenderer->Init();
 
-		scene = new RenderScene();
-
 		//GLTF2ImportSettings settings;
 		//ImportGLTF2("../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf", settings, scene);
 		//ImportGLTF2("../../../Assets/Models/floor/floor.gltf", settings, scene);
@@ -133,18 +131,22 @@ namespace HE
 		lightComponent.color = Vector4(1.0f);
 		lightComponent.intensity = 1.0f;
 		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, lightComponent);
+		entityManager->AddComponent<TransformComponent>(directionalLight);
+		entityManager->AddComponent<HierarchyComponent>(directionalLight);
 
 		auto mesh = entityManager->CreateEntity("Mesh");
+		entityManager->AddComponent<TransformComponent>(mesh);
+		entityManager->AddComponent<HierarchyComponent>(mesh);
 
 		StaticMeshComponent staticMeshComponent;
-		staticMeshComponent.filename = "../../../Assets/Models/Sponza/glTF/Sponza.gltf";
+		//staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
+		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf";
 		entityManager->AddComponent<StaticMeshComponent>(mesh, staticMeshComponent);
 
 		{
 			SceneSerializer serializer(activeScene);
 			serializer.Serialize("../../../Assets/Scenes/Sponza.horizon");
 		}
-
 
 		Scene* tScene = SceneManager::CreateScene("Sponza");
 		{
@@ -153,8 +155,13 @@ namespace HE
 			serializer.Serialize("../../../Assets/Scenes/DefaultScene.horizon");
 		}
 
-		scene->renderBackend = renderBackend;
-		scene->UploadResources();
+		AssimpImporter assimpImporter;
+		assimpImporter.ImportAsset(staticMeshComponent.meshSource.c_str());
+
+		renderScene = new RenderScene();
+		renderScene->renderBackend = renderBackend;
+		renderScene->UploadResources(activeScene);
+		//system("pause");
 
 		renderContext = new RenderContext();
 		renderContext->arena = arena;
@@ -166,14 +173,14 @@ namespace HE
 		renderPipeline->Init();
 
 		sceneView = new SceneView();
-		sceneView->scene = scene;
+		sceneView->scene = renderScene;
 
 		return true;
 	}
 
 	void Application::Exit()
 	{
-		delete scene;
+		delete renderScene;
 		uiRenderer->Shutdown();
 		delete uiRenderer;
 		VulkanRenderBackendDestroyBackend(renderBackend);
@@ -195,10 +202,8 @@ namespace HE
 
 	void Application::Update(float deltaTime)
 	{
-		auto& cameraTransform = scene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
+		auto& cameraTransform = activeScene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		cameraController.Update(deltaTime, cameraTransform.position, cameraTransform.rotation);
-
-		scene->Update();
 	}
 
 	void Application::Render()
@@ -207,9 +212,9 @@ namespace HE
 		OnImGui();
 		uiRenderer->EndFrame();
 
-		auto& camera = scene->GetEntityManager()->GetComponent<CameraComponent>(mainCamera);
+		auto& camera = activeScene->GetEntityManager()->GetComponent<CameraComponent>(mainCamera);
 		camera.aspectRatio = (float)swapChainWidth / (float)swapChainHeight;
-		auto& cameraTransform = scene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
+		auto& cameraTransform = activeScene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		sceneView->renderPipeline = renderPipeline;
 		sceneView->target = RenderBackendGetActiveSwapChainBuffer(renderBackend, swapChain);
 		sceneView->targetDesc = RenderBackendTextureDesc::Create2D(swapChainWidth, swapChainHeight, PixelFormat::BGRA8Unorm, TextureCreateFlags::Present);

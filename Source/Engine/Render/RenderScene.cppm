@@ -8,6 +8,7 @@ import HorizonEngine.Core;
 import HorizonEngine.Render.Core;
 import HorizonEngine.Render.RenderGraph;
 import HorizonEngine.Render.RenderPipeline;
+import HorizonEngine.SceneManagement;
 
 export namespace HE
 {
@@ -21,6 +22,19 @@ export namespace HE
 		uint32 baseColorMapIndex;
 		uint32 normalMapIndex;
 		uint32 metallicRoughnessMapIndex;
+		uint32 emissiveMapIndex;
+	};
+
+	struct Renderable
+	{
+		uint32 firstVertex;
+		uint32 firstIndex;
+		uint32 numIndices;
+		uint32 numVertices;
+		uint32 vertexBufferIndex;
+		uint32 indexBufferIndex;
+		uint32 materialIndex;
+		uint32 transformIndex;
 	};
 
 	class RenderScene
@@ -29,16 +43,27 @@ export namespace HE
 		RenderScene();
 		~RenderScene();
 
+		Scene* scene;
 		RenderBackend* renderBackend;
 
+		void UploadResources(Scene* scene);
+
+		std::vector<Renderable> renderables;
+		std::vector<RenderBackendBufferHandle> vertexBuffers[4];
+		std::vector<RenderBackendBufferHandle> indexBuffers;
 		std::vector<RenderBackendTextureHandle> textures;
+
+		std::vector<PBRMaterialShaderParameters> materials;
 		RenderBackendBufferHandle materialBuffer;
 
+		std::vector<Matrix4x4> worldMatrices;
+		std::vector<Matrix4x4> prevWorldMatrices;
 		RenderBackendBufferHandle worldMatrixBuffer;
 		RenderBackendBufferHandle prevWorldMatrixBuffer;
-
+#if DEBUG_ONLY_RAY_TRACING_ENBALE
 		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
 		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
+#endif
 	};
 
 	struct Camera

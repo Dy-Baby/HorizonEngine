@@ -176,6 +176,10 @@ namespace HE
 			out << YAML::Key << name << YAML::Value << value.cast<Vector4>();
 		};
 
+		SerializeAny["class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
+		{
+			out << YAML::Key << name << YAML::Value << value.cast<std::string>();
+		};
 	}
 
 	void SceneSerializer::Serialize(const std::filesystem::path& filename)
@@ -261,7 +265,7 @@ namespace HE
 
 				if (scene->entityManager->HasComponent<StaticMeshComponent>(entity))
 				{
-					const auto& transform = scene->entityManager->GetComponent<StaticMeshComponent>(entity);
+					const auto& staticMesh = scene->entityManager->GetComponent<StaticMeshComponent>(entity);
 
 					out << YAML::Key << "StaticMeshComponent";
 					out << YAML::BeginMap;
@@ -270,7 +274,7 @@ namespace HE
 					{
 						std::string type = std::string(data.type().info().name());
 						std::string name = data.prop("Name"_hs).value().cast<std::string>();
-						auto value = data.get(transform);
+						auto value = data.get(staticMesh);
 						SerializeAny[type](out, name, value);
 					}
 

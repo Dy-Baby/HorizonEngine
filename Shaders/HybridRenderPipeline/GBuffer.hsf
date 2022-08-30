@@ -60,6 +60,7 @@ struct MaterialInstanceData
     uint baseColorMapIndex;
     uint normalMapIndex;
     uint metallicRoughnessMapIndex;
+    uint emissiveMapIndex;
 };
 
 MaterialInstanceData GetMaterialInstanceData()

@@ -66,7 +66,7 @@ namespace HE
 
 		Scene* activeScene;
 
-		RenderScene* scene;
+		RenderScene* renderScene;
 
 		EntityHandle mainCamera;
 		EntityHandle sky;
