@@ -167,9 +167,6 @@ namespace HE
 				element.numIndices = aiMesh->mNumFaces * 3;
 				element.transform = Matrix4x4(1.0f);
 
-				mesh->numVertices += element.numVertices;
-				mesh->numIndices += element.numIndices;
-
 				for (uint32 vertexID = 0; vertexID < aiMesh->mNumVertices; vertexID++)
 				{
 					mesh->positions.emplace_back(Vector3(aiMesh->mVertices[vertexID].x, aiMesh->mVertices[vertexID].y, aiMesh->mVertices[vertexID].z));
@@ -188,14 +185,19 @@ namespace HE
 				for (uint32 faceIndex = 0; faceIndex < aiMesh->mNumFaces; faceIndex++)
 				{
 					ASSERT(aiMesh->mFaces[faceIndex].mNumIndices == 3);
-					mesh->indices.push_back(aiMesh->mFaces[faceIndex].mIndices[0]);
-					mesh->indices.push_back(aiMesh->mFaces[faceIndex].mIndices[1]);
-					mesh->indices.push_back(aiMesh->mFaces[faceIndex].mIndices[2]);
+					mesh->indices.emplace_back(aiMesh->mFaces[faceIndex].mIndices[0] + element.baseVertex);
+					mesh->indices.emplace_back(aiMesh->mFaces[faceIndex].mIndices[1] + element.baseVertex);
+					mesh->indices.emplace_back(aiMesh->mFaces[faceIndex].mIndices[2] + element.baseVertex);
 				}
+
+				mesh->numVertices += element.numVertices;
+				mesh->numIndices += element.numIndices;
 			}
 		}
 
-		ImportAssimpNode(mesh, aiScene->mRootNode, Matrix4x4(1.0f));
+		static Quaternion zUpQuat = glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(1.0, 0.0, 0.0));
+		static Matrix4x4 preTransform = Math::Compose(Vector3(0.0f, 0.0f, 0.0f), zUpQuat, Vector3(1.0f, 1.0f, 1.0f));
+		ImportAssimpNode(mesh, aiScene->mRootNode, preTransform);
 	}
 
 	void AssimpImporter::ImportAsset(const char* filename)

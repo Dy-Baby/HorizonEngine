@@ -2225,6 +2225,9 @@ VulkanSwapchain::Status VulkanDevice::AcquireImageIndex(uint32 index)
 	VkSemaphore& imageAcquiredSemaphore = swapchain->imageAcquiredSemaphores[semaphoreIndex];
 	VkFence& imageAcquiredFence = swapchain->imageAcquiredFences[semaphoreIndex];
 
+	// TODO: remove this
+	vkDeviceWaitIdle(handle);
+
 	VK_CHECK(vkWaitForFences(handle, 1, &imageAcquiredFence, VK_TRUE, UINT64_MAX));
 	VK_CHECK(vkResetFences(handle, 1, &imageAcquiredFence));
 

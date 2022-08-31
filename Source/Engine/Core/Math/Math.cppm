@@ -1,7 +1,6 @@
 module;
 
 #include "CoreCommon.h"
-
 #include <chrono>
 
 export module HorizonEngine.Core.Math;

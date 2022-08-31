@@ -119,7 +119,7 @@ namespace HE
 		entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 
 		TransformComponent cameraTransform;
-		cameraTransform.position = Vector3(5.0, 0.0, 5.0);
+		cameraTransform.position = Vector3(0.0, 0.0, 5.0);
 		cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
 		cameraTransform.scale = Vector3(1.0);
 		entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
@@ -139,8 +139,8 @@ namespace HE
 		entityManager->AddComponent<HierarchyComponent>(mesh);
 
 		StaticMeshComponent staticMeshComponent;
-		//staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
 		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf";
+		staticMeshComponent.meshSource = "../../../Assets/Models/SunTemple_v4/SunTemple.gltf";
 		entityManager->AddComponent<StaticMeshComponent>(mesh, staticMeshComponent);
 
 		{

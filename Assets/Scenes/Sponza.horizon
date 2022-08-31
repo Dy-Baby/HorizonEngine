@@ -2,7 +2,7 @@ Scene: DefaultScene
 Entities:
   - Entity: Main Camera
     TransformComponent:
-      Position: [5, 0, 5]
+      Position: [0, 0, 5]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
@@ -24,4 +24,4 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0, 0, 0]
     StaticMeshComponent:
-      Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf
+      Mesh Source: ../../../Assets/Models/SunTemple_v4/SunTemple.gltf

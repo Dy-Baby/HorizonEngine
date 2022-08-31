@@ -518,8 +518,6 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 
 			for (const auto& renderable : view->scene->renderables)
 			{
-				uint32 numIndices = renderable.numIndices;
-
 				RenderBackendBufferHandle vertexPosition = view->scene->vertexBuffers[0][renderable.vertexBufferIndex];
 				RenderBackendBufferHandle vertexNormal = view->scene->vertexBuffers[1][renderable.vertexBufferIndex];
 				RenderBackendBufferHandle vertexTangent = view->scene->vertexBuffers[2][renderable.vertexBufferIndex];
@@ -531,10 +529,10 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 
 				ShaderArguments shaderArguments = {};
 				shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
-				shaderArguments.BindBuffer(1, vertexPosition, renderable.firstVertex * sizeof(Vector3));
-				shaderArguments.BindBuffer(2, vertexNormal, renderable.firstVertex * sizeof(Vector3));
-				shaderArguments.BindBuffer(3, vertexTangent, renderable.firstVertex * sizeof(Vector4));
-				shaderArguments.BindBuffer(4, vertexTexCoord, renderable.firstVertex * sizeof(Vector2));
+				shaderArguments.BindBuffer(1, vertexPosition, 0);
+				shaderArguments.BindBuffer(2, vertexNormal, 0);
+				shaderArguments.BindBuffer(3, vertexTangent, 0);
+				shaderArguments.BindBuffer(4, vertexTexCoord, 0);
 				shaderArguments.BindBuffer(5, worldMatrixBuffer, renderable.transformIndex);
 				shaderArguments.BindBuffer(6, prevWorldMatrixBuffer, renderable.transformIndex);
 				shaderArguments.BindBuffer(7, materialBuffer, renderable.materialIndex);
@@ -544,7 +542,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 					gbufferShader,
 					shaderArguments,
 					indexBuffer,
-					numIndices,
+					renderable.numIndices,
 					1,
 					renderable.firstIndex,
 					0,

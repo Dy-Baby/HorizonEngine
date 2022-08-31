@@ -177,8 +177,7 @@ namespace HE
 				for (const auto& element : meshSource->elements)
 				{
 					uint32 transformIndex = (uint32)worldMatrices.size();
-					worldMatrices.push_back(transformComponent.world);
-
+					worldMatrices.push_back(element.transform * transformComponent.world);
 					auto& renderable = renderables.emplace_back();
 					renderable.firstVertex = element.baseVertex;
 					renderable.firstIndex = element.baseIndex;
