@@ -24,4 +24,4 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [0, 0, 0]
     StaticMeshComponent:
-      Mesh Source: ../../../Assets/Models/SunTemple_v4/SunTemple.gltf
+      Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf

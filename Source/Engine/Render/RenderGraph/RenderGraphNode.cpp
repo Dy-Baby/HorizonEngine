@@ -6,4 +6,9 @@ namespace HE
 	{
 		nodes.push_back(node);
 	}
+
+	void RenderGraphDAG::Clear()
+	{
+		nodes.clear();
+	}
 }

@@ -423,7 +423,7 @@ export namespace HE
 		{
 			return flags;
 		}
-		void Graphviz(const std::stringstream& stream) const;
+		void Graphviz(std::stringstream& stream) const;
 		virtual void Execute(RenderGraphRegistry& registry, RenderCommandList& commandList) = 0;
 	protected:
 		friend class RenderGraph;
@@ -434,6 +434,10 @@ export namespace HE
 			, flags(flags) {}
 
 		RenderGraphPassFlags flags;
+
+#if HE_MGPU
+		RenderBackendGpuMask gpuMask;
+#endif
 
 		struct TextureState
 		{
@@ -507,7 +511,7 @@ export namespace HE
 		/**
 		 * @brief Create a string using the Graphviz format.
 		 * @note Compile() should be called before calling this function.
-		 * @return std::pmr::string in the Graphviz format.
+		 * @return std::string in the Graphviz format.
 		 */
 		std::string Graphviz() const;
 

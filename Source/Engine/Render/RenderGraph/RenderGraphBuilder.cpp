@@ -17,9 +17,10 @@ namespace HE
 		pass->textureStates.push_back(RenderGraphPass::TextureState{
 			.texture = renderGraph->textures[handle.GetIndex()],
 			.state = finalState,
-			.subresourceRange = range
-			});
-		// renderGraph->textures[handle.GetIndex()].refCount++;
+			.subresourceRange = range,
+		});
+		pass->inputs.push_back(renderGraph->textures[handle.GetIndex()]);
+		renderGraph->textures[handle.GetIndex()]->refCount++;
 		return handle;
 	}
 
@@ -28,10 +29,11 @@ namespace HE
 		pass->textureStates.push_back(RenderGraphPass::TextureState{
 			.texture = renderGraph->textures[handle.GetIndex()],
 			.state = finalState,
-			.subresourceRange = range
-			});
-		/*handle = RenderGraphTextureHandle::CreateNewVersion(handle);
-		pass->refCount++;*/
+			.subresourceRange = range,
+		});
+		pass->outputs.push_back(renderGraph->textures[handle.GetIndex()]);
+		//handle = RenderGraphTextureHandle::CreateNewVersion(handle);
+		pass->refCount++;
 		return handle;
 	}
 
@@ -40,8 +42,8 @@ namespace HE
 		pass->textureStates.push_back(RenderGraphPass::TextureState{
 			.texture = renderGraph->textures[handle.GetIndex()],
 			.state = finalState,
-			.subresourceRange = range
-			});
+			.subresourceRange = range,
+		});
 		//pass->readResourceInfos[pass->numReadResourceInfos++] = {
 		//	.type = RenderGraphResourceType::Texture,
 		//	.readTexture = {

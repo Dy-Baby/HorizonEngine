@@ -238,7 +238,7 @@ void CooyRenderGraphFinalTextureToCameraTarget(RenderGraph* renderGraph)
 {
 	RenderGraphBlackboard& blackboard = renderGraph->blackboard;
 
-	renderGraph->AddPass("Present Pass", RenderGraphPassFlags::NeverGetCulled,
+	renderGraph->AddPass("PresentPass", RenderGraphPassFlags::NeverGetCulled,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -302,7 +302,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	perFrameData.buffer = perFrameDataBuffer;
 	RenderBackendWriteBuffer(renderBackend, perFrameDataBuffer, 0, &perFrameData, sizeof(PerFrameData));
 
-	ouptutTextureData.outputTexture = renderGraph->ImportExternalTexture(view->target, view->targetDesc, RenderBackendResourceState::Undefined, "Camera Target");
+	ouptutTextureData.outputTexture = renderGraph->ImportExternalTexture(view->target, view->targetDesc, RenderBackendResourceState::Undefined, "CameraTarget");
 	ouptutTextureData.outputTextureDesc = view->targetDesc;
 
 	RenderTargetClearValue clearColor = { .color = { .uint32 = {} } };
@@ -321,7 +321,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
-	gbufferData.gbuffer0 = renderGraph->CreateTexture(gbuffer0Desc, "GBuffer 0");
+	gbufferData.gbuffer0 = renderGraph->CreateTexture(gbuffer0Desc, "GBuffer0");
 
 	RenderGraphTextureDesc gbuffer1Desc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -329,7 +329,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
-	gbufferData.gbuffer1 = renderGraph->CreateTexture(gbuffer1Desc, "GBuffer 1");
+	gbufferData.gbuffer1 = renderGraph->CreateTexture(gbuffer1Desc, "GBuffer1");
 
 	RenderGraphTextureDesc gbuffer2Desc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -337,7 +337,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
-	gbufferData.gbuffer2 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer 2");
+	gbufferData.gbuffer2 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer2");
 
 	RenderGraphTextureDesc gbuffer3Desc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -345,7 +345,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
-	gbufferData.gbuffer3 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer 3");
+	gbufferData.gbuffer3 = renderGraph->CreateTexture(gbuffer2Desc, "GBuffer3");
 
 	RenderGraphTextureDesc velocityBufferDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -353,7 +353,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget,
 		clearColor);
-	gbufferData.velocityBuffer = renderGraph->CreateTexture(velocityBufferDesc, "Velocity Buffer");
+	gbufferData.velocityBuffer = renderGraph->CreateTexture(velocityBufferDesc, "VelocityBuffer");
 
 	RenderGraphTextureDesc depthBufferDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
@@ -361,25 +361,25 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		PixelFormat::D32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::DepthStencil,
 		clearDepth);
-	depthBufferData.depthBuffer = renderGraph->CreateTexture(depthBufferDesc, "Depth Buffer");
+	depthBufferData.depthBuffer = renderGraph->CreateTexture(depthBufferDesc, "DepthBuffer");
 
 	RenderGraphTextureDesc sceneColorDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA16Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
-	sceneColorData.sceneColor = renderGraph->CreateTexture(sceneColorDesc, "Scene Color");
+	sceneColorData.sceneColor = renderGraph->CreateTexture(sceneColorDesc, "SceneColor");
 
 	RenderGraphTextureDesc finalTextureDesc = RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::BGRA8Unorm,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::RenderTarget | TextureCreateFlags::UnorderedAccess);
-	finalTextureData.finalTexture = renderGraph->CreateTexture(finalTextureDesc, "Final Texture");
+	finalTextureData.finalTexture = renderGraph->CreateTexture(finalTextureDesc, "FinalTexture");
 
 	if (renderBRDFLut)
 	{
-		renderGraph->AddPass("BRDF Lut Pass", RenderGraphPassFlags::Compute | RenderGraphPassFlags::NeverGetCulled,
+		renderGraph->AddPass("BRDFLutPass", RenderGraphPassFlags::Compute | RenderGraphPassFlags::NeverGetCulled,
 		[&](RenderGraphBuilder& builder)
 		{
 			return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
@@ -406,7 +406,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 /*
 	if ()
 	{
-		renderGraph->AddPass("Equirectangular To Cube Pass", RenderGraphPassFlags::Compute,
+		renderGraph->AddPass("EquirectangularToCubePass", RenderGraphPassFlags::Compute,
 		[&](RenderGraphBuilder& builder)
 		{
 			return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
@@ -433,7 +433,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 				commandList.Transitions(&transitions, 2);
 			};
 		});
-		renderGraph->AddPass("IBL Diffuse Pass", RenderGraphPassFlags::Compute,
+		renderGraph->AddPass("IBLDiffusePass", RenderGraphPassFlags::Compute,
 		[&](RenderGraphBuilder& builder)
 		{
 			return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
@@ -455,7 +455,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 				commandList.Transitions(&transitionAfter, 1);
 			};
 		});
-		renderGraph->AddPass("IBL Specular Pass", RenderGraphPassFlags::Compute,
+		renderGraph->AddPass("IBLSpecularPass", RenderGraphPassFlags::Compute,
 		[&](RenderGraphBuilder& builder)
 		{
 			return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
@@ -476,7 +476,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	}
 	*/
 
-	renderGraph->AddPass("GBuffer Pass", RenderGraphPassFlags::Raster,
+	renderGraph->AddPass("GBufferPass", RenderGraphPassFlags::Raster,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -558,9 +558,9 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::R32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
-	auto shadowMask = renderGraph->CreateTexture(shadowMaskDesc, "Shadow Mask");
+	auto shadowMask = renderGraph->CreateTexture(shadowMaskDesc, "ShadowMask");
 
-	renderGraph->AddPass("Ray Tracing Shadows Pass", RenderGraphPassFlags::RayTrace,
+	renderGraph->AddPass("RayTracingShadowsPass", RenderGraphPassFlags::RayTrace,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -605,28 +605,28 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
-		"SVGF Illumination");
+		"SVGFIllumination");
 
 	auto svgfMoments = renderGraph->CreateTexture(RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RG32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
-		"SVGF Moments");
+		"SVGFMoments");
 
 	auto svgfHistoryLength = renderGraph->CreateTexture(RenderGraphTextureDesc::Create2D(
 		perFrameData.data.renderResolutionWidth,
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::R16Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
-		"SVGF History Length");
+		"SVGFHistoryLength");
 
-	RenderGraphTextureHandle prevLinearDepthBuffer = renderGraph->ImportExternalTexture(prevLinearDepthBufferRB.texture, prevLinearDepthBufferRB.desc, prevLinearDepthBufferRB.initialState, "Prev Linear Depth Buffer");
-	RenderGraphTextureHandle prevIllum             = renderGraph->ImportExternalTexture(prevIllumRB.texture, prevIllumRB.desc, prevIllumRB.initialState, "Prev Linear Depth Buffer");
-	RenderGraphTextureHandle prevMoments           = renderGraph->ImportExternalTexture(prevMomentsRB.texture, prevMomentsRB.desc, prevMomentsRB.initialState, "Prev Linear Depth Buffer");
-	RenderGraphTextureHandle prevHistoryLength     = renderGraph->ImportExternalTexture(prevHistoryLengthRB.texture, prevHistoryLengthRB.desc, prevHistoryLengthRB.initialState, "Prev Linear Depth Buffer");
+	RenderGraphTextureHandle prevLinearDepthBuffer = renderGraph->ImportExternalTexture(prevLinearDepthBufferRB.texture, prevLinearDepthBufferRB.desc, prevLinearDepthBufferRB.initialState, "PrevLinearDepthBuffer");
+	RenderGraphTextureHandle prevIllum             = renderGraph->ImportExternalTexture(prevIllumRB.texture, prevIllumRB.desc, prevIllumRB.initialState, "PrevLinearDepthBuffer");
+	RenderGraphTextureHandle prevMoments           = renderGraph->ImportExternalTexture(prevMomentsRB.texture, prevMomentsRB.desc, prevMomentsRB.initialState, "PrevLinearDepthBuffer");
+	RenderGraphTextureHandle prevHistoryLength     = renderGraph->ImportExternalTexture(prevHistoryLengthRB.texture, prevHistoryLengthRB.desc, prevHistoryLengthRB.initialState, "PrevLinearDepthBuffer");
 
-	renderGraph->AddPass("SVGF Reproject Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("SVGFReprojectPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -674,9 +674,9 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		perFrameData.data.renderResolutionHeight,
 		PixelFormat::RGBA32Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess),
-		"SVGF Filtered Illumination");
+		"SVGFFilteredIllumination");
 
-	renderGraph->AddPass("SVFG Filter Moments Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("SVFGFilterMomentsPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -716,7 +716,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
-	renderGraph->AddPass("SVFG Atrous Pass", RenderGraphPassFlags::RayTrace,
+	renderGraph->AddPass("SVFGAtrousPass", RenderGraphPassFlags::RayTrace,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -762,7 +762,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 #endif
 
 #if DEBUG_ONLY_RAY_TRACING_ENBALE
-	renderGraph->AddPass("Lighting Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("LightingPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -800,7 +800,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 #else
-	renderGraph->AddPass("Lighting Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("LightingPass", RenderGraphPassFlags::Compute,
 		[&](RenderGraphBuilder& builder)
 		{
 			const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -855,7 +855,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		perFrameData.data.targetResolutionHeight,
 		PixelFormat::RGBA16Float,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
-	auto dofTexture = renderGraph->CreateTexture(dofTextureDesc, "DOF Buffer");
+	auto dofTexture = renderGraph->CreateTexture(dofTextureDesc, "DOFBuffer");
 
 	//renderGraph->AddPass("Depth of Field Pass", RenderGraphPassFlags::Compute,
 	//[&](RenderGraphBuilder& builder)
@@ -891,9 +891,9 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		perFrameData.data.targetResolutionHeight,
 		PixelFormat::RGBA8Unorm,
 		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
-	auto ldrTexture = renderGraph->CreateTexture(ldrTextureDesc, "LDR Buffer");
+	auto ldrTexture = renderGraph->CreateTexture(ldrTextureDesc, "LDRBuffer");
 
-	renderGraph->AddPass("Tonemapping Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("TonemappingPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -919,7 +919,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 
-	renderGraph->AddPass("FXAA Pass", RenderGraphPassFlags::Compute,
+	renderGraph->AddPass("FXAAPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
@@ -951,7 +951,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	RenderGizmo();
 #endif
 
-	renderGraph->AddPass("ImGui Pass", RenderGraphPassFlags::Raster | RenderGraphPassFlags::SkipRenderPass,
+	renderGraph->AddPass("ImGuiPass", RenderGraphPassFlags::Raster | RenderGraphPassFlags::SkipRenderPass,
 	[&](RenderGraphBuilder& builder)
 	{
 		auto& finalTextureData = blackboard.Get<RenderGraphFinalTexture>();

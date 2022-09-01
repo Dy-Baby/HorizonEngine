@@ -29,7 +29,12 @@ namespace HE
 	std::string RenderGraph::Graphviz() const
 	{
 		std::stringstream stream;
-		stream << "digraph render_graph {\n";
+		stream << "digraph render_graph {\n\trankdir = LR;\n"
+			   << "\tsubgraph cluster_0 {\n"
+			   << "\t\tstyle=filled;\n"
+			   << "\t\tcolor = lightgrey;\n"
+			   << "\t\tlabel = \"Graphics\"\n"
+			   << "\t\tnode[shape = rect, style = filled, color = white];\n";
 		for (const auto& pass : passes)
 		{
 			if (pass->IsCulled())
@@ -38,7 +43,7 @@ namespace HE
 			}
 			pass->Graphviz(stream);
 		}
-		stream << "}\n";
+		stream << "\t}\n}\n";
 		return std::move(stream.str());
 	}
 
@@ -124,7 +129,7 @@ namespace HE
 			return false;
 		}
 
-		auto& nodes = dag.GetNodes();
+		auto& nodes = dag.nodes;
 
 		// Push nodes with a 0 reference count on a stack.
 		std::vector<RenderGraphNode*> nodesToCull;
@@ -166,6 +171,9 @@ namespace HE
 	void RenderGraph::Execute(RenderContext* context)
 	{
 		Compile();
+
+		std::string temp = Graphviz();
+		HE_LOG_INFO("{}", temp);
 
 		RenderBackend* renderBackend = context->renderBackend;
 		RenderCommandList* commandList = AllocObject<RenderCommandList>(arena);

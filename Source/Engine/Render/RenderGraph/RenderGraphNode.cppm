@@ -34,28 +34,27 @@ export namespace HE
 			return name; 
 		}
 		uint32 GetRefCount() const 
-		{ 
+		{
 			return refCount;
 		}
-		const std::pmr::vector<RenderGraphNode*>& GetInputs() const 
-		{ 
+		const std::vector<RenderGraphNode*>& GetInputs() const 
+		{
 			return inputs;
 		}
-		const std::pmr::vector<RenderGraphNode*>& GetOutputs() const
+		const std::vector<RenderGraphNode*>& GetOutputs() const
 		{
 			return outputs;
 		}
 	protected:
-		std::pmr::vector<RenderGraphNode*> inputs;
-		std::pmr::vector<RenderGraphNode*> outputs;
-	private:
 		friend class RenderGraph;
 		friend class RenderGraphDAG;
 		friend class RenderGraphBuilder;
-		static const uint32 InfRefCount = (uint32)-1;
 		const char* name;
 		RenderGraphNodeType type;
 		uint32 refCount = 0;
+		static const uint32 InfRefCount = (uint32)-1;
+		std::vector<RenderGraphNode*> inputs;
+		std::vector<RenderGraphNode*> outputs;
 	};
 
 	class RenderGraphDAG
@@ -63,17 +62,10 @@ export namespace HE
 	public:
 		RenderGraphDAG() = default;
 		~RenderGraphDAG() = default;
-		void Clear()
-		{
-			nodes.clear();
-		}
-		const std::pmr::vector<RenderGraphNode*>& GetNodes() const 
-		{
-			return nodes; 
-		}
+		void RegisterNode(RenderGraphNode* node);
+		void Clear();
 	private:
 		friend class RenderGraph;
-		void RegisterNode(RenderGraphNode* node);
-		std::pmr::vector<RenderGraphNode*> nodes;
+		std::vector<RenderGraphNode*> nodes;
 	};
 }
