@@ -114,6 +114,23 @@ namespace YAML
 		}
 	};
 
+	template<>
+	struct YAML::convert<HE::EntityHandle>
+	{
+		static YAML::Node encode(const HE::EntityHandle& rhs)
+		{
+			YAML::Node node;
+			node.push_back((uint64_t)rhs);
+			return node;
+		}
+
+		static bool decode(const YAML::Node& node, HE::EntityHandle& rhs)
+		{
+			rhs = node.as<uint64_t>();
+			return true;
+		}
+	};
+
 	inline YAML::Emitter& operator<<(YAML::Emitter& out, const HE::Vector2& v)
 	{
 		out << YAML::Flow;
@@ -142,6 +159,12 @@ namespace YAML
 		out << YAML::BeginSeq << v.w << v.x << v.y << v.z << YAML::EndSeq;
 		return out;
 	}
+
+	inline YAML::Emitter& operator<<(YAML::Emitter& out, const HE::EntityHandle& entity)
+	{
+		out << (uint64_t)entity;
+		return out;
+	}
 }
 
 namespace HE
@@ -164,6 +187,11 @@ namespace HE
 		SerializeAny["unsigned int"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
 		{
 			out << YAML::Key << name << YAML::Value << value.cast<uint32>();
+		};
+
+		SerializeAny["class HE::EntityHandle"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
+		{
+			out << YAML::Key << name << YAML::Value << value.cast<EntityHandle>();
 		};
 
 		SerializeAny["float"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
@@ -237,13 +265,28 @@ namespace HE
 					out << YAML::EndMap;
 				}
 
+				if (scene->entityManager->HasComponent<SceneHierarchyComponent>(entity))
+				{
+					const auto& component = scene->entityManager->GetComponent<SceneHierarchyComponent>(entity);
+
+					out << YAML::Key << "SceneHierarchyComponent";
+					out << YAML::BeginMap;
+					for (auto data : entt::resolve<SceneHierarchyComponent>().data())
+					{
+						std::string type = std::string(data.type().info().name());
+						std::string name = data.prop("Name"_hs).value().cast<std::string>();
+						auto value = data.get(component);
+						SerializeAny[type](out, name, value);
+					}
+					out << YAML::EndMap;
+				}
+
 				if (scene->entityManager->HasComponent<CameraComponent>(entity))
 				{
 					const auto& component = scene->entityManager->GetComponent<CameraComponent>(entity);
 
 					out << YAML::Key << "CameraComponent";
 					out << YAML::BeginMap;
-
 					for (auto data : entt::resolve<CameraComponent>().data())
 					{
 						std::string type = std::string(data.type().info().name());
@@ -251,7 +294,6 @@ namespace HE
 						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
-
 					out << YAML::EndMap;
 				}
 
@@ -261,7 +303,6 @@ namespace HE
 
 					out << YAML::Key << "DirectionalLightComponent";
 					out << YAML::BeginMap;
-
 					for (auto data : entt::resolve<DirectionalLightComponent>().data())
 					{
 						std::string type = std::string(data.type().info().name());
@@ -269,7 +310,6 @@ namespace HE
 						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
-
 					out << YAML::EndMap;
 				}
 
@@ -279,7 +319,6 @@ namespace HE
 
 					out << YAML::Key << "SkyLightComponent";
 					out << YAML::BeginMap;
-
 					for (auto data : entt::resolve<SkyLightComponent>().data())
 					{
 						std::string type = std::string(data.type().info().name());
@@ -287,7 +326,6 @@ namespace HE
 						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
-
 					out << YAML::EndMap;
 				}
 
@@ -297,7 +335,6 @@ namespace HE
 
 					out << YAML::Key << "StaticMeshComponent";
 					out << YAML::BeginMap;
-
 					for (auto data : entt::resolve<StaticMeshComponent>().data())
 					{
 						std::string type = std::string(data.type().info().name());
@@ -305,13 +342,10 @@ namespace HE
 						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
-
 					out << YAML::EndMap;
 				}
-
 				out << YAML::EndMap; // Entity
 			}
-
 			out << YAML::EndSeq; // Entities
 		}
 		out << YAML::EndMap; // Scene
@@ -360,6 +394,18 @@ namespace HE
 					transform.position = transformComponent["Position"].as<Vector3>();
 					transform.rotation = transformComponent["Rotation"].as<Vector3>();
 					transform.scale = transformComponent["Scale"].as<Vector3>();
+				}
+
+				auto sceneHierarchyComponent = entityValue["SceneHierarchyComponent"];
+				if (sceneHierarchyComponent)
+				{
+					auto& transform = scene->entityManager->AddComponent<SceneHierarchyComponent>(entity);
+					transform.depth = sceneHierarchyComponent["Depth"].as<uint32>();
+					transform.numChildren = sceneHierarchyComponent["Num Children"].as<uint32>();
+					transform.parent = sceneHierarchyComponent["Parent"].as<EntityHandle>();
+					transform.first = sceneHierarchyComponent["First"].as<EntityHandle>();
+					transform.next = sceneHierarchyComponent["Next"].as<EntityHandle>();
+					transform.prev = sceneHierarchyComponent["Prev"].as<EntityHandle>();
 				}
 
 				auto cameraComponent = entityValue["CameraComponent"];

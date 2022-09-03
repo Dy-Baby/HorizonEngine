@@ -8,8 +8,9 @@ namespace HE
 	{
 	public:
 		EntityHandle() : handle(entt::null) {}
+		EntityHandle(uint64 entity) : handle((entt::entity)entity) {}
 		EntityHandle(const entt::entity& entity) : handle(entity) {}
-		~EntityHandle() {}
+		EntityHandle(const EntityHandle& other) : handle(other.handle) {}
 		FORCEINLINE bool operator==(const EntityHandle& rhs) const
 		{
 			return handle == rhs.handle;

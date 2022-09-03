@@ -5,6 +5,13 @@ Entities:
       Position: [0, 0, 5]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    SceneHierarchyComponent:
+      Depth: 0
+      Num Children: 0
+      Parent: 4294967295
+      First: 4294967295
+      Next: 4294967295
+      Prev: 4294967295
     CameraComponent:
       Near Plane: 0.100000001
       Far Plane: 3000
@@ -16,6 +23,13 @@ Entities:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    SceneHierarchyComponent:
+      Depth: 0
+      Num Children: 0
+      Parent: 4294967295
+      First: 4294967295
+      Next: 4294967295
+      Prev: 4294967295
     DirectionalLightComponent:
       Color: [1, 1, 1]
       Intensity: 1
@@ -24,6 +38,13 @@ Entities:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    SceneHierarchyComponent:
+      Depth: 0
+      Num Children: 0
+      Parent: 4294967295
+      First: 4294967295
+      Next: 4294967295
+      Prev: 4294967295
     SkyLightComponent:
       Cubemap: ../../../Assets/HDRIs/PaperMill_E_3k.hdr
       Cubemap Resolution: 128
@@ -32,5 +53,12 @@ Entities:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    SceneHierarchyComponent:
+      Depth: 0
+      Num Children: 0
+      Parent: 4294967295
+      First: 4294967295
+      Next: 4294967295
+      Prev: 4294967295
     StaticMeshComponent:
       Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf
