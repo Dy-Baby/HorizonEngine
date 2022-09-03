@@ -1,3 +1,7 @@
+module;
+
+#include <ECS/ECS.h>
+
 module HorizonEngine.SceneManagement;
 
 namespace HE
@@ -39,8 +43,8 @@ namespace HE
 		{
 			return;
 		}
-		
-		
+
+
 	}
 
 	void SceneManager::LoadSceneAsync(const std::string& name)
@@ -61,10 +65,48 @@ namespace HE
 	Scene::Scene()
 	{
 		entityManager = new EntityManager();
+		entityManager->OnConstruct<TransformComponent>().connect<&entt::registry::emplace_or_replace<TransformDirtyComponent>>();
+		entityManager->OnUpdate<TransformComponent>().connect<&entt::registry::emplace_or_replace<TransformDirtyComponent>>();
 	}
 
 	Scene::~Scene()
 	{
 		delete entityManager;
+	}
+
+	static void UpdateTransform(EntityManager* manager, EntityHandle entity)
+	{
+		const auto& hierarchy = manager->GetComponent<SceneHierarchyComponent>(entity);
+		auto& transform = manager->GetComponent<TransformComponent>(entity);
+		transform.Update();
+		auto currentEntity = hierarchy.first;
+		for (uint32 i = 0; i < hierarchy.numChildren; i++)
+		{
+			if (manager->HasComponent<TransformDirtyComponent>(currentEntity))
+			{
+				continue;
+			}
+			UpdateTransform(manager, currentEntity);
+			currentEntity = manager->GetComponent<SceneHierarchyComponent>(currentEntity).next;
+		}
+		manager->RemoveComponent<TransformDirtyComponent>(entity);
+	}
+
+	void Scene::Update(float timestep)
+	{
+		// Update animations
+
+		// Update transforms
+		entityManager->Get()->sort<TransformDirtyComponent>([&](EntityHandle lhs, EntityHandle rhs)
+		{
+			const auto& lc = entityManager->GetComponent<SceneHierarchyComponent>(lhs);
+			const auto& rc = entityManager->GetComponent<SceneHierarchyComponent>(rhs);
+			return lc.depth < rc.depth;
+		});
+
+		entityManager->GetView<TransformDirtyComponent>().each([&](EntityHandle entity)
+		{
+			UpdateTransform(entityManager, entity);
+		});
 	}
 }

@@ -213,14 +213,16 @@ namespace HE
 	{
 		auto& cameraTransform = activeScene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		cameraController.Update(deltaTime, cameraTransform.position, cameraTransform.rotation);
+
+		activeScene->Update(deltaTime);
+
+		uiRenderer->BeginFrame();
+		OnImGui();
+		uiRenderer->EndFrame();
 	}
 
 	void Application::Render()
 	{
-		uiRenderer->BeginFrame();
-		OnImGui();
-		uiRenderer->EndFrame();
-		
 		auto& camera = activeScene->GetEntityManager()->GetComponent<CameraComponent>(mainCamera);
 		auto& cameraTransform = activeScene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		sceneView->renderPipeline = renderPipeline;

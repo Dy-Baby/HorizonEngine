@@ -81,7 +81,7 @@ namespace HE
 		template<typename Component>
 		bool HasComponent(EntityHandle entity)
 		{
-			return registry.try_get<Component>(entity);
+			return registry.all_of<Component>(entity);
 		}
 
 		template<typename... Component>
@@ -157,7 +157,7 @@ namespace HE
 		}
 
 		template<typename Component>
-		void RemoveComponent(EntityHandle entity) 
+		auto RemoveComponent(EntityHandle entity) 
 		{ 
 			return registry.remove<Component>(entity);
 		}

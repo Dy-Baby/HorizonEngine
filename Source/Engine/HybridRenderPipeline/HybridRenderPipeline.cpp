@@ -303,6 +303,16 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		.targetResolutionHeight = view->targetHeight,
 	};
 	frameIndex++;
+	view->scene->scene->frame = frameIndex;
+	{
+		auto entities = view->scene->scene->GetEntityManager()->GetView<DirectionalLightComponent>();
+		for (auto entity : entities)
+		{
+			auto& transform = view->scene->scene->GetEntityManager()->GetComponent<TransformComponent>(entity);
+			perFrameData.data.sunDirection = Vector3(transform.world * Vector4(0.0, 0.0, -1.0, 0.0));
+			break;
+		}
+	}
 
 	perFrameData.buffer = perFrameDataBuffer;
 	RenderBackendWriteBuffer(renderBackend, perFrameDataBuffer, 0, &perFrameData, sizeof(PerFrameData));

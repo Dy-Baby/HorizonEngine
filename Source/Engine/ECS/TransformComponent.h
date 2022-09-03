@@ -25,6 +25,11 @@ namespace HE
 			factory.data<&TransformComponent::position, entt::as_ref_t>("Position"_hs)
 				.prop("Name"_hs, std::string("Position"));
 		}
+
+		void Update()
+		{
+			world = Math::Compose(position, Quaternion(Math::DegreesToRadians(rotation)), scale);
+		}
 	};
 
 	struct TransformDirtyComponent

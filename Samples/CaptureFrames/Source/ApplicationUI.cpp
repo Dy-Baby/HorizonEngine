@@ -168,16 +168,14 @@ namespace HE
 	}
 
 	template<typename ComponentType>
-	void DrawComponentUI(EntityHandle entity, const char* lable, ComponentType& component)
+	void DrawComponentUI(const char* lable, ComponentType& component)
 	{
 		using namespace entt;
-		ImGui::PushID((int)uint64(entity));
 		if (ImGui::CollapsingHeader(lable, ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 			ImGui::Columns(2);
 			ImGui::Separator();
-
 			for (auto data : entt::resolve<ComponentType>().data())
 			{
 				std::string type = std::string(data.type().info().name());
@@ -185,12 +183,10 @@ namespace HE
 				void* value = data.get(component).data();
 				uiCreator[type](std::string("##" + name).c_str(), name.c_str(), value);
 			}
-
 			ImGui::Columns(1);
 			ImGui::Separator();
 			ImGui::PopStyleVar();
 		}
-		ImGui::PopID();
 	}
 
 	void Application::DrawEntityNodeUI(EntityHandle entity)
@@ -291,28 +287,79 @@ namespace HE
 		{
 			if (selectedEntity != EntityHandle())
 			{
+				ImGui::PushID((int)uint64(selectedEntity));
+
 				auto& transformComponent = activeScene->GetEntityManager()->GetComponent<TransformComponent>(selectedEntity);
-				DrawComponentUI<TransformComponent>(selectedEntity, "Transform", transformComponent);
+				if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+					ImGui::Columns(2);
+					ImGui::Separator();
+
+					bool dirty = false;
+					ImGui::AlignTextToFramePadding();
+					ImGui::TextUnformatted("Position");
+					ImGui::NextColumn();
+					ImGui::PushItemWidth(-1);
+					if (ImGui::DragFloat3("##Position", static_cast<float*>(&transformComponent.position.x)))
+					{
+						dirty = true;
+					}
+					ImGui::PopItemWidth();
+					ImGui::NextColumn();
+
+					ImGui::AlignTextToFramePadding();
+					ImGui::TextUnformatted("Rotation");
+					ImGui::NextColumn();
+					ImGui::PushItemWidth(-1);
+					if (ImGui::DragFloat3("##Rotation", static_cast<float*>(&transformComponent.rotation.x)))
+					{
+						dirty = true;
+					}
+					ImGui::PopItemWidth();
+					ImGui::NextColumn();
+
+					ImGui::AlignTextToFramePadding();
+					ImGui::TextUnformatted("Scale");
+					ImGui::NextColumn();
+					ImGui::PushItemWidth(-1);
+					if (ImGui::DragFloat3("##Scale", static_cast<float*>(&transformComponent.scale.x)))
+					{
+						dirty = true;
+					}
+					ImGui::PopItemWidth();
+					ImGui::NextColumn();
+
+					ImGui::Columns(1);
+					ImGui::Separator();
+					ImGui::PopStyleVar();
+
+					if (dirty)
+					{
+						activeScene->GetEntityManager()->ReplaceComponent<TransformComponent>(selectedEntity, transformComponent);
+					}
+				}
 
 				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<DirectionalLightComponent>(selectedEntity))
 				{
-					DrawComponentUI<DirectionalLightComponent>(selectedEntity, "Directional Light", *component);
+					DrawComponentUI<DirectionalLightComponent>("Directional Light", *component);
 				}
 
 				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<SkyLightComponent>(selectedEntity))
 				{
-					DrawComponentUI<SkyLightComponent>(selectedEntity, "Sky Light", *component);
+					DrawComponentUI<SkyLightComponent>("Sky Light", *component);
 				}
 
 				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<CameraComponent>(selectedEntity))
 				{
-					DrawComponentUI<CameraComponent>(selectedEntity, "Camera", *component);
+					DrawComponentUI<CameraComponent>("Camera", *component);
 				}
 
 				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<StaticMeshComponent>(selectedEntity))
 				{
-					DrawComponentUI<StaticMeshComponent>(selectedEntity, "Static Mesh", *component);
+					DrawComponentUI<StaticMeshComponent>("Static Mesh", *component);
 				}
+				ImGui::PopID();
 			}
 		}
 		ImGui::End();

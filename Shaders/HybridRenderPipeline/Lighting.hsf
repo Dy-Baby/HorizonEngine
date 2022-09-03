@@ -91,7 +91,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		float3 Li = -perFrameData.sunDirection;
 		float cosLi = clamp(dot(N, Li), 0.0, 1.0);
 	{
-		if(cosLi > 0.0)
+		// if(cosLi > 0.0)
 		{
 			float3 Lh = normalize(Li + V);
 			float cosLh = clamp(dot(N, Lh), 0.0, 1.0);

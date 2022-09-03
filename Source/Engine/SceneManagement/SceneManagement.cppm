@@ -22,10 +22,13 @@ export namespace HE
 	public:
 		Scene();
 		~Scene();
+		void Update(float timestep);
 		std::string name;
 		std::string url;
 		bool isLoaded;
 		bool isDirty;
+
+		int frame = 0;
 		EntityManager* GetEntityManager()
 		{
 			return entityManager;
