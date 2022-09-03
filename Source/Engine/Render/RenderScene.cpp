@@ -128,6 +128,7 @@ namespace HE
 				{
 					PBRMaterialShaderParameters& material = materials.emplace_back();
 
+					material.flags = meshSource->materials[i].flags;
 					material.baseColor = meshSource->materials[i].baseColor;
 					material.metallic = meshSource->materials[i].metallic;
 					material.roughness = meshSource->materials[i].roughness;

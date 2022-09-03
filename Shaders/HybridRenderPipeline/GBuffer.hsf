@@ -52,8 +52,11 @@ float4x4 GetPrevWorldMatrix()
     return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<float4x4>((bufferIndex & 0xffff) * sizeof(float4x4));
 }
 
+#define MATERIAL_FLAGS_USE_NORMAL_MAP 0x00000001
+
 struct MaterialInstanceData
 {
+    int flags;
     float4 baseColor;
     float metallic;
     float roughness;
@@ -91,8 +94,8 @@ struct GBufferVSToPS
     float4 prevClipPosition : POSITION0;
     float3 worldPosition : POSITION1;
     float3 worldNormal : NORMAL0;
-    float4 worldTangent : TANGENT0;
     float2 texCoord0 : TEXCOORD0;
+    float3x3 tangentSpace : TANGENT;
 };
 
 void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
@@ -104,12 +107,12 @@ void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
     float3 worldPosition = mul(float4(localPosition, 1.0), worldMatrix).xyz;
     float4 clipPosition = mul(float4(worldPosition, 1.0), perFrameData.viewProjectionMatrix);
 
-    float3 worldNormal = GetVertexNormal(vertexIndex);
-    worldNormal = mul(worldNormal.xyz, (float3x3)worldMatrix);
+    float3 worldNormal = normalize(mul(GetVertexNormal(vertexIndex), (float3x3)worldMatrix));
+    float4 vertexTangent = GetVertexTangent(vertexIndex);
+    float3 worldTangent = normalize(mul(vertexTangent.xyz, (float3x3)worldMatrix));
+    float3 worldBitangent = normalize(cross(worldNormal, worldTangent) * vertexTangent.w);
+    float3x3 tangentSpace = float3x3(worldTangent, worldBitangent, worldNormal);
 
-    float4 worldTangent = GetVertexTangent(vertexIndex);
-    worldTangent = float4(mul(worldTangent.xyz, (float3x3)worldMatrix), worldTangent.w);
-    
     float2 texCoord0 =  GetVertexTexCoord0(vertexIndex);
 
     float4x4 prevWorldMatrix = GetPrevWorldMatrix();
@@ -120,7 +123,7 @@ void GBufferVS(uint vertexIndex : SV_VertexID, out GBufferVSToPS output)
     output.prevClipPosition = prevClipPosition;
     output.worldPosition = worldPosition;
     output.worldNormal = worldNormal;
-    output.worldTangent = worldTangent;
+    output.tangentSpace = tangentSpace;
     output.texCoord0 = texCoord0;
 }
 
@@ -137,7 +140,6 @@ struct GBufferData
 void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
 {
     float3 interpolatedVertexNormal = normalize(input.worldNormal);
-    float4 tangent = input.worldTangent;
     float3 position = input.worldPosition;
     float2 texCoord0 = input.texCoord0;
     
@@ -156,13 +158,16 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
 		discard;
 	}
 
-    float3 tangentNormal = normalize(normalize(normalMap.Sample(SAMPLER_LINEAR_WARP, texCoord0).xyz) * 2.0 - 1.0);
-	float3 N = interpolatedVertexNormal;
-	float3 T = normalize(tangent.xyz);
-	float3 B = normalize(cross(N, T)) * tangent.w;
-    float3x3 TBN = float3x3(T, B, N);
-	float3 normal = normalize(mul(tangentNormal, TBN));
-    //normal = N;
+    float3 normal;
+    if (material.flags & MATERIAL_FLAGS_USE_NORMAL_MAP)
+    {
+        float3 tangentNormal = normalize(normalize(normalMap.Sample(SAMPLER_LINEAR_WARP, texCoord0).xyz) * 2.0 - 1.0);
+        normal = normalize(mul(tangentNormal, input.tangentSpace));
+    }
+    else
+    {
+        normal = interpolatedVertexNormal;
+    }
 
     float2 metallicRoughness = metallicRoughnessMap.Sample(SAMPLER_LINEAR_WARP, texCoord0).bg;
 	float metallic = material.metallic * metallicRoughness.x;

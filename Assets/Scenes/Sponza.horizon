@@ -33,4 +33,4 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     StaticMeshComponent:
-      Mesh Source: ../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf
+      Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf

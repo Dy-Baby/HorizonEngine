@@ -146,7 +146,7 @@ namespace HE
 		auto mesh = entityManager->CreateEntity("Mesh");
 		StaticMeshComponent staticMeshComponent;
 		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf"; 
-		staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
+		//staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
 		//staticMeshComponent.meshSource = "../../../Assets/Models/SunTemple_v4/SunTemple.gltf";
 		entityManager->AddComponent<StaticMeshComponent>(mesh, staticMeshComponent);
 		entityManager->AddComponent<TransformComponent>(mesh);

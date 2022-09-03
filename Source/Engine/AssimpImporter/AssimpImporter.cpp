@@ -111,6 +111,7 @@ namespace HE
 				if (result == aiReturn_SUCCESS)
 				{
 					material.normalMap = dir + '/' + aiTexPath.C_Str();
+					material.flags &= MATERIAL_FLAGS_USE_NORMAL_MAP;
 				}
 				else
 				{

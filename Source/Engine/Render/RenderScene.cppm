@@ -16,6 +16,7 @@ export namespace HE
 	
 	struct PBRMaterialShaderParameters
 	{
+		int32 flags;
 		Vector4 baseColor;
 		float metallic;
 		float roughness;

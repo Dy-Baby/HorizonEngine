@@ -42,9 +42,17 @@ export namespace HE
 		static std::unordered_map<std::string, std::shared_ptr<Asset>> ImportedAssets;
 	};
 
+	enum MaterialFlags
+	{
+		MATERIAL_FLAGS_NONE = 0x00000000,
+		MATERIAL_FLAGS_USE_NORMAL_MAP = 0x00000001,
+		MATERIAL_FLAGS_MASK_ALL = 0xffffffff,
+	};
+
 	struct Material
 	{
 		std::string name;
+		int32 flags;
 		Vector4 baseColor;
 		float metallic;
 		float specular;
