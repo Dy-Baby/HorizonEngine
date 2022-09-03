@@ -1,6 +1,6 @@
 Scene: DefaultScene
 Entities:
-  - Entity: Main Camera
+  - Entity: MainCamera
     TransformComponent:
       Position: [0, 0, 5]
       Rotation: [0, 0, 0]
@@ -9,19 +9,28 @@ Entities:
       Near Plane: 0.100000001
       Far Plane: 3000
       Field of View: 60
-      Aspect Ratio: -107374176
-  - Entity: Directional Light
+      Aspect Ratio: 1.77777779
+      Override Aspect Ratio: false
+  - Entity: DirectionalLight
     TransformComponent:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
-      Scale: [0, 0, 0]
+      Scale: [1, 1, 1]
     DirectionalLightComponent:
       Color: [1, 1, 1]
       Intensity: 1
+  - Entity: SkyLight
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SkyLightComponent:
+      Cubemap: ../../../Assets/HDRIs/PaperMill_E_3k.hdr
+      Cubemap Resolution: 128
   - Entity: Mesh
     TransformComponent:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
-      Scale: [0, 0, 0]
+      Scale: [1, 1, 1]
     StaticMeshComponent:
       Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf

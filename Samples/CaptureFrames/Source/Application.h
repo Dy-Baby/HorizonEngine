@@ -79,6 +79,8 @@ namespace HE
 		RenderBackend* renderBackend;
 		UIRenderer* uiRenderer;
 
+		EntityHandle selectedEntity;
+
 		RenderContext* renderContext;
 
 		SimpleFirstPersonCameraController cameraController;

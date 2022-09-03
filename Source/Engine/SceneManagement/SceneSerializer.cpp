@@ -151,9 +151,19 @@ namespace HE
 	
 	void InitializeSerializeAny()
 	{
+		SerializeAny["bool"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
+		{
+			out << YAML::Key << name << YAML::Value << value.cast<bool>();
+		};
+
 		SerializeAny["int"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
 		{
 			out << YAML::Key << name << YAML::Value << value.cast<int>();
+		};
+
+		SerializeAny["unsigned int"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
+		{
+			out << YAML::Key << name << YAML::Value << value.cast<uint32>();
 		};
 
 		SerializeAny["float"] = [](YAML::Emitter& out, const std::string& name, const entt::meta_any& value)
@@ -211,7 +221,7 @@ namespace HE
 
 				if (scene->entityManager->HasComponent<TransformComponent>(entity))
 				{
-					const auto& transform = scene->entityManager->GetComponent<TransformComponent>(entity);
+					const auto& component = scene->entityManager->GetComponent<TransformComponent>(entity);
 
 					out << YAML::Key << "TransformComponent";
 					out << YAML::BeginMap;
@@ -220,7 +230,7 @@ namespace HE
 					{
 						std::string type = std::string(data.type().info().name());
 						std::string name = data.prop("Name"_hs).value().cast<std::string>();
-						auto value = data.get(transform);
+						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
 
@@ -229,7 +239,7 @@ namespace HE
 
 				if (scene->entityManager->HasComponent<CameraComponent>(entity))
 				{
-					const auto& camera = scene->entityManager->GetComponent<CameraComponent>(entity);
+					const auto& component = scene->entityManager->GetComponent<CameraComponent>(entity);
 
 					out << YAML::Key << "CameraComponent";
 					out << YAML::BeginMap;
@@ -238,7 +248,7 @@ namespace HE
 					{
 						std::string type = std::string(data.type().info().name());
 						std::string name = data.prop("Name"_hs).value().cast<std::string>();
-						auto value = data.get(camera);
+						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
 
@@ -247,7 +257,7 @@ namespace HE
 
 				if (scene->entityManager->HasComponent<DirectionalLightComponent>(entity))
 				{
-					const auto& camera = scene->entityManager->GetComponent<DirectionalLightComponent>(entity);
+					const auto& component = scene->entityManager->GetComponent<DirectionalLightComponent>(entity);
 
 					out << YAML::Key << "DirectionalLightComponent";
 					out << YAML::BeginMap;
@@ -256,7 +266,25 @@ namespace HE
 					{
 						std::string type = std::string(data.type().info().name());
 						std::string name = data.prop("Name"_hs).value().cast<std::string>();
-						auto value = data.get(camera);
+						auto value = data.get(component);
+						SerializeAny[type](out, name, value);
+					}
+
+					out << YAML::EndMap;
+				}
+
+				if (scene->entityManager->HasComponent<SkyLightComponent>(entity))
+				{
+					const auto& component = scene->entityManager->GetComponent<SkyLightComponent>(entity);
+
+					out << YAML::Key << "SkyLightComponent";
+					out << YAML::BeginMap;
+
+					for (auto data : entt::resolve<SkyLightComponent>().data())
+					{
+						std::string type = std::string(data.type().info().name());
+						std::string name = data.prop("Name"_hs).value().cast<std::string>();
+						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
 
@@ -265,7 +293,7 @@ namespace HE
 
 				if (scene->entityManager->HasComponent<StaticMeshComponent>(entity))
 				{
-					const auto& staticMesh = scene->entityManager->GetComponent<StaticMeshComponent>(entity);
+					const auto& component = scene->entityManager->GetComponent<StaticMeshComponent>(entity);
 
 					out << YAML::Key << "StaticMeshComponent";
 					out << YAML::BeginMap;
@@ -274,7 +302,7 @@ namespace HE
 					{
 						std::string type = std::string(data.type().info().name());
 						std::string name = data.prop("Name"_hs).value().cast<std::string>();
-						auto value = data.get(staticMesh);
+						auto value = data.get(component);
 						SerializeAny[type](out, name, value);
 					}
 
@@ -342,6 +370,7 @@ namespace HE
 					camera.farPlane = cameraComponent["Far Plane"].as<float>();
 					camera.fieldOfView = cameraComponent["Field of View"].as<float>();
 					camera.aspectRatio = cameraComponent["Aspect Ratio"].as<float>();
+					camera.overrideAspectRatio = cameraComponent["Override Aspect Ratio"].as<bool>();
 				}
 
 				auto directionalLightComponent = entityValue["DirectionalLightComponent"];
@@ -350,6 +379,14 @@ namespace HE
 					auto& directionalLight = scene->entityManager->AddComponent<DirectionalLightComponent>(entity);
 					directionalLight.intensity = directionalLightComponent["Intensity"].as<float>(1.0f);
 					directionalLight.color = directionalLightComponent["Color"].as<Vector3>(Vector3(1.0f));
+				}
+
+				auto skyLightComponent = entityValue["SkyLightComponent"];
+				if (skyLightComponent)
+				{
+					auto& skyLight = scene->entityManager->AddComponent<SkyLightComponent>(entity);
+					skyLight.cubemap = skyLightComponent["Cubemap"].as<std::string>();
+					skyLight.cubemapResolution = skyLightComponent["Cubemap Resolution"].as<uint32>();
 				}
 
 				auto staticMeshComponent = entityValue["StaticMeshComponent"];

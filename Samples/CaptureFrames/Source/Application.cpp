@@ -109,13 +109,15 @@ namespace HE
 		
 		auto entityManager = activeScene->GetEntityManager();
 
-		mainCamera = entityManager->CreateEntity("Main Camera");
+		mainCamera = entityManager->CreateEntity("MainCamera");
 
 		CameraComponent cameraComponent;
 		cameraComponent.type = CameraType::Perpective;
 		cameraComponent.nearPlane = 0.1;
 		cameraComponent.farPlane = 3000.0;
 		cameraComponent.fieldOfView = 60.0;
+		cameraComponent.aspectRatio = 16.0 / 9.0;
+		cameraComponent.overrideAspectRatio = false;
 		entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 
 		TransformComponent cameraTransform;
@@ -125,14 +127,23 @@ namespace HE
 		entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
 		entityManager->AddComponent<HierarchyComponent>(mainCamera);
 
-		auto directionalLight = entityManager->CreateEntity("Directional Light");
+		auto directionalLight = entityManager->CreateEntity("DirectionalLight");
 
-		DirectionalLightComponent lightComponent;
-		lightComponent.color = Vector4(1.0f);
-		lightComponent.intensity = 1.0f;
-		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, lightComponent);
+		DirectionalLightComponent directionalLightComponent;
+		directionalLightComponent.color = Vector4(1.0f);
+		directionalLightComponent.intensity = 1.0f;
+		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, directionalLightComponent);
 		entityManager->AddComponent<TransformComponent>(directionalLight);
 		entityManager->AddComponent<HierarchyComponent>(directionalLight);
+
+		auto skyLight = entityManager->CreateEntity("SkyLight");
+		SkyLightComponent skyLightComponent;
+		skyLightComponent.cubemap = "../../../Assets/HDRIs/PaperMill_E_3k.hdr";
+		skyLightComponent.cubemapResolution = 128;
+		entityManager->AddComponent<SkyLightComponent>(skyLight, skyLightComponent);
+		entityManager->AddComponent<TransformComponent>(skyLight);
+		entityManager->AddComponent<HierarchyComponent>(skyLight);
+		selectedEntity = skyLight;
 
 		auto mesh = entityManager->CreateEntity("Mesh");
 		entityManager->AddComponent<TransformComponent>(mesh);

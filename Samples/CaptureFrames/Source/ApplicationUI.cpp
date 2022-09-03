@@ -14,6 +14,29 @@ namespace HE
 	void UIInit()
 	{
 		using namespace HE;
+
+		uiCreator["int"] = [](const std::string& name, void* value)
+		{
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextUnformatted(name.c_str());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1);
+			ImGui::DragInt(("##" + name).c_str(), static_cast<int*>(value));
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+		};
+
+		uiCreator["unsigned int"] = [](const std::string& name, void* value)
+		{
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextUnformatted(name.c_str());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1);
+			ImGui::DragInt(("##" + name).c_str(), static_cast<int*>(value));
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+		};
+
 		uiCreator["float"] = [](const std::string& name, void* value)
 		{
 			ImGui::AlignTextToFramePadding();
@@ -32,6 +55,17 @@ namespace HE
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
 			ImGui::DragFloat3(("##" + name).c_str(), static_cast<float*>(value));
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+		};
+
+		uiCreator["class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >"] = [](const std::string& name, void* value)
+		{
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextUnformatted(name.c_str());
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1);
+			ImGui::LabelText(("##" + name).c_str(), "%s", static_cast<std::string*>(value)->c_str());
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};
@@ -123,10 +157,10 @@ namespace HE
 	}
 
 	template<typename ComponentType>
-	void DrawComponent(const ComponentType& component)
+	void DrawComponentUI(const char* lable, ComponentType& component)
 	{
 		using namespace entt;
-		if (ImGui::CollapsingHeader("Sky Atmosphere"))
+		if (ImGui::CollapsingHeader(lable))
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 			ImGui::Columns(2);
@@ -136,7 +170,6 @@ namespace HE
 			{
 				std::string type = std::string(data.type().info().name());
 				std::string name = data.prop("Name"_hs).value().cast<std::string>();
-				auto g = data.get(component);
 				void* value = data.get(component).data();
 				uiCreator[type](name, value);
 			}
@@ -160,7 +193,7 @@ namespace HE
 			inited = true;
 		}
 
-		ImGui::Begin("Settings");
+		ImGui::Begin("Inspector");
 		{
 			//auto& skyAtmosphereComponent = activeScene->GetEntityManager()->GetComponent<SkyAtmosphereComponent>(sky);
 			//// DrawComponent<SkyAtmosphereComponent>(skyAtmosphereComponent);
@@ -184,6 +217,28 @@ namespace HE
 			//	ImGui::PopStyleVar();
 			//}
 
+			auto& transformComponent = activeScene->GetEntityManager()->GetComponent<TransformComponent>(selectedEntity);
+			DrawComponentUI<TransformComponent>("Transform", transformComponent);
+
+			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<DirectionalLightComponent>(selectedEntity))
+			{
+				DrawComponentUI<DirectionalLightComponent>("Directional Light", *component);
+			}
+
+			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<SkyLightComponent>(selectedEntity))
+			{
+				DrawComponentUI<SkyLightComponent>("Sky Light", *component);
+			}
+
+			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<CameraComponent>(selectedEntity))
+			{
+				DrawComponentUI<CameraComponent>("Camera Light", *component);
+			}
+
+			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<StaticMeshComponent>(selectedEntity))
+			{
+				DrawComponentUI<StaticMeshComponent>("Static Mesh", *component);
+			}
 #if 0
 			if (ImGui::CollapsingHeader("Sky Atmosphere"))
 			{

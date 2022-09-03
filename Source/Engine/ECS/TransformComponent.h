@@ -12,6 +12,9 @@ namespace HE
 		Matrix4x4 world;
 
 		TransformComponent()
+			: position(0.0, 0.0, 0.0)
+			, rotation(0.0, 0.0, 0.0)
+			, scale(1.0, 1.0, 1.0)
 		{
 			using namespace entt;
 			auto factory = entt::meta<TransformComponent>();

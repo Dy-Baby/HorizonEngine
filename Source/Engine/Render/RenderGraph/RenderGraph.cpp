@@ -172,8 +172,8 @@ namespace HE
 	{
 		Compile();
 
-		std::string temp = Graphviz();
-		HE_LOG_INFO("{}", temp);
+		//std::string temp = Graphviz();
+		//HE_LOG_INFO("{}", temp);
 
 		RenderBackend* renderBackend = context->renderBackend;
 		RenderCommandList* commandList = AllocObject<RenderCommandList>(arena);

@@ -17,11 +17,14 @@ namespace HE
 		float farPlane;
 		float fieldOfView;
 		float aspectRatio;
+		bool overrideAspectRatio;
 
 		CameraComponent()
 		{
 			using namespace entt;
 			auto factory = entt::meta<CameraComponent>();
+			factory.data<&CameraComponent::overrideAspectRatio, entt::as_ref_t>("Override Aspect Ratio"_hs)
+				.prop("Name"_hs, std::string("Override Aspect Ratio"));
 			factory.data<&CameraComponent::aspectRatio, entt::as_ref_t>("Aspect Ratio"_hs)
 				.prop("Name"_hs, std::string("Aspect Ratio"));
 			factory.data<&CameraComponent::fieldOfView, entt::as_ref_t>("Field of View"_hs)
