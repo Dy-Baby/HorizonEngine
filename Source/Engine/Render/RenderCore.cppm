@@ -771,6 +771,16 @@ export namespace HE
 
 	struct RenderBackendTextureDesc
 	{
+		static RenderBackendTextureDesc CreateTexture2D(
+			uint32 width,
+			uint32 height,
+			uint32 mipLevels,
+			PixelFormat format)
+		{
+			TextureCreateFlags flags = TextureCreateFlags::ShaderResource;
+			return RenderBackendTextureDesc(width, height, 1, mipLevels, 1, 1, TextureType::Texture2D, format, flags, {});
+		}
+
 		static RenderBackendTextureDesc Create2D(
 			uint32 width,
 			uint32 height,

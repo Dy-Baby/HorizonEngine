@@ -78,8 +78,8 @@ namespace HE
 
 		shaderCompiler = CreateDxcShaderCompiler();
 
-		// int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
-		int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
+		//int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
+		int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
 		renderBackend = VulkanRenderBackendCreateBackend(flags);
 
 		uint32 deviceMask;
@@ -110,7 +110,12 @@ namespace HE
 		auto entityManager = activeScene->GetEntityManager();
 
 		mainCamera = entityManager->CreateEntity("MainCamera");
-
+		TransformComponent cameraTransform;
+		cameraTransform.position = Vector3(0.0, 0.0, 5.0);
+		cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
+		cameraTransform.scale = Vector3(1.0);
+		entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
+		entityManager->AddComponent<SceneHierarchyComponent>(mainCamera);
 		CameraComponent cameraComponent;
 		cameraComponent.type = CameraType::Perpective;
 		cameraComponent.nearPlane = 0.1;
@@ -120,13 +125,6 @@ namespace HE
 		cameraComponent.overrideAspectRatio = false;
 		entityManager->AddComponent<CameraComponent>(mainCamera, cameraComponent);
 
-		TransformComponent cameraTransform;
-		cameraTransform.position = Vector3(0.0, 0.0, 5.0);
-		cameraTransform.rotation = Vector3(0.0, 0.0, 0.0);
-		cameraTransform.scale = Vector3(1.0);
-		entityManager->AddComponent<TransformComponent>(mainCamera, cameraTransform);
-		entityManager->AddComponent<HierarchyComponent>(mainCamera);
-
 		auto directionalLight = entityManager->CreateEntity("DirectionalLight");
 
 		DirectionalLightComponent directionalLightComponent;
@@ -134,7 +132,7 @@ namespace HE
 		directionalLightComponent.intensity = 1.0f;
 		entityManager->AddComponent<DirectionalLightComponent>(directionalLight, directionalLightComponent);
 		entityManager->AddComponent<TransformComponent>(directionalLight);
-		entityManager->AddComponent<HierarchyComponent>(directionalLight);
+		entityManager->AddComponent<SceneHierarchyComponent>(directionalLight);
 
 		auto skyLight = entityManager->CreateEntity("SkyLight");
 		SkyLightComponent skyLightComponent;
@@ -142,17 +140,17 @@ namespace HE
 		skyLightComponent.cubemapResolution = 128;
 		entityManager->AddComponent<SkyLightComponent>(skyLight, skyLightComponent);
 		entityManager->AddComponent<TransformComponent>(skyLight);
-		entityManager->AddComponent<HierarchyComponent>(skyLight);
+		entityManager->AddComponent<SceneHierarchyComponent>(skyLight);
 		selectedEntity = skyLight;
 
 		auto mesh = entityManager->CreateEntity("Mesh");
-		entityManager->AddComponent<TransformComponent>(mesh);
-		entityManager->AddComponent<HierarchyComponent>(mesh);
-
 		StaticMeshComponent staticMeshComponent;
-		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf";
+		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf"; 
+		staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
 		//staticMeshComponent.meshSource = "../../../Assets/Models/SunTemple_v4/SunTemple.gltf";
 		entityManager->AddComponent<StaticMeshComponent>(mesh, staticMeshComponent);
+		entityManager->AddComponent<TransformComponent>(mesh);
+		entityManager->AddComponent<SceneHierarchyComponent>(mesh);
 
 		{
 			SceneSerializer serializer(activeScene);
@@ -222,25 +220,31 @@ namespace HE
 		uiRenderer->BeginFrame();
 		OnImGui();
 		uiRenderer->EndFrame();
-
+		
 		auto& camera = activeScene->GetEntityManager()->GetComponent<CameraComponent>(mainCamera);
-		camera.aspectRatio = (float)swapChainWidth / (float)swapChainHeight;
 		auto& cameraTransform = activeScene->GetEntityManager()->GetComponent<TransformComponent>(mainCamera);
 		sceneView->renderPipeline = renderPipeline;
 		sceneView->target = RenderBackendGetActiveSwapChainBuffer(renderBackend, swapChain);
 		sceneView->targetDesc = RenderBackendTextureDesc::Create2D(swapChainWidth, swapChainHeight, PixelFormat::BGRA8Unorm, TextureCreateFlags::Present);
 		sceneView->targetWidth = swapChainWidth;
 		sceneView->targetHeight = swapChainHeight;
-		sceneView->camera.aspectRatio = camera.aspectRatio;
 		sceneView->camera.fieldOfView = camera.fieldOfView;
 		sceneView->camera.zNear = camera.nearPlane;
 		sceneView->camera.zFar = camera.farPlane;
 		sceneView->camera.position = cameraTransform.position;
 		sceneView->camera.euler = cameraTransform.rotation;
+		if (camera.overrideAspectRatio)
+		{
+			sceneView->camera.aspectRatio = camera.aspectRatio;
+		}
+		else
+		{
+			sceneView->camera.aspectRatio = (float)swapChainWidth / (float)swapChainHeight;
+		}
 		static Quaternion zUpQuat = glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(0.0, 1.0, 0.0)) * glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(0.0, 0.0, 1.0));
 		sceneView->camera.invViewMatrix = Math::Compose(sceneView->camera.position, Quaternion(Math::DegreesToRadians(sceneView->camera.euler)) * zUpQuat, Vector3(1.0f, 1.0f, 1.0f));
 		sceneView->camera.viewMatrix = Math::Inverse(sceneView->camera.invViewMatrix);
-		sceneView->camera.projectionMatrix = glm::perspectiveRH_ZO(Math::DegreesToRadians(camera.fieldOfView), camera.aspectRatio, camera.nearPlane, camera.farPlane);
+		sceneView->camera.projectionMatrix = glm::perspectiveRH_ZO(Math::DegreesToRadians(sceneView->camera.fieldOfView), sceneView->camera.aspectRatio, sceneView->camera.zNear, sceneView->camera.zFar);
 		sceneView->camera.invProjectionMatrix = Math::Inverse(sceneView->camera.projectionMatrix);
 		RenderSceneView(renderContext, sceneView);
 

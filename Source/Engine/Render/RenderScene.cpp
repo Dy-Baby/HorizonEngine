@@ -73,7 +73,7 @@ namespace HE
 
 		stbi_image_free(data);
 
-		RenderBackendTextureDesc desc = RenderBackendTextureDesc::Create2D(iw, ih, PixelFormat::RGBA8Unorm, TextureCreateFlags::ShaderResource);
+		RenderBackendTextureDesc desc = RenderBackendTextureDesc::CreateTexture2D(iw, ih, Math::MaxMipLevelCount(iw, ih), PixelFormat::RGBA8Unorm);
 		RenderBackendTextureHandle texture = RenderBackendCreateTexture(renderBackend, ~0u, &desc, buffer, filename);
 
 		_aligned_free(buffer);
@@ -131,7 +131,8 @@ namespace HE
 					material.baseColor = meshSource->materials[i].baseColor;
 					material.metallic = meshSource->materials[i].metallic;
 					material.roughness = meshSource->materials[i].roughness;
-
+					material.emission = meshSource->materials[i].emission;
+					
 					if (meshSource->materials[i].baseColorMap == "")
 					{
 						material.baseColorMapIndex = 0;
@@ -211,11 +212,11 @@ namespace HE
 					.numVertices = renderables[i].numVertices,
 					.vertexStride = 3 * sizeof(float),
 					.vertexBuffer = vertexBuffers[0][renderables[i].vertexBufferIndex],
-					.vertexOffset = renderables[i].firstVertex * 3 * sizeof(float),
+					.vertexOffset = 0,
 					.indexBuffer = indexBuffers[renderables[i].indexBufferIndex],
 					.indexOffset = renderables[i].firstIndex * sizeof(uint32),
 					.transformBuffer = worldMatrixBuffer,
-					.transformOffset = renderables[i].transformIndex * 16 * (uint32)sizeof(float),
+					.transformOffset = renderables[i].transformIndex * 16 * sizeof(float),
 				}
 			};
 		}

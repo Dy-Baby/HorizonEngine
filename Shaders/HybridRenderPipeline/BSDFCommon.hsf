@@ -1,3 +1,6 @@
+// Constant normal incidence Fresnel factor for all dielectrics.
+static const float3 Fdielectric = 0.04;
+
 float3 TangentToWorld(const float3 vec, const float3 T, const float3 B, const float3 N)
 {
     return normalize(T * vec.x + B * vec.y + N * vec.z);

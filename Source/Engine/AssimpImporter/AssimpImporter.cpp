@@ -135,10 +135,12 @@ namespace HE
 				if (result == aiReturn_SUCCESS)
 				{
 					material.emissiveMap = dir + '/' + aiTexPath.C_Str();
+					material.emission = Vector4(1.0);
 				}
 				else
 				{
 					material.emissiveMap = "";
+					material.emission = Vector4(0.0);
 				}
 			}
 		}
@@ -169,9 +171,13 @@ namespace HE
 
 				for (uint32 vertexID = 0; vertexID < aiMesh->mNumVertices; vertexID++)
 				{
+					Vector3 normal = Vector3(aiMesh->mNormals[vertexID].x, aiMesh->mNormals[vertexID].y, aiMesh->mNormals[vertexID].z);
+					Vector3 tangent = Vector3(aiMesh->mTangents[vertexID].x, aiMesh->mTangents[vertexID].y, aiMesh->mTangents[vertexID].z);
+					Vector3 bitangent = Vector3(aiMesh->mBitangents[vertexID].x, aiMesh->mBitangents[vertexID].y, aiMesh->mBitangents[vertexID].z);
+					float tangentW = glm::dot(glm::cross(normal, tangent), bitangent) > 0.0f ? 1.0f : -1.0f;
 					mesh->positions.emplace_back(Vector3(aiMesh->mVertices[vertexID].x, aiMesh->mVertices[vertexID].y, aiMesh->mVertices[vertexID].z));
-					mesh->normals.emplace_back(Vector3(aiMesh->mNormals[vertexID].x, aiMesh->mNormals[vertexID].y, aiMesh->mNormals[vertexID].z));
-					mesh->tangents.emplace_back(Vector4(aiMesh->mTangents[vertexID].x, aiMesh->mTangents[vertexID].y, aiMesh->mTangents[vertexID].z, 1.0f));
+					mesh->normals.emplace_back(normal);
+					mesh->tangents.emplace_back(Vector4(aiMesh->mTangents[vertexID].x, aiMesh->mTangents[vertexID].y, aiMesh->mTangents[vertexID].z, tangentW));
 					if (aiMesh->HasTextureCoords(0))
 					{
 						mesh->texCoords.emplace_back(Vector2(aiMesh->mTextureCoords[0][vertexID].x, aiMesh->mTextureCoords[0][vertexID].y));

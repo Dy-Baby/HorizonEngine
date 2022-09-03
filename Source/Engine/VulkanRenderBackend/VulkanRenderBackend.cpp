@@ -1581,51 +1581,164 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 
 		VkCommandBuffer commandBuffer; VkCommandPool pool;
 		VulkanHelper::CreateTemporaryCommandBuffer(handle, GetQueueFamilyIndex(QueueFamily::Graphics), pool, commandBuffer);
-		VkImageMemoryBarrier barrier = {};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.image = texture.handle;
-		barrier.oldLayout = imageInfo.initialLayout;
-		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = imageInfo.arrayLayers;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = imageInfo.mipLevels;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		vkCmdPipelineBarrier(
-			commandBuffer, 
-			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0, 
-			0, NULL, 
-			0, NULL, 
-			1, &barrier);
+		
+		{
+			VkImageMemoryBarrier barrier = {
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = 0,
+				.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = texture.handle,
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = 0,
+					.levelCount = imageInfo.mipLevels,
+					.baseArrayLayer = 0,
+					.layerCount = imageInfo.arrayLayers,
+				},
+			};
+		
+			vkCmdPipelineBarrier(
+				commandBuffer,
+				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
 
-		vkCmdCopyBufferToImage(
-			commandBuffer,
-			uploadBuffer.handle, 
-			texture.handle,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-			(uint32)copyRegions.size(), copyRegions.data());
+			vkCmdCopyBufferToImage(
+				commandBuffer,
+				uploadBuffer.handle,
+				texture.handle,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				(uint32)copyRegions.size(), 
+				copyRegions.data());
 
-		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		vkCmdPipelineBarrier(
-			commandBuffer,
-			VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier);
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			vkCmdPipelineBarrier(
+				commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+		}
+
+		for (uint32 mipLevel = 1; mipLevel < texture.mipLevels; mipLevel++)
+		{
+			VkImageBlit imageBlit = {
+				.srcSubresource = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.mipLevel = mipLevel - 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+				.srcOffsets = {
+					{ .x = 0, .y = 0, .z = 0 },
+					{ .x = std::max((int32)(texture.width >> (mipLevel - 1)), 1), .y = std::max((int32)(texture.height >> (mipLevel - 1)), 1), .z = 1,},
+				},
+				.dstSubresource = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.mipLevel = mipLevel,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+				.dstOffsets = {
+					{.x = 0, .y = 0, .z = 0 },
+					{.x = std::max((int32)(texture.width >> mipLevel), 1), .y = std::max((int32)(texture.height >> mipLevel), 1), .z = 1,},
+				},
+			};
+
+			VkImageMemoryBarrier barrier = {
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = 0,
+				.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = texture.handle,
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = mipLevel,
+					.levelCount = 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+			};
+
+			vkCmdPipelineBarrier(commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+
+			vkCmdBlitImage(commandBuffer,
+				texture.handle,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				texture.handle,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1,
+				&imageBlit,
+				VK_FILTER_LINEAR);
+
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier);
+		}
+
+		{
+			VkImageMemoryBarrier barrier = {
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+				.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = texture.handle,
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = 0,
+					.levelCount = texture.mipLevels,
+					.baseArrayLayer = 0,
+					.layerCount = 1,
+				},
+			};
+
+			vkCmdPipelineBarrier(
+				commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier); 
+		}
+
 		VulkanHelper::FlushTemporaryCommandBuffer(handle, GetCommandQueue(QueueFamily::Graphics, 0)->handle, pool, commandBuffer);
 		DestroyBuffer(bufferIndex);
 	}
+
 	return textureIndex;
 }
 

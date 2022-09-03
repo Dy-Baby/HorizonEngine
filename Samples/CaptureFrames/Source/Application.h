@@ -41,7 +41,8 @@ namespace HE
 		void Update(float deltaTime);
 		void Render();
 		void OnImGui();
-
+		void DrawEntityNodeUI(EntityHandle entity);
+		
 		bool IsExitRequest() const
 		{
 			return isExitRequested;

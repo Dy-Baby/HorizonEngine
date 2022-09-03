@@ -1,12 +1,14 @@
 #include "../ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
+#include "BSDFCommon.hsf"
 
 #define LIGHTING_SHADER_PER_FRAME_DATA_SLOT        0
 #define LIGHTING_SHADER_GBUFFER0_SRV_SLOT          1
 #define LIGHTING_SHADER_GBUFFER1_SRV_SLOT          2
 #define LIGHTING_SHADER_GBUFFER2_SRV_SLOT          3
-#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT    4
-#define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT       5
+#define LIGHTING_SHADER_GBUFFER3_SRV_SLOT          4
+#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT    5
+#define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT       6
 
 PerFrameData GetPerFrameData()
 {
@@ -27,6 +29,11 @@ Texture2D GetGBuffer1SRV()
 Texture2D GetGBuffer2SRV()
 {
     return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_GBUFFER2_SRV_SLOT)];
+}
+
+Texture2D GetGBuffer3SRV()
+{
+    return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_GBUFFER3_SRV_SLOT)];
 }
 
 Texture2D GetShadowBufferSRV()
@@ -55,24 +62,77 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	Texture2D gbuffer0 = GetGBuffer0SRV();
 	Texture2D gbuffer1 = GetGBuffer1SRV();
 	Texture2D gbuffer2 = GetGBuffer2SRV();
-	
-	// Texture2D shadowBuffer = GetShadowBufferSRV();
+	Texture2D gbuffer3 = GetGBuffer3SRV();
+
+	Texture2D shadowBuffer = GetShadowBufferSRV();
 
 	float4 gbuffer0Data = gbuffer0[coord];
 	float4 gbuffer1Data = gbuffer1[coord];
 	float4 gbuffer2Data = gbuffer2[coord];
+	float4 gbuffer3Data = gbuffer3[coord];
 
 	float3 position = gbuffer0Data.xyz;
 	float3 normal = gbuffer1Data.xyz;
 	float4 baseColor = gbuffer2Data;
 	float metallic = gbuffer0Data.w;
 	float roughness = gbuffer1Data.w;
+	float3 emission = gbuffer3Data.rgb;
 
-	// Microfacet Cook-Torrance BRDF
+	float3 F0 = lerp(Fdielectric, baseColor.rgb, metallic);
+	float3 finalColor = emission;
+	
+		float visibility = 1.0;
+		float lightIntensity = 1.0;
+		float3 N = normal;
+		float3 V = normalize(perFrameData.cameraPosition - position);
+		float3 R = reflect(-V, N);
+		float NdotV = clamp(dot(N, V), 0.0, 1.0);
+		float3 irradiance = perFrameData.solarIrradiance;
+		float3 Li = -perFrameData.sunDirection;
+		float cosLi = clamp(dot(N, Li), 0.0, 1.0);
+	{
+		if(cosLi > 0.0)
+		{
+			float3 Lh = normalize(Li + V);
+			float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
+
+			float3 F = FresnelSchlick(F0, NdotV);
+			float D = D_GGX(cosLh, roughness);
+			float G = SchlickGGX(cosLi, NdotV, roughness);
+			float3 Kd = (1.0 - F) * (1.0 - metallic);
+
+			float3 diffuse = Kd * baseColor.rgb / PI;
+			float3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
+			float3 radiance = irradiance * lightIntensity;
+
+			finalColor += (diffuse + specular) * radiance * cosLi * visibility;
+		}
+	}
+
+	// IBL
+	// {
+	// 	vec3 F = FresnelSchlickRoughness(F0, NdotV, roughness);
+	// 	vec3 Kd = (1.0 - F) * (1.0 - metallic);
+
+	// 	vec3 diffuseIrradiance = texture(u_IrradianceEnvCubemap, N).rgb;
+	// 	// Diffuse based on irradiance
+	// 	vec3 diffuseIBL = Kd * baseColor.rgb * diffuseIrradiance;
+		
+	// 	int prefilteredEnvCubemapLevels = textureQueryLevels(u_PrefilteredEnvCubemap);
+	// 	float lod = roughness * prefilteredEnvCubemapLevels;
+	// 	vec3 specularIrradiance = textureLod(u_PrefilteredEnvCubemap, R, lod).rgb;
+
+	// 	// @note When loading the texture, use CLAMP_TO_EDGE to ensure that values are read correctly.
+	// 	vec2 specularBRDF = texture(u_BrdfLut, vec2(NdotV, roughness)).rg;
+	// 	// Specular reflection
+	// 	vec3 specularIBL = (F * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+	// 	finalColor += u_IblFactor * (diffuseIBL + specularIBL) * occlusion;
+	// }
 
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
-	// sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
-	sceneColor[coord] = float4(baseColor.rgb, 1.0);
+	//sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
+	//sceneColor[coord] = float4(baseColor.rgb, 1.0);
+	sceneColor[coord] = float4(finalColor, 1.0);
 }
 
 // Material material = BindlessBuffers[5].Load<Material>(0);

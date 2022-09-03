@@ -19,6 +19,7 @@ export namespace HE
 		Vector4 baseColor;
 		float metallic;
 		float roughness;
+		Vector4 emission;
 		uint32 baseColorMapIndex;
 		uint32 normalMapIndex;
 		uint32 metallicRoughnessMapIndex;

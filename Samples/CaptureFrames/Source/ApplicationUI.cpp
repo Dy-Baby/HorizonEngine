@@ -6,7 +6,7 @@
 
 namespace HE
 {
-	std::unordered_map<std::string, std::function<void(std::string, void*)>> uiCreator;
+	std::unordered_map<std::string, std::function<void(const char*, const char* name, void*)>> uiCreator;
 	std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
 	int                                       g_node_depth = -1;
 	bool inited = false;
@@ -15,57 +15,68 @@ namespace HE
 	{
 		using namespace HE;
 
-		uiCreator["int"] = [](const std::string& name, void* value)
+		uiCreator["bool"] = [](const char* lable, const char* name, void* value)
 		{
 			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(name.c_str());
+			ImGui::TextUnformatted(name);
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
-			ImGui::DragInt(("##" + name).c_str(), static_cast<int*>(value));
+			ImGui::Checkbox(lable, static_cast<bool*>(value));
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};
 
-		uiCreator["unsigned int"] = [](const std::string& name, void* value)
+		uiCreator["int"] = [](const char* lable, const char* name, void* value)
 		{
 			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(name.c_str());
+			ImGui::TextUnformatted(name);
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
-			ImGui::DragInt(("##" + name).c_str(), static_cast<int*>(value));
+			ImGui::DragInt(lable, static_cast<int*>(value));
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};
 
-		uiCreator["float"] = [](const std::string& name, void* value)
+		uiCreator["unsigned int"] = [](const char* lable, const char* name, void* value)
 		{
 			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(name.c_str());
+			ImGui::TextUnformatted(name);
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
-			ImGui::DragFloat(("##" + name).c_str(), static_cast<float*>(value));
+			ImGui::DragInt(lable, static_cast<int*>(value));
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};
 
-		uiCreator["struct glm::vec<3,float,0>"] = [](const std::string& name, void* value)
+		uiCreator["float"] = [](const char* lable, const char* name, void* value)
 		{
 			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(name.c_str());
+			ImGui::TextUnformatted(name);
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
-			ImGui::DragFloat3(("##" + name).c_str(), static_cast<float*>(value));
+			ImGui::DragFloat(lable, static_cast<float*>(value));
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};
 
-		uiCreator["class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >"] = [](const std::string& name, void* value)
+		uiCreator["struct glm::vec<3,float,0>"] = [](const char* lable, const char* name, void* value)
 		{
 			ImGui::AlignTextToFramePadding();
-			ImGui::TextUnformatted(name.c_str());
+			ImGui::TextUnformatted(name);
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
-			ImGui::LabelText(("##" + name).c_str(), "%s", static_cast<std::string*>(value)->c_str());
+			ImGui::DragFloat3(lable, static_cast<float*>(value));
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+		};
+
+		uiCreator["class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >"] = [](const char* lable, const char* name, void* value)
+		{
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextUnformatted(name);
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1);
+			ImGui::Text("%s", static_cast<std::string*>(value)->c_str());
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};
@@ -157,10 +168,11 @@ namespace HE
 	}
 
 	template<typename ComponentType>
-	void DrawComponentUI(const char* lable, ComponentType& component)
+	void DrawComponentUI(EntityHandle entity, const char* lable, ComponentType& component)
 	{
 		using namespace entt;
-		if (ImGui::CollapsingHeader(lable))
+		ImGui::PushID((int)uint64(entity));
+		if (ImGui::CollapsingHeader(lable, ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 			ImGui::Columns(2);
@@ -171,12 +183,59 @@ namespace HE
 				std::string type = std::string(data.type().info().name());
 				std::string name = data.prop("Name"_hs).value().cast<std::string>();
 				void* value = data.get(component).data();
-				uiCreator[type](name, value);
+				uiCreator[type](std::string("##" + name).c_str(), name.c_str(), value);
 			}
 
 			ImGui::Columns(1);
 			ImGui::Separator();
 			ImGui::PopStyleVar();
+		}
+		ImGui::PopID();
+	}
+
+	void Application::DrawEntityNodeUI(EntityHandle entity)
+	{
+		auto entityManager = SceneManager::GetActiveScene()->GetEntityManager();
+		const auto& hierarchy = entityManager->GetComponent<SceneHierarchyComponent>(entity);
+		ImGuiTreeNodeFlags flags = ((selectedEntity != EntityHandle() && selectedEntity == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+		if (hierarchy.numChildren == 0)
+		{
+			flags |= ImGuiTreeNodeFlags_Leaf;
+		}
+		bool opened = ImGui::TreeNodeEx((void*)(uint64)entity, flags, entityManager->GetComponent<NameComponent>(entity).name.c_str());
+		if (ImGui::IsItemClicked())
+		{
+			selectedEntity = entity;
+		}
+
+		if (opened)
+		{
+			auto currentEntity = hierarchy.first;
+			for (uint32 i = 0; i < hierarchy.numChildren; i++)
+			{
+				DrawEntityNodeUI(currentEntity);
+				currentEntity = entityManager->GetComponent<SceneHierarchyComponent>(currentEntity).next;
+			}
+			ImGui::TreePop();
+		}
+
+		bool deleted = false;
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (ImGui::MenuItem("Delete Entity"))
+			{
+				deleted = true;
+			}
+			ImGui::EndPopup();
+		}
+
+		if (deleted)
+		{
+			entityManager->DestroyEntity(entity);
+			if (selectedEntity == entity)
+			{
+				selectedEntity = EntityHandle();
+			}
 		}
 	}
 
@@ -193,153 +252,68 @@ namespace HE
 			inited = true;
 		}
 
+		ImGui::Begin("Scene Hierarchy");
+		{
+			ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
+			if (ImGui::TreeNodeEx((void*)(uint64)564788, flags, SceneManager::GetActiveScene()->name.c_str()))
+			{
+				auto entityManager = SceneManager::GetActiveScene()->GetEntityManager();
+				entityManager->Get()->each([&](auto entity)
+				{
+					if (entityManager->GetComponent<SceneHierarchyComponent>(entity).parent == EntityHandle())
+					{
+						DrawEntityNodeUI(entity);
+					}
+				});
+				ImGui::TreePop();
+			}
+
+			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+			{
+				selectedEntity = {};
+			}
+
+			// Right-click on blank space
+			if (ImGui::BeginPopupContextWindow(0, 1, false))
+			{
+				if (ImGui::MenuItem("Create Empty Entity"))
+				{
+					auto newEntity = SceneManager::GetActiveScene()->GetEntityManager()->CreateEntity("Empty Entity");
+					SceneManager::GetActiveScene()->GetEntityManager()->AddComponent<TransformComponent>(newEntity);
+					SceneManager::GetActiveScene()->GetEntityManager()->AddComponent<SceneHierarchyComponent>(newEntity);
+				}
+				ImGui::EndPopup();
+			}
+		}
+		ImGui::End();
+
 		ImGui::Begin("Inspector");
 		{
-			//auto& skyAtmosphereComponent = activeScene->GetEntityManager()->GetComponent<SkyAtmosphereComponent>(sky);
-			//// DrawComponent<SkyAtmosphereComponent>(skyAtmosphereComponent);
-
-			//if (ImGui::CollapsingHeader("Sky Atmosphere"))
-			//{
-			//	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-			//	ImGui::Columns(2);
-			//	ImGui::Separator();
-
-			//	for (auto data : entt::resolve<SkyAtmosphereComponent>().data())
-			//	{
-			//		std::string type = std::string(data.type().info().name());
-			//		std::string name = data.prop("Name"_hs).value().cast<std::string>();
-			//		void* value = data.get(skyAtmosphereComponent).data();
-			//		uiCreator[type](name, value);
-			//	}
-
-			//	ImGui::Columns(1);
-			//	ImGui::Separator();
-			//	ImGui::PopStyleVar();
-			//}
-
-			auto& transformComponent = activeScene->GetEntityManager()->GetComponent<TransformComponent>(selectedEntity);
-			DrawComponentUI<TransformComponent>("Transform", transformComponent);
-
-			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<DirectionalLightComponent>(selectedEntity))
+			if (selectedEntity != EntityHandle())
 			{
-				DrawComponentUI<DirectionalLightComponent>("Directional Light", *component);
+				auto& transformComponent = activeScene->GetEntityManager()->GetComponent<TransformComponent>(selectedEntity);
+				DrawComponentUI<TransformComponent>(selectedEntity, "Transform", transformComponent);
+
+				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<DirectionalLightComponent>(selectedEntity))
+				{
+					DrawComponentUI<DirectionalLightComponent>(selectedEntity, "Directional Light", *component);
+				}
+
+				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<SkyLightComponent>(selectedEntity))
+				{
+					DrawComponentUI<SkyLightComponent>(selectedEntity, "Sky Light", *component);
+				}
+
+				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<CameraComponent>(selectedEntity))
+				{
+					DrawComponentUI<CameraComponent>(selectedEntity, "Camera", *component);
+				}
+
+				if (auto* component = activeScene->GetEntityManager()->TryGetComponent<StaticMeshComponent>(selectedEntity))
+				{
+					DrawComponentUI<StaticMeshComponent>(selectedEntity, "Static Mesh", *component);
+				}
 			}
-
-			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<SkyLightComponent>(selectedEntity))
-			{
-				DrawComponentUI<SkyLightComponent>("Sky Light", *component);
-			}
-
-			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<CameraComponent>(selectedEntity))
-			{
-				DrawComponentUI<CameraComponent>("Camera Light", *component);
-			}
-
-			if (auto* component = activeScene->GetEntityManager()->TryGetComponent<StaticMeshComponent>(selectedEntity))
-			{
-				DrawComponentUI<StaticMeshComponent>("Static Mesh", *component);
-			}
-#if 0
-			if (ImGui::CollapsingHeader("Sky Atmosphere"))
-			{
-				ImGui::Separator();
-				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-				ImGui::Columns(2);
-				ImGui::Separator();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Ground Radius");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat("##Ground Radius", &skyAtmosphereComponent.groundRadius, 0.1f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Ground Albedo");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat3("##Ground Albedo", &skyAtmosphereComponent.groundAlbedo.x, 0.1f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Atmosphere Height");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat("##Atmosphere Height", &skyAtmosphereComponent.atmosphereHeight, 0.1f, 0.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Multiple Scattering Factor");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat("##Multiple Scattering Factor", &skyAtmosphereComponent.multipleScatteringFactor, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Rayleigh Scattering");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat3("##Rayleigh Scattering", &skyAtmosphereComponent.rayleighScattering.x, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Rayleigh Scale Height");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat("##Rayleigh Scale Height", &skyAtmosphereComponent.rayleighScaleHeight, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Mie Scattering");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat3("##Mie Scattering", &skyAtmosphereComponent.mieScattering.x, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Mie Extinction");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat3("##Mie Extinction", &skyAtmosphereComponent.mieExtinction.x, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Mie Anisotropy");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat("##Mie Anisotropy", &skyAtmosphereComponent.mieAnisotropy, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Mie Scale Height");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat("##Mie Scale Height", &skyAtmosphereComponent.mieScaleHeight, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::AlignTextToFramePadding();
-				ImGui::TextUnformatted("Absorption Extinction");
-				ImGui::NextColumn();
-				ImGui::PushItemWidth(-1);
-				ImGui::DragFloat3("##Absorption Extinction", &skyAtmosphereComponent.absorptionExtinction.x, 0.01f, 0.0f, 1.0f);
-				ImGui::PopItemWidth();
-				ImGui::NextColumn();
-
-				ImGui::Columns(1);
-				ImGui::Separator();
-				ImGui::PopStyleVar();
-			}
-#endif
 		}
 		ImGui::End();
 

@@ -77,7 +77,7 @@ void RayTracingShadowsRayGen()
     // @see UniformSampleCone in [pbrt]
     float3 randDirection = UniformSampleCone(float2(Rand(randSeed), Rand(randSeed)), cosThetaMax);
 
-    float3 N = float3(-1.0, 0.0, 1.0);
+    float3 N = float3(0.0, 0.0, 1.0);
     float3 B = GetPerpendicularVector(N);
     float3 T = cross(B, N);
 
@@ -91,7 +91,7 @@ void RayTracingShadowsRayGen()
     RayDesc ray;
     ray.Origin = worldSpacePosition.xyz;
     ray.Direction = randDirection;
-    ray.TMin = max(1.0, length(worldSpacePosition.xyz)) * 1e-2;
+    ray.TMin = max(0.2, length(worldSpacePosition.xyz)) * 1e-2;
     ray.TMax = 10000.0;
 
     uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;

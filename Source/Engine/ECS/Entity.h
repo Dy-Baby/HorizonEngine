@@ -10,11 +10,23 @@ namespace HE
 		EntityHandle() : handle(entt::null) {}
 		EntityHandle(const entt::entity& entity) : handle(entity) {}
 		~EntityHandle() {}
-		FORCEINLINE constexpr operator bool() const
+		FORCEINLINE bool operator==(const EntityHandle& rhs) const
+		{
+			return handle == rhs.handle;
+		}
+		FORCEINLINE bool operator!=(const EntityHandle& rhs) const
+		{
+			return handle != rhs.handle;
+		}
+		FORCEINLINE operator uint64() const 
+		{ 
+			return (uint64)handle;
+		}
+		FORCEINLINE operator bool() const
 		{
 			return handle == entt::null;
 		}
-		FORCEINLINE constexpr operator entt::entity() const
+		FORCEINLINE operator entt::entity() const
 		{
 			return handle;
 		}

@@ -163,14 +163,14 @@ export namespace HE::Math
         glm::decompose(matrix, outScale, outRotation, outTranslation, skew, perspective);
     }
 
-    FORCEINLINE uint32_t MaxMipLevelCount(uint32_t size)
+    FORCEINLINE uint32 MaxMipLevelCount(uint32 size)
     {
-        return 1 + uint32_t(std::floor(std::log2(size)));
+        return 1 + uint32(std::floor(std::log2(size)));
     }
 
-    FORCEINLINE uint32_t MaxMipLevelCount(uint32_t width, uint32_t height)
+    FORCEINLINE uint32 MaxMipLevelCount(uint32 width, uint32 height)
     {
-        return 1 + uint32_t(std::floor(std::log2(glm::min(width, height))));
+        return 1 + uint32(std::floor(std::log2(glm::min(width, height))));
     }
 
     FORCEINLINE float Clamp(float x, float min = 0, float max = 1)
