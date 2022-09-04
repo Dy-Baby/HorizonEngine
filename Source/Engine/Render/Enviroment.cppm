@@ -9,6 +9,15 @@ export namespace HE
 {
 	uint32 GIrradianceEnviromentMapSize = 32;
 
+	void GenerateCubemapMips(RenderCommandList& commandList, RenderBackendTextureHandle cubemap, uint32 numMipLevels)
+	{
+		// TODO
+		for (uint32 mipLevel = 1; mipLevel < numMipLevels; mipLevel++)
+		{
+
+		}
+	}
+
 	void ComputeEnviromentIrradiance(RenderCommandList& commandList, RenderBackendTextureHandle enviromentMap, uint32 mipLevel, RenderBackendTextureHandle irradianceEnviromentMap)
 	{
 		RenderBackendBarrier transition(irradianceEnviromentMap, RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
@@ -68,6 +77,8 @@ export namespace HE
 	void ComputeEnviromentCubemaps(RenderCommandList& commandList, RenderBackendTextureHandle enviromentMap, uint32 cubemapSize, RenderBackendTextureHandle irradianceEnviromentMap, RenderBackendTextureHandle filteredEnviromentMap)
 	{
 		const uint32 numMipLevels = Math::MaxMipLevelCount(cubemapSize);
+
+		GenerateCubemapMips(commandList, enviromentMap, numMipLevels);
 
 		const uint32 numIrradianceEnviromentMapMipLevels = Math::MaxMipLevelCount(GIrradianceEnviromentMapSize) + 1;
 		const uint32 sourceMipLevel = Math::Max<uint32>(0, numMipLevels - numIrradianceEnviromentMapMipLevels);

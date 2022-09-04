@@ -81,6 +81,8 @@ export namespace HE
 		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
 		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
 #endif
+		void SetSkyLight(SkyLightRenderProxy* proxy);
+		SkyLightRenderProxy* skyLight;
 	};
 
 	struct Camera

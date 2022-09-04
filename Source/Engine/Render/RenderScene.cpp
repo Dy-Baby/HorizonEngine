@@ -256,9 +256,45 @@ namespace HE
 #endif
 	}
 
+	void EquirectangularToCubemap(RenderCommandList& commandList, RenderBackendTextureHandle equirectangular, RenderBackendTextureHandle cubemap, uint32 cubemapSize)
+	{
+		RenderBackendBarrier transition(cubemap, RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
+		commandList.Transitions(&transition, 1);
+
+		uint32 dispatchX = CEIL_DIV(cubemapSize, 8);
+		uint32 dispatchY = CEIL_DIV(cubemapSize, 8);
+		uint32 dispatchZ = 6;
+
+		ShaderArguments shaderArguments = {};
+		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(equirectangular));
+		shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(cubemap, 0));
+
+		RenderBackendShaderHandle computeShader;
+		commandList.Dispatch(
+			computeShader,
+			shaderArguments,
+			dispatchX,
+			dispatchY,
+			dispatchZ);
+
+		transition = RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
+		commandList.Transitions(&transition, 1);
+	}
+
+	void RenderScene::SetSkyLight(SkyLightRenderProxy* proxy)
+	{
+		ASSERT(proxy);
+
+		RenderScene* scene = this;
+		{
+			scene->skyLight = proxy;
+		}
+	}
+
 	void RenderScene::UpdateSkyLights()
 	{
 		//uint32 cubemapSize = skyLightComponent->CubemapResolution;
+		//EquirectangularToCubemap();
 		//ComputeEnviromentCubemaps(commandList, environmentMap, cubemapSize, outIrradianceEnvironmentMap, outFilteredEnvironmentMap);
 	}
 }

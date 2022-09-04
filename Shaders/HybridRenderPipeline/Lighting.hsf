@@ -2,13 +2,16 @@
 #include "../BSDFCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 
-#define LIGHTING_SHADER_PER_FRAME_DATA_SLOT        0
-#define LIGHTING_SHADER_GBUFFER0_SRV_SLOT          1
-#define LIGHTING_SHADER_GBUFFER1_SRV_SLOT          2
-#define LIGHTING_SHADER_GBUFFER2_SRV_SLOT          3
-#define LIGHTING_SHADER_GBUFFER3_SRV_SLOT          4
-#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT    5
-#define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT       6
+#define LIGHTING_SHADER_PER_FRAME_DATA_SLOT                              0
+#define LIGHTING_SHADER_GBUFFER0_SRV_SLOT                                1
+#define LIGHTING_SHADER_GBUFFER1_SRV_SLOT                                2
+#define LIGHTING_SHADER_GBUFFER2_SRV_SLOT                                3
+#define LIGHTING_SHADER_GBUFFER3_SRV_SLOT                                4
+#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT                          5
+#define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT                             6
+#define LIGHTING_SHADER_BRDF_LUT_SRV_SLOT                                7
+#define LIGHTING_SHADER_SKY_LIGHT_IRRADIANCE_ENVIRONMENT_MAP_SRV_SLOT    8
+#define LIGHTING_SHADER_SKY_LIGHT_FILTERED_ENVIRONMENT_MAP_SRV_SLOT      9
 
 PerFrameData GetPerFrameData()
 {
@@ -46,6 +49,21 @@ RWTexture2D<float4> GetSceneColorUAV()
     return BindlessRWTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT)];
 }
 
+Texture2D GetBRDFLutSRV()
+{
+    return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_BRDF_LUT_SRV_SLOT)];
+}
+
+TextureCube GetSkyLightIrradianceEnvironmentMapSRV()
+{
+    return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_SKY_LIGHT_IRRADIANCE_ENVIRONMENT_MAP_SRV_SLOT)];
+}
+
+TextureCube GetSkyLightFilteredEnvironmentMapSRV()
+{
+    return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_SKY_LIGHT_FILTERED_ENVIRONMENT_MAP_SRV_SLOT)];
+}
+
 [numthreads(8, 8, 1)]
 void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
@@ -81,8 +99,8 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 F0 = lerp(Fdielectric, baseColor.rgb, metallic);
 	float3 finalColor = emission;
 	
-		float visibility = shadowBuffer[coord].r;
-		// visibility = 1.0;
+		//float visibility = shadowBuffer[coord].r;
+		float visibility = 1.0;
 		float lightIntensity = 1.0;
 		float3 N = normal;
 		float3 V = normalize(perFrameData.cameraPosition - position);
@@ -111,24 +129,29 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	}
 
 	// IBL
-	// {
-	// 	vec3 F = FresnelSchlickRoughness(F0, NdotV, roughness);
-	// 	vec3 Kd = (1.0 - F) * (1.0 - metallic);
+	{
+		Texture2D brdfLut = GetBRDFLutSRV();
+		TextureCube irradianceEnvironmentMap = GetSkyLightIrradianceEnvironmentMapSRV();
+		TextureCube filteredEnvironmentMap = GetSkyLightFilteredEnvironmentMapSRV();
 
-	// 	vec3 diffuseIrradiance = texture(u_IrradianceEnvCubemap, N).rgb;
-	// 	// Diffuse based on irradiance
-	// 	vec3 diffuseIBL = Kd * baseColor.rgb * diffuseIrradiance;
+		float3 F = FresnelSchlickRoughness(F0, NdotV, roughness);
+		float3 Kd = (1.0 - F) * (1.0 - metallic);
+
+		float3 diffuseIrradiance = irradianceEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, N, 0).rgb;
+		// Diffuse based on irradiance
+		float3 diffuseIBL = Kd * baseColor.rgb * diffuseIrradiance;
 		
-	// 	int prefilteredEnvCubemapLevels = textureQueryLevels(u_PrefilteredEnvCubemap);
-	// 	float lod = roughness * prefilteredEnvCubemapLevels;
-	// 	vec3 specularIrradiance = textureLod(u_PrefilteredEnvCubemap, R, lod).rgb;
+		uint w; uint h; uint numMipLevels;
+		filteredEnvironmentMap.GetDimensions(0, w, h, numMipLevels);
+		float lod = roughness * numMipLevels;
+		float3 specularIrradiance = filteredEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, R, lod).rgb;
 
-	// 	// @note When loading the texture, use CLAMP_TO_EDGE to ensure that values are read correctly.
-	// 	vec2 specularBRDF = texture(u_BrdfLut, vec2(NdotV, roughness)).rg;
-	// 	// Specular reflection
-	// 	vec3 specularIBL = (F * specularBRDF.x + specularBRDF.y) * specularIrradiance;
-	// 	finalColor += u_IblFactor * (diffuseIBL + specularIBL) * occlusion;
-	// }
+		// @note When loading the texture, use CLAMP_TO_EDGE to ensure that values are read correctly.
+		float2 specularBRDF = brdfLut.SampleLevel(SAMPLER_LINEAR_CLAMP, float2(NdotV, roughness), 0).rg;
+		// Specular reflection
+		float3 specularIBL = (F * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+		finalColor += (diffuseIBL + specularIBL);
+	}
 
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
 	sceneColor[coord] = float4(finalColor, 1.0);

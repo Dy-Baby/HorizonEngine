@@ -86,7 +86,7 @@ filter "platforms:Win64"
         "_CRT_SECURE_NO_WARNINGS",
         "_ITERATOR_DEBUG_LEVEL=0",
         "_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING",
-        "DEBUG_ONLY_RAY_TRACING_ENBALE=1",
+        --"DEBUG_ONLY_RAY_TRACING_ENBALE=1",
     }
     staticruntime "On"
     architecture "x64"

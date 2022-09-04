@@ -92,4 +92,14 @@ export namespace HE
 		ParticleMotion motion;
 		ParticleAppearance appearance;
 	};
+
+	struct ParticleSystemComponent
+	{
+
+	};
+
+	struct ParticleSystemRenderProxy
+	{
+
+	};
 }

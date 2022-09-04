@@ -1,19 +1,19 @@
-#include "../ShaderCommon.hsf"
+#include "ShaderCommon.hsf"
 #include "BSDFCommon.hsf"
 
-#define IBL_DIFFUSE_SHADER_ENVIROMENT_MAP_SRV_SLOT               0
-#define IBL_DIFFUSE_SHADER_IRRADIANCE_ENVIROMENT_MAP_UAV_SLOT    1
+#define COMPUTE_ENVIRONMENT_IRRADIANCE_SHADER_ENVIROMENT_MAP_SRV_SLOT               0
+#define COMPUTE_ENVIRONMENT_IRRADIANCE_SHADER_IRRADIANCE_ENVIROMENT_MAP_UAV_SLOT    1
 
 const uint NumSamples = 1024;
 
 TextureCube GetEnviromentMapSRV()
 {
-	return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(IBL_DIFFUSE_SHADER_ENVIROMENT_MAP_SRV_SLOT)];
+	return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(COMPUTE_ENVIRONMENT_IRRADIANCE_SHADER_ENVIROMENT_MAP_SRV_SLOT)];
 }
 
 RWTexture2DArray<float4> GetIrradianceEnviromentMapUAV()
 {
-    return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(IBL_DIFFUSE_SHADER_IRRADIANCE_ENVIROMENT_MAP_UAV_SLOT)];
+    return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(COMPUTE_ENVIRONMENT_IRRADIANCE_SHADER_IRRADIANCE_ENVIROMENT_MAP_UAV_SLOT)];
 }
 
 [numthreads(8, 8, 1)]
@@ -31,7 +31,7 @@ void ComputeEnviromentIrradianceCS(uint3 GlobalInvocationID : SV_DispatchThreadI
 
 	TextureCube enviromentMap = GetEnviromentMapSRV();
 	uint enviromentMapMipLevel = 0;
-	
+
 	// Monte carlo integration of hemispherical irradiance
 	float3 irradiance = 0;
 	for (uint i = 0; i < NumSamples; i++)
