@@ -202,6 +202,14 @@ namespace HE
 		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer, 0, worldMatrices.data(), worldMatrices.size() * sizeof(Matrix4x4));
 
 #if DEBUG_ONLY_RAY_TRACING_ENBALE
+
+		for (auto& transform : worldMatrices)
+		{
+			transform = Math::Transpose(transform);
+		}
+		worldMatrixBuffer1 = RenderBackendCreateBuffer(renderBackend, deviceMask, &worldMatrixBufferDesc, "WorldMatrixBuffer");
+		RenderBackendWriteBuffer(renderBackend, worldMatrixBuffer1, 0, worldMatrices.data(), worldMatrices.size() * sizeof(Matrix4x4));
+
 		std::vector<RenderBackendGeometryDesc> geometryDescs(renderables.size());
 		for (uint32 i = 0; i < (uint32)geometryDescs.size(); i++)
 		{
@@ -216,7 +224,7 @@ namespace HE
 					.vertexOffset = 0,
 					.indexBuffer = indexBuffers[renderables[i].indexBufferIndex],
 					.indexOffset = renderables[i].firstIndex * sizeof(uint32),
-					.transformBuffer = worldMatrixBuffer,
+					.transformBuffer = worldMatrixBuffer1,
 					.transformOffset = renderables[i].transformIndex * 16 * sizeof(float),
 				}
 			};

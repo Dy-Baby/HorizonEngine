@@ -77,6 +77,7 @@ export namespace HE
 		RenderBackendBufferHandle prevWorldMatrixBuffer;
 
 #if DEBUG_ONLY_RAY_TRACING_ENBALE
+		RenderBackendBufferHandle worldMatrixBuffer1;
 		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
 		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
 #endif

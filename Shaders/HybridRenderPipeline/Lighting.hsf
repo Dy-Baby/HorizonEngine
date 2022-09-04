@@ -81,7 +81,8 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 F0 = lerp(Fdielectric, baseColor.rgb, metallic);
 	float3 finalColor = emission;
 	
-		float visibility = 1.0;
+		float visibility = shadowBuffer[coord].r;
+		// visibility = 1.0;
 		float lightIntensity = 1.0;
 		float3 N = normal;
 		float3 V = normalize(perFrameData.cameraPosition - position);
@@ -130,8 +131,6 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	// }
 
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
-	//sceneColor[coord] = float4(baseColor.rgb * shadowBuffer[coord].r, 1.0);
-	//sceneColor[coord] = float4(baseColor.rgb, 1.0);
 	sceneColor[coord] = float4(finalColor, 1.0);
 }
 
