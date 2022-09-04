@@ -5,24 +5,25 @@ project "ShaderSystem"
     staticruntime "on"
     location "%{wks.location}/%{prj.name}"
     targetdir "%{wks.location}/Bin/%{cfg.buildcfg}"
+
     links {
         "Core",
+        "Render",
     }
+
     files {
         "**.h",  
         "**.c", 
         "**.hpp",
         "**.cpp",
+        "**.cppm",
         "**.inl",
         "**.hsf",
     }
 
     includedirs {
+        "",
         enginepath(""),
-        enginepath("Core"),
-        enginepath("DxcShaderCompiler"),
-        enginepath("VulkanRenderBackend"),
-        enginepath("AssimpImporter"),
         thirdpartypath("assimp/include"),
         thirdpartypath("entt/include"),
         thirdpartypath("dxc/include"),

@@ -7,6 +7,9 @@ module;
 
 module HorizonEngine.Render.Scene;
 
+import HorizonEngine.Render.Enviroment;
+import HorizonEngine.Render.ShaderSystem;
+
 namespace HE
 {
 	RenderScene::RenderScene()
@@ -73,7 +76,7 @@ namespace HE
 
 		stbi_image_free(data);
 
-		RenderBackendTextureDesc desc = RenderBackendTextureDesc::CreateTexture2D(iw, ih, Math::MaxMipLevelCount(iw, ih), PixelFormat::RGBA8Unorm);
+		RenderBackendTextureDesc desc = RenderBackendTextureDesc::CreateTexture2D(iw, ih, Math::MaxNumMipLevels(iw, ih), PixelFormat::RGBA8Unorm);
 		RenderBackendTextureHandle texture = RenderBackendCreateTexture(renderBackend, ~0u, &desc, buffer, filename);
 
 		_aligned_free(buffer);
@@ -83,6 +86,9 @@ namespace HE
 
 	void EquirectangularToCubemap(RenderCommandList& commandList, RenderBackendTextureHandle equirectangular, RenderBackendTextureHandle cubemap, uint32 cubemapSize)
 	{
+		ShaderLibrary* shaderLibrary = GetGlobalShaderLibrary();
+		RenderBackendShaderHandle computeShader = shaderLibrary->GetShader("EquirectangularToCubemapCS");
+
 		RenderBackendBarrier transition(cubemap, RenderBackendTextureSubresourceRange(0, 1, 0, 6), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
 		commandList.Transitions(&transition, 1);
 
@@ -94,7 +100,6 @@ namespace HE
 		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(equirectangular));
 		shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(cubemap, 0));
 
-		RenderBackendShaderHandle computeShader;
 		commandList.Dispatch(
 			computeShader,
 			shaderArguments,
@@ -297,15 +302,15 @@ namespace HE
 		topLevelAS = RenderBackendCreateTopLevelAS(renderBackend, deviceMask, &topLevelASDesc, "TopLevelAS");
 #endif
 
-		uint32 cubemapSize = skyLight->component->CubemapResolution;
+		uint32 cubemapSize = skyLight->component->cubemapResolution;
 		RenderBackendTextureHandle equirectangular = LoadTextureFromFile(renderBackend, skyLight->component->cubemap.c_str());
 		RenderBackendTextureDesc cubemapDesc = RenderBackendTextureDesc::CreateCube(cubemapSize, PixelFormat::RGBA16Float, TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource);
-		skyLight->cubemap = RenderBackendCreateTexture(renderBackend, deviceMask, &cubemapDesc, nullptr, "EnvironmentMap");
+		skyLight->environmentMap = RenderBackendCreateTexture(renderBackend, deviceMask, &cubemapDesc, nullptr, "EnvironmentMap");
 		
 		RenderCommandList* commandList = renderContext->commandLists.data();
 
-		EquirectangularToCubemap(*commandList, equirectangular, cubemap, cubemapSize);
-		ComputeEnviromentCubemaps(*commandList, environmentMap, cubemapSize, irradianceEnvironmentMap, filteredEnvironmentMap);
+		EquirectangularToCubemap(*commandList, equirectangular, skyLight->environmentMap, cubemapSize);
+		ComputeEnviromentCubemaps(*commandList, skyLight->environmentMap, cubemapSize, skyLight->irradianceEnvironmentMap, skyLight->filteredEnvironmentMap);
 
 		RenderBackendSubmitRenderCommandLists(renderBackend, commandList, 1);
 	}

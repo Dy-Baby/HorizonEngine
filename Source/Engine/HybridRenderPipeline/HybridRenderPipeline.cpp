@@ -859,7 +859,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 			// shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
 			shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(brdfLut));
 			shaderArguments.BindTextureSRV(8, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->irradianceEnvironmentMap));
-			shaderArguments.BindTextureSRV(9, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->filteredEnviromentMap));
+			shaderArguments.BindTextureSRV(9, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->filteredEnvironmentMap));
 
 			commandList.Dispatch2D(
 				lightingShader,

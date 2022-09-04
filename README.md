@@ -25,11 +25,13 @@ Inspired by [Halcyon](https://www.ea.com/seed/news/khronos-munich-2018-halcyon-v
 ![image](/Docs/rendering_architecture.png)
 
 Implemented features:
+* Modularization using C++20 modules
 * Fiber-Based Job System
 * Bindless
 * Render Graph
 * ECS (Entity-Component-System)
 * Hybrid Render Pipeline
+* Deferred Render Pipeline
 * Path Tracing
 
 Main features to come:
@@ -56,7 +58,7 @@ FSR
 Sky Atomsphere
 ![image](/Screenshots/screenshot_sky_atmosphere.png)
 
-Particle System
+Particles
 ![image](/Screenshots/screenshot_particle_system.png)
 
 ## Requirements

@@ -18,12 +18,14 @@ export namespace HE
 	class SkyLightRenderProxy
 	{
 	public:
-		SkyLightRenderProxy(const SkyLightComponent& skyLightComponent)
+		SkyLightRenderProxy(const SkyLightComponent* skyLightComponent)
 			: component(skyLightComponent) {}
 
-		const SkyLightComponent& component;
+		const SkyLightComponent* component;
+
+		RenderBackendTextureHandle environmentMap;
 		RenderBackendTextureHandle irradianceEnvironmentMap;
-		RenderBackendTextureHandle filteredEnviromentMap;
+		RenderBackendTextureHandle filteredEnvironmentMap;
 	};
 
 	struct PBRMaterialShaderParameters

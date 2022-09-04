@@ -51,7 +51,7 @@ namespace HE
 			valid = false;
 		}
 
-		SkyLightRenderProxy* renderProxy;
+		SkyLightRenderProxy* proxy;
 
 		bool valid;
 	};

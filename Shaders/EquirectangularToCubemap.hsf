@@ -1,5 +1,4 @@
 #include "ShaderCommon.hsf"
-#include "HybridRenderPipelineCommon.hsf"
 #include "BSDFCommon.hsf"
 
 #define EQUIRECTANGULAR_TO_CUBEMAP_SHADER_EQUIRECTANGULAR_MAP_SRV_SLOT    0

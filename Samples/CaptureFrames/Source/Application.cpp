@@ -136,13 +136,12 @@ namespace HE
 
 		auto skyLight = entityManager->CreateEntity("SkyLight");
 		SkyLightComponent skyLightComponent;
-		skyLightComponent.cubemap = "../../../Assets/HDRIs/PaperMill_E_3k.hdr";
 		skyLightComponent.cubemapResolution = 128;
+		skyLightComponent.SetCubemap("../../../Assets/HDRIs/PaperMill_E_3k.hdr");
 		entityManager->AddComponent<SkyLightComponent>(skyLight, skyLightComponent);
 		entityManager->AddComponent<TransformComponent>(skyLight);
 		entityManager->AddComponent<SceneHierarchyComponent>(skyLight);
-		selectedEntity = skyLight;
-
+		
 		auto mesh = entityManager->CreateEntity("Mesh");
 		StaticMeshComponent staticMeshComponent;
 		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf"; 
@@ -167,8 +166,14 @@ namespace HE
 		AssimpImporter assimpImporter;
 		assimpImporter.ImportAsset(staticMeshComponent.meshSource.c_str());
 
+		selectedEntity = mesh;
+
 		renderScene = new RenderScene();
 		renderScene->renderBackend = renderBackend;
+
+		SkyLightComponent* sl = entityManager->TryGetComponent<SkyLightComponent>(skyLight);
+		sl->proxy = new SkyLightRenderProxy(sl);
+		renderScene->SetSkyLight(sl->proxy);
 		renderScene->UploadResources(activeScene);
 		//system("pause");
 

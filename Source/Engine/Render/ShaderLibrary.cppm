@@ -2,7 +2,7 @@ module;
 
 #include <unordered_map>
 
-export module HorizonEngine.ShaderSystem;
+export module HorizonEngine.Render.ShaderSystem;
 
 import HorizonEngine.Core;
 import HorizonEngine.Render.Core;
@@ -13,7 +13,6 @@ export namespace HE
 	{
 		std::vector<uint8> code;
 		uint32 codeSize;
-		pipelineState;
 	};
 
 	/** A compiled shader. */
@@ -38,26 +37,32 @@ export namespace HE
 	class ShaderLibrary
 	{
 	public:
-		ShaderLibrary() {}
+		ShaderLibrary(RenderBackend* backend, ShaderCompiler* compiler);
 		~ShaderLibrary() {}
-		bool LoadShader(const char* filename, const char* entry, const ShaderMacros* macros);
-		bool ReloadShader();
-		void UnloadShader();
+		bool LoadShader(const char* filename, const wchar* entry);
+		//bool ReloadShader();
+		//void UnloadShader();
 		//void Clear();
-		Shader* GetShader(const std::string& name) const
+		/*Shader* GetShader(const std::string& name) const
+		{
+			ASSERT(loadedShaders.find(name) != loadedShaders.end());
+			return loadedShaders[name];
+		}*/
+		RenderBackendShaderHandle GetShader(const std::string& name)
 		{
 			ASSERT(loadedShaders.find(name) != loadedShaders.end());
 			return loadedShaders[name];
 		}
 	private:
 		RenderBackend* renderBackend;
-		RenderBackendShaderCompiler* shaderCompiler;
-		std::unordered_map<std::string, Shader*> loadedShaders;
+		ShaderCompiler* shaderCompiler;
+		//std::unordered_map<std::string, Shader*> loadedShaders;
+		std::unordered_map<std::string, RenderBackendShaderHandle> loadedShaders;
 	};
 
 	ShaderLibrary* GGlobalShaderLibrary = nullptr;
 
-	ShaderLibrary* GetGlobalShaderMap()
+	ShaderLibrary* GetGlobalShaderLibrary()
 	{
 		ASSERT(GGlobalShaderLibrary);
 		return GGlobalShaderLibrary;
