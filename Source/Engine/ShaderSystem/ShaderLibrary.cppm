@@ -11,9 +11,9 @@ export namespace HE
 {
 	struct ShaderCreateInfo
 	{
-		const std::vector<uint8>& code;
-		const uint32 codeSize;
-		 pipelineState;
+		std::vector<uint8> code;
+		uint32 codeSize;
+		pipelineState;
 	};
 
 	/** A compiled shader. */
@@ -24,10 +24,7 @@ export namespace HE
 		~Shader();
 		uint64 GetHash() const;
 	private:
-		MemoryArena* allocator;
-		RenderBackendInstance backend;
 		RenderBackendShaderHandle handle;
-		bool compiled;
 	};
 
 	struct ShaderMacro

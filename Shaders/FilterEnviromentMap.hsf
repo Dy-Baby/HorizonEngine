@@ -69,9 +69,9 @@ void FilterEnviromentMapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float roughness = SHADER_ARGUMENTS_DATA(0);
 	
 	//const uint NumSamples = 1024;
-	const uint NumSamples = roughness < 0.1 ? 32 : 64;
+	const uint numSamples = roughness < 0.1 ? 32 : 64;
 
-	float3 result = FilterEnviromentMap(enviromentMap, N, roughness, NumSamples);
+	float3 result = FilterEnviromentMap(enviromentMap, N, roughness, numSamples);
 
 	filteredEnviromentMap[coord] = float4(result, 1.0);
 }

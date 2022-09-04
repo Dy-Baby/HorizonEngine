@@ -81,6 +81,48 @@ namespace HE
 		return texture;
 	}
 
+	void EquirectangularToCubemap(RenderCommandList& commandList, RenderBackendTextureHandle equirectangular, RenderBackendTextureHandle cubemap, uint32 cubemapSize)
+	{
+		RenderBackendBarrier transition(cubemap, RenderBackendTextureSubresourceRange(0, 1, 0, 6), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
+		commandList.Transitions(&transition, 1);
+
+		uint32 dispatchX = CEIL_DIV(cubemapSize, 8);
+		uint32 dispatchY = CEIL_DIV(cubemapSize, 8);
+		uint32 dispatchZ = 6;
+
+		ShaderArguments shaderArguments = {};
+		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(equirectangular));
+		shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(cubemap, 0));
+
+		RenderBackendShaderHandle computeShader;
+		commandList.Dispatch(
+			computeShader,
+			shaderArguments,
+			dispatchX,
+			dispatchY,
+			dispatchZ);
+
+		transition = RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(0, 1, 0, 6), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
+		commandList.Transitions(&transition, 1);
+	}
+
+	void RenderScene::SetSkyLight(SkyLightRenderProxy* proxy)
+	{
+		ASSERT(proxy);
+
+		RenderScene* scene = this;
+		{
+			scene->skyLight = proxy;
+		}
+	}
+
+	void RenderScene::UpdateSkyLights()
+	{
+		//uint32 cubemapSize = skyLightComponent->CubemapResolution;
+		//EquirectangularToCubemap();
+		//ComputeEnviromentCubemaps(commandList, environmentMap, cubemapSize, outIrradianceEnvironmentMap, outFilteredEnvironmentMap);
+	}
+
 	void RenderScene::UploadResources(Scene* scene)
 	{
 		uint32 deviceMask = ~0u;
@@ -254,47 +296,17 @@ namespace HE
 		};
 		topLevelAS = RenderBackendCreateTopLevelAS(renderBackend, deviceMask, &topLevelASDesc, "TopLevelAS");
 #endif
-	}
 
-	void EquirectangularToCubemap(RenderCommandList& commandList, RenderBackendTextureHandle equirectangular, RenderBackendTextureHandle cubemap, uint32 cubemapSize)
-	{
-		RenderBackendBarrier transition(cubemap, RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
-		commandList.Transitions(&transition, 1);
+		uint32 cubemapSize = skyLight->component->CubemapResolution;
+		RenderBackendTextureHandle equirectangular = LoadTextureFromFile(renderBackend, skyLight->component->cubemap.c_str());
+		RenderBackendTextureDesc cubemapDesc = RenderBackendTextureDesc::CreateCube(cubemapSize, PixelFormat::RGBA16Float, TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource);
+		skyLight->cubemap = RenderBackendCreateTexture(renderBackend, deviceMask, &cubemapDesc, nullptr, "EnvironmentMap");
+		
+		RenderCommandList* commandList = renderContext->commandLists.data();
 
-		uint32 dispatchX = CEIL_DIV(cubemapSize, 8);
-		uint32 dispatchY = CEIL_DIV(cubemapSize, 8);
-		uint32 dispatchZ = 6;
+		EquirectangularToCubemap(*commandList, equirectangular, cubemap, cubemapSize);
+		ComputeEnviromentCubemaps(*commandList, environmentMap, cubemapSize, irradianceEnvironmentMap, filteredEnvironmentMap);
 
-		ShaderArguments shaderArguments = {};
-		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(equirectangular));
-		shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(cubemap, 0));
-
-		RenderBackendShaderHandle computeShader;
-		commandList.Dispatch(
-			computeShader,
-			shaderArguments,
-			dispatchX,
-			dispatchY,
-			dispatchZ);
-
-		transition = RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
-		commandList.Transitions(&transition, 1);
-	}
-
-	void RenderScene::SetSkyLight(SkyLightRenderProxy* proxy)
-	{
-		ASSERT(proxy);
-
-		RenderScene* scene = this;
-		{
-			scene->skyLight = proxy;
-		}
-	}
-
-	void RenderScene::UpdateSkyLights()
-	{
-		//uint32 cubemapSize = skyLightComponent->CubemapResolution;
-		//EquirectangularToCubemap();
-		//ComputeEnviromentCubemaps(commandList, environmentMap, cubemapSize, outIrradianceEnvironmentMap, outFilteredEnvironmentMap);
+		RenderBackendSubmitRenderCommandLists(renderBackend, commandList, 1);
 	}
 }
