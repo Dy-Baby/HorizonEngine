@@ -199,15 +199,9 @@ namespace HE
 				RenderGraphTexture* texture = state.texture;
 				if (state.state != texture->tempState)
 				{
-					TextureSubresourceRange range = {
-						.firstLevel = 0,
-						.mipLevels = REMAINING_MIP_LEVELS,
-						.firstLayer = 0,
-						.arrayLayers = REMAINING_ARRAY_LAYERS,
-					};
 					RenderBackendBarrier barrier = RenderBackendBarrier(
 						texture->GetRenderBackendTexture(),
-						range,
+						RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS),
 						texture->tempState,
 						state.state);
 					texture->tempState = state.state;

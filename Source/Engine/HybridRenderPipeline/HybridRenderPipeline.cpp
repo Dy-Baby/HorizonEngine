@@ -45,10 +45,11 @@ void HybridRenderPipeline::Init()
 	std::vector<uint8> source;
 	std::vector<const wchar*> includeDirs;
 	std::vector<const wchar*> defines;
+	includeDirs.push_back(HE_TEXT("../../../Shaders"));
 	includeDirs.push_back(HE_TEXT("../../../Shaders/HybridRenderPipeline"));
 
 	RenderBackendShaderDesc brdfLutShaderDesc;
-	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/BRDFLut.hsf", source);
+	LoadShaderSourceFromFile("../../../Shaders/BRDFLut.hsf", source);
 	CompileShader(
 		shaderCompiler,
 		source,
@@ -263,7 +264,7 @@ void CooyRenderGraphFinalTextureToCameraTarget(RenderGraph* renderGraph)
 				offset,
 				0,
 				extent);
-			RenderBackendBarrier transition = RenderBackendBarrier(registry.GetRenderBackendTexture(outputTexture), TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::CopyDst, RenderBackendResourceState::Present);
+			RenderBackendBarrier transition = RenderBackendBarrier(registry.GetRenderBackendTexture(outputTexture), RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::CopyDst, RenderBackendResourceState::Present);
 			commandList.Transitions(&transition, 1);
 		};
 	});
@@ -413,14 +414,14 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 				ShaderArguments shaderArguments = {};
 				shaderArguments.BindTextureUAV(0, RenderBackendTextureUAVDesc::Create(brdfLut, 0));
 
-				RenderBackendBarrier transitionBefore = RenderBackendBarrier(brdfLut, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
+				RenderBackendBarrier transitionBefore = RenderBackendBarrier(brdfLut, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
 				commandList.Transitions(&transitionBefore, 1);
 				commandList.Dispatch2D(
 					brdfLutShader,
 					shaderArguments,
 					dispatchWidth,
 					dispatchHeight);
-				RenderBackendBarrier transitionAfter = RenderBackendBarrier(brdfLut, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
+				RenderBackendBarrier transitionAfter = RenderBackendBarrier(brdfLut, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
 				commandList.Transitions(&transitionAfter, 1);
 			};
 		});
@@ -443,8 +444,8 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 				shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(enviromentMap, 0));
 
 				RenderBackendBarrier transitions[2];
-				transitions[0] = RenderBackendBarrier(equirectangularMap, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::ShaderResource);
-				transitions[1] = RenderBackendBarrier(enviromentMap, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
+				transitions[0] = RenderBackendBarrier(equirectangularMap, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::ShaderResource);
+				transitions[1] = RenderBackendBarrier(enviromentMap, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
 				commandList.Transitions(&transitions, 2);
 				commandList.Dispatch(
 					equirectangularToCubeShader,
@@ -452,7 +453,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 					dispatchX,
 					dispatchY,
 					dispatchZ);
-				transitions[0] = RenderBackendBarrier(brdfLut, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
+				transitions[0] = RenderBackendBarrier(brdfLut, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
 				commandList.Transitions(&transitions, 2);
 			};
 		});
@@ -467,14 +468,14 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 				ShaderArguments shaderArguments = {};
 				shaderArguments.BindTextureUAV(0, RenderBackendTextureUAVDesc::Create(brdfLut, 0));
 
-				RenderBackendBarrier transitionBefore = RenderBackendBarrier(brdfLut, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
+				RenderBackendBarrier transitionBefore = RenderBackendBarrier(brdfLut, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess);
 				commandList.Transitions(&transitionBefore, 1);
 				commandList.Dispatch2D(
 					brdfLutShader,
 					shaderArguments,
 					dispatchWidth,
 					dispatchHeight);
-				RenderBackendBarrier transitionAfter = RenderBackendBarrier(brdfLut, TextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
+				RenderBackendBarrier transitionAfter = RenderBackendBarrier(brdfLut, RenderBackendTextureSubresourceRange(0, 1, 0, 1), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
 				commandList.Transitions(&transitionAfter, 1);
 			};
 		});

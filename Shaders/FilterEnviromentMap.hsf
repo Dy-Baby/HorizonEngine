@@ -1,32 +1,26 @@
-#include "../ShaderCommon.hsf"
-#include "HybridRenderPipelineCommon.hsf"
+#include "ShaderCommon.hsf"
 #include "BSDFCommon.hsf"
 
-#define IBL_SPECULAR_SHADER_ENVIROMENT_MAP_SRV_SLOT      0
-#define IBL_SPECULAR_SHADER_IBL_SPECULAR_LUT_UAV_SLOT    1
-
-const uint NUM_SAMPLES = 1024;
+#define FILTER_ENVIROMENT_MAP_SHADER_ENVIROMENT_MAP_SRV_SLOT             0
+#define FILTER_ENVIROMENT_MAP_SHADER_FILTERED_ENVIROMENT_MAP_UAV_SLOT    1
 
 TextureCube GetEnviromentMapSRV()
 {
-	return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(IBL_SPECULAR_SHADER_ENVIROMENT_MAP_SRV_SLOT)];
+	return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(FILTER_ENVIROMENT_MAP_SHADER_ENVIROMENT_MAP_SRV_SLOT)];
 }
 
-RWTexture2DArray<float4> GetIBLSpecularLutUAV()
+RWTexture2DArray<float4> GetFilteredEnviromentMapUAV()
 {
-    return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(IBL_SPECULAR_SHADER_IBL_SPECULAR_LUT_UAV_SLOT)];
+    return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(FILTER_ENVIROMENT_MAP_SHADER_FILTERED_ENVIROMENT_MAP_UAV_SLOT)];
 }
-
-const uint NumSamples = 1024;
 
 // Filtering based on https://placeholderart.wordpress.com/2015/07/28/implementation-notes-runtime-environment-map-filtering-for-image-based-lighting/
-float3 PrefilterEnvmap(TextureCube envmap, float3 N, float roughness, uint numSamples)
+float3 FilterEnviromentMap(TextureCube enviromentMap, float3 N, float roughness, uint numSamples)
 {
-	float3 V = N;
-	float3 T = 0.0;
-	float3 B = 0.0;
+	float3 T; float3 B;
 	GenerateTangentBasis(T, B, N);
 
+	float3 V = N; 
 	float3 color = 0.0;
 	float weight = 0.0;
 
@@ -54,7 +48,7 @@ float3 PrefilterEnvmap(TextureCube envmap, float3 N, float roughness, uint numSa
 			// Biased (+1.0) mip level for better result
 			float mipBias = 1.0;
 			float mipLevel = (roughness == 0.0) ? 0.0 : max(0.5 * log2(omegaS / omegaP) + mipBias, 0.0);
-			color += envmap.SampleLevel(SAMPLER_LINEAR_WARP, L, mipLevel).rgb * NdotL;
+			color += enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, L, mipLevel).rgb * NdotL;
 			weight += NdotL;
 		}
 	}
@@ -63,24 +57,21 @@ float3 PrefilterEnvmap(TextureCube envmap, float3 N, float roughness, uint numSa
 }
 
 [numthreads(8, 8, 1)]
-void IBLSpecularCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
+void FilterEnviromentMapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
-	RWTexture2DArray<float4> iblSpecularLut = GetIBLSpecularLutUAV();
-    uint width, height, elements;
-    iblSpecularLut.GetDimensions(width, height, elements);
-	if (GlobalInvocationID.x >= width || GlobalInvocationID.y >= height) 
-    {
-        return;
-    }
+	RWTexture2DArray<float4> filteredEnviromentMap = GetFilteredEnviromentMapUAV();
+
 	uint3 coord = GlobalInvocationID;
     float2 uv = (coord.xy + 0.5) / float2(width, height);
 	
+	TextureCube enviromentMap = GetEnviromentMapSRV();
 	float3 N = UVToCubemapCoord(uv, coord.z);
-
 	float roughness = SHADER_ARGUMENTS_DATA(0);
 	
-	TextureCube envmap = GetEnviromentMapSRV();
-	float3 result = PrefilterEnvmap(envmap, N, roughness, NumSamples);
+	//const uint NumSamples = 1024;
+	const uint NumSamples = roughness < 0.1 ? 32 : 64;
 
-	iblSpecularLut[coord] = float4(result, 1.0);
+	float3 result = FilterEnviromentMap(enviromentMap, N, roughness, NumSamples);
+
+	filteredEnviromentMap[coord] = float4(result, 1.0);
 }

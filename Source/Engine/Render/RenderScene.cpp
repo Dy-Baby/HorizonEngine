@@ -247,4 +247,10 @@ namespace HE
 		topLevelAS = RenderBackendCreateTopLevelAS(renderBackend, deviceMask, &topLevelASDesc, "TopLevelAS");
 #endif
 	}
+
+	void RenderScene::UpdateSkyLights()
+	{
+		//uint32 cubemapSize = skyLightComponent->CubemapResolution;
+		//ComputeEnviromentCubemaps(commandList, environmentMap, cubemapSize, outIrradianceEnvironmentMap, outFilteredEnvironmentMap);
+	}
 }

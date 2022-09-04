@@ -76,7 +76,11 @@ namespace HE
 			ImGui::TextUnformatted(name);
 			ImGui::NextColumn();
 			ImGui::PushItemWidth(-1);
-			ImGui::Text("%s", static_cast<std::string*>(value)->c_str());
+			ImGui::Text(lable, static_cast<std::string*>(value)->c_str());
+			/*if (ImGui::InputText(lable, static_cast<std::string*>(value)->c_str(), 256))
+			{
+				
+			}*/
 			ImGui::PopItemWidth();
 			ImGui::NextColumn();
 		};

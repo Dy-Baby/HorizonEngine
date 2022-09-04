@@ -1,4 +1,4 @@
-#include "../ShaderCommon.hsf"
+#include "ShaderCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
 #include "BSDFCommon.hsf"
 

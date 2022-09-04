@@ -20,6 +20,8 @@ namespace HE
 		}
 	};
 
+	class SkyLightRenderProxy;
+
 	struct SkyLightComponent
 	{
 		std::string cubemap;
@@ -34,5 +36,23 @@ namespace HE
 			factory.data<&SkyLightComponent::cubemap, entt::as_ref_t>("Cubemap"_hs)
 				.prop("Name"_hs, std::string("Cubemap"));
 		}
+		
+		void SetCubemap(std::string newCubemap)
+		{
+			if (cubemap != newCubemap)
+			{
+				cubemap = newCubemap;
+				SetDirty();
+			}
+		}
+
+		void SetDirty()
+		{
+			valid = false;
+		}
+
+		SkyLightRenderProxy* renderProxy;
+
+		bool valid;
 	};
 }

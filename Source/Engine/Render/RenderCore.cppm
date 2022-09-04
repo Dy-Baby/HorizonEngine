@@ -588,19 +588,22 @@ export namespace HE
 		uint32 height;
 	};
 
-	struct TextureSubresourceRange
+	struct RenderBackendTextureSubresourceRange
 	{
-		uint32 firstLevel;
-		uint32 mipLevels;
-		uint32 firstLayer;
-		uint32 arrayLayers;
-		FORCEINLINE bool operator==(const TextureSubresourceRange& rhs) const
+		RenderBackendTextureSubresourceRange() = default;
+		RenderBackendTextureSubresourceRange(uint32 firstLevel, uint32 mipLevels, uint32 firstLayer, uint32 arrayLayers)
+			: firstLevel(firstLevel), mipLevels(mipLevels), firstLayer(firstLayer), arrayLayers(arrayLayers) {}
+		FORCEINLINE bool operator==(const RenderBackendTextureSubresourceRange& rhs) const
 		{
 			return (firstLevel == rhs.firstLevel)
 				&& (mipLevels == rhs.mipLevels)
 				&& (firstLayer == rhs.firstLayer)
 				&& (arrayLayers == rhs.arrayLayers);
 		}
+		uint32 firstLevel;
+		uint32 mipLevels;
+		uint32 firstLayer;
+		uint32 arrayLayers;
 	};
 
 	struct BufferSubresourceRange
@@ -681,7 +684,7 @@ export namespace HE
 			struct
 			{
 				RenderBackendTextureHandle texture;
-				TextureSubresourceRange textureRange;
+				RenderBackendTextureSubresourceRange textureRange;
 			};
 			struct
 			{
@@ -689,7 +692,7 @@ export namespace HE
 				BufferSubresourceRange bufferRange;
 			};
 		};
-		RenderBackendBarrier(RenderBackendTextureHandle texture, TextureSubresourceRange range, RenderBackendResourceState srcState, RenderBackendResourceState dstState)
+		RenderBackendBarrier(RenderBackendTextureHandle texture, RenderBackendTextureSubresourceRange range, RenderBackendResourceState srcState, RenderBackendResourceState dstState)
 			: type(ResourceType::Texture), texture(texture), textureRange(range), srcState(srcState), dstState(dstState) {}
 		RenderBackendBarrier(RenderBackendBufferHandle buffer, BufferSubresourceRange range, RenderBackendResourceState srcState, RenderBackendResourceState dstState)
 			: type(ResourceType::Buffer), buffer(buffer), bufferRange(range), srcState(srcState), dstState(dstState) {}

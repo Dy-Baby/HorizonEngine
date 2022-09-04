@@ -1,6 +1,7 @@
 module;
 
 #include <vector>
+#include <ECS/ECS.h>
 
 export module HorizonEngine.Render.Scene;
 
@@ -14,6 +15,17 @@ export namespace HE
 {
 	struct RenderBackend;
 	
+	class SkyLightRenderProxy
+	{
+	public:
+		SkyLightRenderProxy(const SkyLightComponent& skyLightComponent)
+			: component(skyLightComponent) {}
+
+		const SkyLightComponent& component;
+		RenderBackendTextureHandle irradianceEnvironmentMap;
+		RenderBackendTextureHandle filteredEnviromentMap;
+	};
+
 	struct PBRMaterialShaderParameters
 	{
 		int32 flags;
@@ -47,7 +59,8 @@ export namespace HE
 
 		Scene* scene;
 		RenderBackend* renderBackend;
-
+		
+		void UpdateSkyLights();
 		void UploadResources(Scene* scene);
 
 		std::vector<Renderable> renderables;
@@ -62,6 +75,7 @@ export namespace HE
 		std::vector<Matrix4x4> prevWorldMatrices;
 		RenderBackendBufferHandle worldMatrixBuffer;
 		RenderBackendBufferHandle prevWorldMatrixBuffer;
+
 #if DEBUG_ONLY_RAY_TRACING_ENBALE
 		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
 		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;

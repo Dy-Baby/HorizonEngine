@@ -49,13 +49,6 @@ float3 CalculateTextureCubeUVW(float2 uv, uint faceIndex)
     }
 }
 
-void GenerateTangentBasis(inout float3 T, inout float3 B, float3 N)
-{
-    float3 up = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
-    T = normalize(cross(up, N));
-    B = normalize(cross(N, T));
-}
-
 float3 GetPerpendicularVector(float3 u)
 {
 	float3 a = abs(u);

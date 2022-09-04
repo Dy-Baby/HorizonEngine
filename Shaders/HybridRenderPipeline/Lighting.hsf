@@ -1,6 +1,6 @@
 #include "../ShaderCommon.hsf"
+#include "../BSDFCommon.hsf"
 #include "HybridRenderPipelineCommon.hsf"
-#include "BSDFCommon.hsf"
 
 #define LIGHTING_SHADER_PER_FRAME_DATA_SLOT        0
 #define LIGHTING_SHADER_GBUFFER0_SRV_SLOT          1

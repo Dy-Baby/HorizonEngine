@@ -141,7 +141,7 @@ namespace HE
 
 		template<typename Component, typename... Args>
 		Component& GetOrAddComponent(EntityHandle entity, Args&&... args)
-		{ 
+		{
 			return registry.get_or_emplace<Component>(entity, std::forward<Args>(args)...);
 		}
 
