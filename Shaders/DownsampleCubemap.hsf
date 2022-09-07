@@ -3,9 +3,9 @@
 #define DOWNSAMPLE_CUBEMAP_SHADER_CUBEMAP_SRV_SLOT               0
 #define DOWNSAMPLE_CUBEMAP_SHADER_OUTPUT_CUBEMAP_MIP_UAV_SLOT    1
 
-Texture2D GetCubemapSRV()
+TextureCube GetCubemapSRV()
 {
-    return BindlessTexture2D[SHADER_ARGUMENTS_INDEX(DOWNSAMPLE_CUBEMAP_SHADER_CUBEMAP_SRV_SLOT)];
+    return BindlessTextureCubes[SHADER_ARGUMENTS_INDEX(DOWNSAMPLE_CUBEMAP_SHADER_CUBEMAP_SRV_SLOT)];
 }
 
 RWTexture2DArray<float4> GetOutputCubemapMipUAV()
@@ -13,13 +13,13 @@ RWTexture2DArray<float4> GetOutputCubemapMipUAV()
 	return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(DOWNSAMPLE_CUBEMAP_SHADER_OUTPUT_CUBEMAP_MIP_UAV_SLOT)];
 }
 
-[numthreads(8, 8, 1)]
+[numthreads(8, 8, 6)]
 void DownsampleCubemapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
     RWTexture2DArray<float4> outputCubemapMip = GetOutputCubemapMipUAV();
 
-    uint width, height;
-    outputCubemapMip.GetDimensions(width, height);
+    uint width, height, faces;
+    outputCubemapMip.GetDimensions(width, height, faces);
 	if (GlobalInvocationID.x >= width || GlobalInvocationID.y >= height) 
     {
         return;

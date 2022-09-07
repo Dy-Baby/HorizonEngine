@@ -46,7 +46,7 @@ Entities:
       Next: 4294967295
       Prev: 4294967295
     SkyLightComponent:
-      Cubemap: ../../../Assets/HDRIs/PaperMill_E_3k.hdr
+      Cubemap: ../../../Assets/HDRIs/HDR_029_Sky_Cloudy_Ref.hdr
       Cubemap Resolution: 128
   - Entity: Mesh
     TransformComponent:

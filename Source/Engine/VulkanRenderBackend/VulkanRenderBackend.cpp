@@ -239,11 +239,15 @@ struct VulkanTexture
 	VkImageAspectFlags aspectMask;
 	VkClearValue clearValue;
 	VkImageView srv = VK_NULL_HANDLE;
-	VkImageView uav = VK_NULL_HANDLE;
 	VkImageView rtv = VK_NULL_HANDLE;
 	VkImageView dsv = VK_NULL_HANDLE;
 	int32 srvIndex = -1;
-	int32 uavIndex = -1;
+	struct UAV
+	{
+		VkImageView uav = VK_NULL_HANDLE;
+		int32 uavIndex = -1;
+	};
+	std::vector<UAV> uavs;
 };
 
 struct VulkanSampler
@@ -460,7 +464,7 @@ public:
 	uint32 CreateTextureSRV(uint32 textureIndex, const RenderBackendTextureSRVDesc* desc, const char* name);
 	int32 GetTextureSRVDescriptorIndex(uint32 textureIndex);
 	uint32 CreateTextureUAV(uint32 textureIndex, const RenderBackendTextureUAVDesc* desc, const char* name);
-	int32 GetTextureUAVDescriptorIndex(uint32 textureIndex);
+	int32 GetTextureUAVDescriptorIndex(uint32 textureIndex, uint32 mipLevel);
 	uint32 CreateSampler(const RenderBackendSamplerDesc* desc, const char* name);
 	void DestroySampler(uint32 index);
 	uint32 CreateShader(const RenderBackendShaderDesc* desc, const char* name);
@@ -1486,32 +1490,36 @@ uint32 VulkanDevice::CreateTexture(const RenderBackendTextureDesc* desc, const v
 	}
 	if (HAS_ANY_FLAGS(desc->flags, TextureCreateFlags::UnorderedAccess))
 	{
-		VkImageViewCreateInfo imageViewInfo = {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			.image = texture.handle,
-			.viewType = ConvertToVkImageViewType(desc->type, false),
-			.format = texture.format,
-			.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
-			.subresourceRange = { texture.aspectMask, 0, VK_REMAINING_MIP_LEVELS, 0, VK_REMAINING_ARRAY_LAYERS }
-		};
-		VK_CHECK(vkCreateImageView(handle, &imageViewInfo, VULKAN_ALLOCATION_CALLBACKS, &texture.uav));
+		texture.uavs.resize(texture.mipLevels);
+		for (uint32 mipLevel = 0; mipLevel < texture.mipLevels; mipLevel++)
+		{
+			VkImageViewCreateInfo imageViewInfo = {
+				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.image = texture.handle,
+				.viewType = ConvertToVkImageViewType(desc->type, false),
+				.format = texture.format,
+				.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
+				.subresourceRange = { texture.aspectMask, mipLevel, 1, 0, VK_REMAINING_ARRAY_LAYERS }
+			};
+			VK_CHECK(vkCreateImageView(handle, &imageViewInfo, VULKAN_ALLOCATION_CALLBACKS, &texture.uavs[mipLevel].uav));
 
-		uint32 index = bindlessManager.AllocateStorageImageIndex();
-		VkDescriptorImageInfo descriptorImageInfo = {
-			.imageView = texture.uav,
-			.imageLayout = VK_IMAGE_LAYOUT_GENERAL,
-		};
-		VkWriteDescriptorSet write = {
-			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = bindlessManager.set,
-			.dstBinding = VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_STORAGE_IMAGES,
-			.dstArrayElement = index,
-			.descriptorCount = 1,
-			.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-			.pImageInfo = &descriptorImageInfo,
-		};
-		vkUpdateDescriptorSets(handle, 1, &write, 0, nullptr);
-		texture.uavIndex = index;
+			uint32 index = bindlessManager.AllocateStorageImageIndex();
+			VkDescriptorImageInfo descriptorImageInfo = {
+				.imageView = texture.uavs[mipLevel].uav,
+				.imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+			};
+			VkWriteDescriptorSet write = {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = bindlessManager.set,
+				.dstBinding = VULKAN_RENDER_BACKEND_BINDLESS_DESCRIPTOR_SLOT_STORAGE_IMAGES,
+				.dstArrayElement = index,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+				.pImageInfo = &descriptorImageInfo,
+			};
+			vkUpdateDescriptorSets(handle, 1, &write, 0, nullptr);
+			texture.uavs[mipLevel].uavIndex = index;
+		}
 	}
 	if (HAS_ANY_FLAGS(desc->flags, TextureCreateFlags::RenderTarget))
 	{
@@ -1795,11 +1803,11 @@ uint32 VulkanDevice::CreateTextureUAV(uint32 textureIndex, const RenderBackendTe
 		.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A },
 		.subresourceRange = { texture.aspectMask, desc->mipLevel, 1, 0, 1 }
 	};
-	VK_CHECK(vkCreateImageView(handle, &imageViewInfo, VULKAN_ALLOCATION_CALLBACKS, &texture.uav));
+	VK_CHECK(vkCreateImageView(handle, &imageViewInfo, VULKAN_ALLOCATION_CALLBACKS, &texture.uavs[desc->mipLevel].uav));
 
 	uint32 index = bindlessManager.AllocateSampledImageIndex();
 	VkDescriptorImageInfo descriptorImageInfo = {
-		.imageView = texture.uav,
+		.imageView = texture.uavs[desc->mipLevel].uav,
 		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	};
 	VkWriteDescriptorSet write = {
@@ -1812,14 +1820,14 @@ uint32 VulkanDevice::CreateTextureUAV(uint32 textureIndex, const RenderBackendTe
 		.pImageInfo = &descriptorImageInfo,
 	};
 	vkUpdateDescriptorSets(handle, 1, &write, 0, nullptr);
-	texture.srvIndex = index;
+	texture.uavs[desc->mipLevel].uavIndex = index;
 	return index;
 }
 
-int32 VulkanDevice::GetTextureUAVDescriptorIndex(uint32 textureIndex)
+int32 VulkanDevice::GetTextureUAVDescriptorIndex(uint32 textureIndex, uint32 mipLevel)
 {
 	VulkanTexture& texture = textures[textureIndex];
-	return texture.uavIndex;
+	return texture.uavs[mipLevel].uavIndex;
 }
 
 uint32 VulkanDevice::CreateSampler(const RenderBackendSamplerDesc* desc, const char* name)
@@ -3655,7 +3663,7 @@ bool VulkanRenderCompileContext::PrepareForDispatch(RenderBackendShaderHandle sh
 		else if (shaderArguments.slots[i].type == 2)
 		{
 			VulkanTexture* texture = device->GetTexture(shaderArguments.slots[i].uavSlot.uav.texture);
-			pushConstants.indices[i] = texture->uavIndex;
+			pushConstants.indices[i] = texture->uavs[shaderArguments.slots[i].uavSlot.uav.mipLevel].uavIndex;
 		}
 		else if (shaderArguments.slots[i].type == 3)
 		{
@@ -3814,7 +3822,7 @@ bool VulkanRenderCompileContext::CompileRenderCommand(const RenderCommandTraceRa
 		else if (command.shaderArguments.slots[i].type == 2)
 		{
 			VulkanTexture* texture = device->GetTexture(command.shaderArguments.slots[i].uavSlot.uav.texture);
-			pushConstants.indices[i] = texture->uavIndex;
+			pushConstants.indices[i] = texture->uavs[command.shaderArguments.slots[i].uavSlot.uav.mipLevel].uavIndex;
 		}
 		else if (command.shaderArguments.slots[i].type == 3)
 		{
@@ -3916,7 +3924,7 @@ bool VulkanRenderCompileContext::PrepareForDraw(RenderBackendShaderHandle shader
 		else if (shaderArguments.slots[i].type == 2)
 		{
 			VulkanTexture* texture = device->GetTexture(shaderArguments.slots[i].uavSlot.uav.texture);
-			pushConstants.indices[i] = texture->uavIndex;
+			pushConstants.indices[i] = texture->uavs[shaderArguments.slots[i].uavSlot.uav.mipLevel].uavIndex;
 		}
 		else if (shaderArguments.slots[i].type == 3)
 		{
@@ -4712,7 +4720,7 @@ static int32 GetTextureUAVDescriptorIndex(void* instance, uint32 deviceMask, Ren
 	{
 		return 0;
 	}
-	return device.GetTextureUAVDescriptorIndex(textureIndex);
+	return device.GetTextureUAVDescriptorIndex(textureIndex, 0);
 }
 
 

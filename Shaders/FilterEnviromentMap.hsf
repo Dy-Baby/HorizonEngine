@@ -25,7 +25,7 @@ float3 FilterEnviromentMap(TextureCube enviromentMap, float3 N, float roughness,
 	float weight = 0.0;
 
 	uint width, height;
-	envmap.GetDimensions(0, width, height);
+	enviromentMap.GetDimensions(width, height);
 
 	// Convolve environment map using GGX NDF importance sampling
 	for (uint i = 0; i < numSamples; i++)
@@ -56,16 +56,22 @@ float3 FilterEnviromentMap(TextureCube enviromentMap, float3 N, float roughness,
 	return color;
 }
 
-[numthreads(8, 8, 1)]
+[numthreads(8, 8, 6)]
 void FilterEnviromentMapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
 	RWTexture2DArray<float4> filteredEnviromentMap = GetFilteredEnviromentMapUAV();
+	uint width, height, faces;
+    filteredEnviromentMap.GetDimensions(width, height, faces);
+	if (GlobalInvocationID.x >= width || GlobalInvocationID.y >= height) 
+    {
+        return;
+    }
 
 	uint3 coord = GlobalInvocationID;
     float2 uv = (coord.xy + 0.5) / float2(width, height);
 	
 	TextureCube enviromentMap = GetEnviromentMapSRV();
-	float3 N = UVToCubemapCoord(uv, coord.z);
+	float3 N = CalculateTextureCubeUVW(uv, coord.z);
 	float roughness = SHADER_ARGUMENTS_DATA(0);
 	
 	//const uint NumSamples = 1024;

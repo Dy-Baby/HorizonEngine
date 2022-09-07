@@ -78,8 +78,8 @@ namespace HE
 
 		shaderCompiler = CreateDxcShaderCompiler();
 
-		int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
-		//int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
+		//int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
+		int flags = VULKAN_RENDER_BACKEND_CREATE_FLAGS_VALIDATION_LAYERS | VULKAN_RENDER_BACKEND_CREATE_FLAGS_SURFACE;
 		renderBackend = VulkanRenderBackendCreateBackend(flags);
 
 		uint32 deviceMask;
@@ -137,7 +137,8 @@ namespace HE
 		auto skyLight = entityManager->CreateEntity("SkyLight");
 		SkyLightComponent skyLightComponent;
 		skyLightComponent.cubemapResolution = 128;
-		skyLightComponent.SetCubemap("../../../Assets/HDRIs/PaperMill_E_3k.hdr");
+		//skyLightComponent.SetCubemap("../../../Assets/HDRIs/PaperMill_E_3k.hdr");
+		skyLightComponent.SetCubemap("../../../Assets/HDRIs/HDR_029_Sky_Cloudy_Ref.hdr");
 		entityManager->AddComponent<SkyLightComponent>(skyLight, skyLightComponent);
 		entityManager->AddComponent<TransformComponent>(skyLight);
 		entityManager->AddComponent<SceneHierarchyComponent>(skyLight);
@@ -145,6 +146,7 @@ namespace HE
 		auto mesh = entityManager->CreateEntity("Mesh");
 		StaticMeshComponent staticMeshComponent;
 		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf"; 
+		//staticMeshComponent.meshSource = "../../../Assets/Models/SciFiHelmet/glTF/SciFiHelmet.gltf";
 		//staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
 		//staticMeshComponent.meshSource = "../../../Assets/Models/SunTemple_v4/SunTemple.gltf";
 		entityManager->AddComponent<StaticMeshComponent>(mesh, staticMeshComponent);
@@ -168,7 +170,9 @@ namespace HE
 
 		selectedEntity = mesh;
 
-		renderScene = new RenderScene();
+		GGlobalShaderLibrary = new ShaderLibrary(renderBackend, shaderCompiler);
+
+		renderScene = new RenderScene(arena);
 		renderScene->renderBackend = renderBackend;
 
 		SkyLightComponent* sl = entityManager->TryGetComponent<SkyLightComponent>(skyLight);

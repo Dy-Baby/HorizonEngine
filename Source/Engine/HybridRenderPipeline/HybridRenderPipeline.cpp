@@ -284,7 +284,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	perFrameData.data = {
 		.frameIndex = frameIndex,
 		.gamma = 2.2,
-		.exposure = 1.2,
+		.exposure = 1.4,
 		.sunDirection = { 0.00, 0.90045, 0.43497 },
 		.solarIrradiance = { 10.0f, 10.0f, 10.0f },
 		.solarAngularRadius = 0.004675f,

@@ -52,7 +52,10 @@ float4x4 GetPrevWorldMatrix()
     return BindlessBuffers[(bufferIndex >> 16) & 0xffff].Load<float4x4>((bufferIndex & 0xffff) * sizeof(float4x4));
 }
 
-#define MATERIAL_FLAGS_USE_NORMAL_MAP 0x00000001
+#define MATERIAL_FLAGS_USE_BASE_COLOR_MAP         0x00000001
+#define MATERIAL_FLAGS_USE_NORMAL_MAP             0x00000002
+#define MATERIAL_FLAGS_USE_METALLIC_ROUGHNESS_MAP 0x00000004
+#define MATERIAL_FLAGS_USE_EMISSIVE_MAP           0x00000008
 
 struct MaterialInstanceData
 {
@@ -86,6 +89,11 @@ Texture2D GetNormalMap(uint normalMapIndex)
 Texture2D GetMetallicRoughnessMap(uint metallicRoughnessMapIndex)
 {
     return BindlessTexture2Ds[metallicRoughnessMapIndex];
+}
+
+Texture2D GetEmissiveMap(uint emissiveMapIndex)
+{
+    return BindlessTexture2Ds[emissiveMapIndex];
 }
 
 struct GBufferVSToPS
@@ -147,33 +155,44 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
     float gamma = perFrameData.gamma;
 
     MaterialInstanceData material = GetMaterialInstanceData();
-    Texture2D baseColorMap = GetBaseColorMap(material.baseColorMapIndex);
-    Texture2D normalMap = GetNormalMap(material.normalMapIndex);
-    Texture2D metallicRoughnessMap = GetMetallicRoughnessMap(material.metallicRoughnessMapIndex);
-    Texture2D emissiveMap = GetMetallicRoughnessMap(material.emissiveMapIndex);
     
-    float4 baseColor = material.baseColor * SRGBToLinear(baseColorMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
+    float4 baseColor = material.baseColor;
+    if (material.flags & MATERIAL_FLAGS_USE_BASE_COLOR_MAP)
+    {
+        Texture2D baseColorMap = GetBaseColorMap(material.baseColorMapIndex);
+        baseColor = SRGBToLinear(baseColorMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
+    }
     if (baseColor.a < 0.2)
 	{
 		discard;
 	}
 
-    float3 normal;
+    float3 normal = interpolatedVertexNormal;
     if (material.flags & MATERIAL_FLAGS_USE_NORMAL_MAP)
     {
+        Texture2D normalMap = GetNormalMap(material.normalMapIndex);
         float3 tangentNormal = normalize(normalize(normalMap.Sample(SAMPLER_LINEAR_WARP, texCoord0).xyz) * 2.0 - 1.0);
         normal = normalize(mul(tangentNormal, input.tangentSpace));
     }
-    else
+
+	float metallic = material.metallic;
+    float roughness = material.roughness;
+    if (material.flags & MATERIAL_FLAGS_USE_METALLIC_ROUGHNESS_MAP)
     {
-        normal = interpolatedVertexNormal;
+        Texture2D metallicRoughnessMap = GetMetallicRoughnessMap(material.metallicRoughnessMapIndex);
+        float4 metallicRoughness = metallicRoughnessMap.Sample(SAMPLER_LINEAR_WARP, texCoord0);
+        metallic = metallicRoughness.b;
+        roughness = metallicRoughness.g;
+    }
+    roughness = max(roughness, 0.04);
+    
+    float4 emission = material.emission;
+    if (material.flags & MATERIAL_FLAGS_USE_EMISSIVE_MAP)
+    {
+        Texture2D emissiveMap = GetEmissiveMap(material.emissiveMapIndex);
+        float4 emission = SRGBToLinear(emissiveMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
     }
 
-    float2 metallicRoughness = metallicRoughnessMap.Sample(SAMPLER_LINEAR_WARP, texCoord0).bg;
-	float metallic = material.metallic * metallicRoughness.x;
-	float roughness = material.roughness * metallicRoughness.y;
-
-    float4 emission = material.emission * SRGBToLinear(emissiveMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
     float4 clipPosition = input.clipPosition;
     float linearDepth01 = clipPosition.z / clipPosition.w;
 

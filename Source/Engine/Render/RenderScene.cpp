@@ -12,18 +12,41 @@ import HorizonEngine.Render.ShaderSystem;
 
 namespace HE
 {
-	RenderScene::RenderScene()
+	/*RenderScene::RenderScene()
 	{
-	}
+	}*/
 
 	RenderScene::~RenderScene()
 	{
 	}
 
-	RenderBackendTextureHandle LoadTextureFromFile(RenderBackend* renderBackend, const char* filename)
+	RenderBackendTextureHandle LoadTextureFromHDRFile(RenderBackend* renderBackend, const char* filename)
+	{
+		if (!stbi_is_hdr(filename))
+		{
+			return RenderBackendTextureHandle::NullHandle;
+		}
+
+		int iw = 0, ih = 0, c = 0;
+		stbi_set_flip_vertically_on_load(false);
+		void* data = stbi_loadf(filename, &iw, &ih, &c, STBI_rgb_alpha);
+		if (data == nullptr)
+		{
+			return RenderBackendTextureHandle::NullHandle;
+		}
+		uint64 bufferSize = iw * ih * 4 * sizeof(float);
+
+		RenderBackendTextureDesc desc = RenderBackendTextureDesc::CreateTexture2D(iw, ih, 1, PixelFormat::RGBA32Float);
+		RenderBackendTextureHandle texture = RenderBackendCreateTexture(renderBackend, ~0u, &desc, data, filename);
+
+		stbi_image_free(data);
+		return texture;
+	}
+
+	RenderBackendTextureHandle LoadTextureFromFile(RenderBackend* renderBackend, const char* filename, bool autoMipmaps = true, bool filpY = true)
 	{
 		int iw = 0, ih = 0, c = 0;
-		stbi_set_flip_vertically_on_load(true);
+		stbi_set_flip_vertically_on_load(filpY);
 		unsigned char* data = stbi_load(filename, &iw, &ih, &c, STBI_default);
 		if (data == nullptr)
 		{
@@ -76,7 +99,7 @@ namespace HE
 
 		stbi_image_free(data);
 
-		RenderBackendTextureDesc desc = RenderBackendTextureDesc::CreateTexture2D(iw, ih, Math::MaxNumMipLevels(iw, ih), PixelFormat::RGBA8Unorm);
+		RenderBackendTextureDesc desc = RenderBackendTextureDesc::CreateTexture2D(iw, ih, autoMipmaps ? Math::MaxNumMipLevels(iw, ih) : 1, PixelFormat::RGBA8Unorm);
 		RenderBackendTextureHandle texture = RenderBackendCreateTexture(renderBackend, ~0u, &desc, buffer, filename);
 
 		_aligned_free(buffer);
@@ -106,9 +129,6 @@ namespace HE
 			dispatchX,
 			dispatchY,
 			dispatchZ);
-
-		transition = RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(0, 1, 0, 6), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
-		commandList.Transitions(&transition, 1);
 	}
 
 	void RenderScene::SetSkyLight(SkyLightRenderProxy* proxy)
@@ -303,15 +323,20 @@ namespace HE
 #endif
 
 		uint32 cubemapSize = skyLight->component->cubemapResolution;
-		RenderBackendTextureHandle equirectangular = LoadTextureFromFile(renderBackend, skyLight->component->cubemap.c_str());
-		RenderBackendTextureDesc cubemapDesc = RenderBackendTextureDesc::CreateCube(cubemapSize, PixelFormat::RGBA16Float, TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource);
+		RenderBackendTextureHandle equirectangular = LoadTextureFromHDRFile(renderBackend, skyLight->component->cubemap.c_str());
+		RenderBackendTextureDesc cubemapDesc = RenderBackendTextureDesc::CreateCube(cubemapSize, PixelFormat::RGBA16Float, TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource, Math::MaxNumMipLevels(cubemapSize));
 		skyLight->environmentMap = RenderBackendCreateTexture(renderBackend, deviceMask, &cubemapDesc, nullptr, "EnvironmentMap");
 		
-		RenderCommandList* commandList = renderContext->commandLists.data();
+		RenderBackendTextureDesc irradianceEnvironmentMapDesc = RenderBackendTextureDesc::CreateCube(GIrradianceEnviromentMapSize, PixelFormat::RGBA16Float, TextureCreateFlags::UnorderedAccess | TextureCreateFlags::ShaderResource);
+		skyLight->irradianceEnvironmentMap = RenderBackendCreateTexture(renderBackend, deviceMask, &irradianceEnvironmentMapDesc, nullptr, "IrradianceEnvironmentMap");
+		
+		skyLight->filteredEnvironmentMap = RenderBackendCreateTexture(renderBackend, deviceMask, &cubemapDesc, nullptr, "FilteredEnvironmentMap");
+
+		RenderCommandList* commandList = new RenderCommandList(arena);
 
 		EquirectangularToCubemap(*commandList, equirectangular, skyLight->environmentMap, cubemapSize);
 		ComputeEnviromentCubemaps(*commandList, skyLight->environmentMap, cubemapSize, skyLight->irradianceEnvironmentMap, skyLight->filteredEnvironmentMap);
 
-		RenderBackendSubmitRenderCommandLists(renderBackend, commandList, 1);
+		RenderBackendSubmitRenderCommandLists(renderBackend, &commandList, 1);
 	}
 }

@@ -56,9 +56,10 @@ export namespace HE
 	class RenderScene
 	{
 	public:
-		RenderScene();
+		RenderScene(MemoryArena* arena) : arena(arena) {}
 		~RenderScene();
 
+		MemoryArena* arena;
 		Scene* scene;
 		RenderBackend* renderBackend;
 		
@@ -83,6 +84,7 @@ export namespace HE
 		RenderBackendRayTracingAccelerationStructureHandle bottomLevelAS;
 		RenderBackendRayTracingAccelerationStructureHandle topLevelAS;
 #endif
+
 		void SetSkyLight(SkyLightRenderProxy* proxy);
 		SkyLightRenderProxy* skyLight;
 	};

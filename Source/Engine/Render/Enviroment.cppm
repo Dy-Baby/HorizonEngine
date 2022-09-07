@@ -17,17 +17,16 @@ export namespace HE
 
 		for (uint32 mipLevel = 1; mipLevel < numMipLevels; mipLevel++)
 		{
-			RenderBackendResourceState previousState = (mipLevel == 1) ? RenderBackendResourceState::Undefined : RenderBackendResourceState::ShaderResource;
 			RenderBackendBarrier transitions[] =
 			{
-				RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(mipLevel - 1, 1, 0, REMAINING_ARRAY_LAYERS), previousState, RenderBackendResourceState::ShaderResource),
+				RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(mipLevel - 1, 1, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource),
 				RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(mipLevel, 1, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::Undefined, RenderBackendResourceState::UnorderedAccess)
 			};
 			commandList.Transitions(transitions, 2);
 
 			uint32 dispatchX = CEIL_DIV(1 << (numMipLevels - mipLevel - 1), 8);
 			uint32 dispatchY = CEIL_DIV(1 << (numMipLevels - mipLevel - 1), 8);
-			uint32 dispatchZ = 6;
+			uint32 dispatchZ = 1;
 
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(cubemap));
@@ -42,7 +41,7 @@ export namespace HE
 				dispatchZ);
 		}
 
-		RenderBackendBarrier transition = RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(0, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::Undefined, RenderBackendResourceState::ShaderResource);
+		RenderBackendBarrier transition = RenderBackendBarrier(cubemap, RenderBackendTextureSubresourceRange(numMipLevels - 1, REMAINING_MIP_LEVELS, 0, REMAINING_ARRAY_LAYERS), RenderBackendResourceState::UnorderedAccess, RenderBackendResourceState::ShaderResource);
 		commandList.Transitions(&transition, 1);
 	}
 
@@ -56,7 +55,7 @@ export namespace HE
 
 		uint32 dispatchX = CEIL_DIV(GIrradianceEnviromentMapSize, 8);
 		uint32 dispatchY = CEIL_DIV(GIrradianceEnviromentMapSize, 8);
-		uint32 dispatchZ = 6;
+		uint32 dispatchZ = 1;
 
 		ShaderArguments shaderArguments = {};
 		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(enviromentMap));
@@ -85,7 +84,7 @@ export namespace HE
 		{
 			uint32 dispatchX = CEIL_DIV(1 << (numMipLevels - mipLevel - 1), 8);
 			uint32 dispatchY = CEIL_DIV(1 << (numMipLevels - mipLevel - 1), 8);
-			uint32 dispatchZ = 6;
+			uint32 dispatchZ = 1;
 
 			float roughness = (float)mipLevel / (float)(numMipLevels - 1);
 
@@ -94,7 +93,6 @@ export namespace HE
 			shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(filteredEnviromentMap, mipLevel));
 			shaderArguments.PushConstants(0, roughness);
 
-			RenderBackendShaderHandle computeShader;
 			commandList.Dispatch(
 				computeShader,
 				shaderArguments,

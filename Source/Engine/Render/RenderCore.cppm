@@ -813,7 +813,7 @@ export namespace HE
 			uint32 mipLevels = 1,
 			uint32 samples = 1)
 		{
-			return RenderBackendTextureDesc(sizeInPixels, sizeInPixels, 1, mipLevels, 1, samples, TextureType::TextureCube, format, flags, {});
+			return RenderBackendTextureDesc(sizeInPixels, sizeInPixels, 1, mipLevels, 6, samples, TextureType::TextureCube, format, flags, {});
 		}
 
 		RenderBackendTextureDesc() = default;

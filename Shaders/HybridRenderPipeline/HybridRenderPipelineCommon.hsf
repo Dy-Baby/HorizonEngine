@@ -34,21 +34,6 @@ float4 SRGBToLinear(float4 sRGB, float gamma)
 	return float4(linearColor, sRGB.w);
 }
 
-float3 CalculateTextureCubeUVW(float2 uv, uint faceIndex)
-{
-    uv = 2.0 * float2(uv.x, 1.0 - uv.y) - 1.0;
-    switch (faceIndex)
-    {
-    case 0: return normalize(float3( 1.0, uv.y, -uv.x));
-    case 1: return normalize(float3(-1.0, uv.y,  uv.x));
-    case 2: return normalize(float3(uv.x,  1.0, -uv.y));
-    case 3: return normalize(float3(uv.x, -1.0,  uv.y));
-    case 4: return normalize(float3(uv.x, uv.y,   1.0));
-    case 5: return normalize(float3(uv.x, uv.y,  -1.0));
-    default: return 0;
-    }
-}
-
 float3 GetPerpendicularVector(float3 u)
 {
 	float3 a = abs(u);

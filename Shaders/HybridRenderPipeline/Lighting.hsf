@@ -99,34 +99,34 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 F0 = lerp(Fdielectric, baseColor.rgb, metallic);
 	float3 finalColor = emission;
 	
-		//float visibility = shadowBuffer[coord].r;
-		float visibility = 1.0;
-		float lightIntensity = 1.0;
-		float3 N = normal;
-		float3 V = normalize(perFrameData.cameraPosition - position);
-		float3 R = reflect(-V, N);
-		float NdotV = clamp(dot(N, V), 0.0, 1.0);
-		float3 irradiance = perFrameData.solarIrradiance;
-		float3 Li = -perFrameData.sunDirection;
-		float cosLi = clamp(dot(N, Li), 0.0, 1.0);
-	{
-		// if(cosLi > 0.0)
-		{
-			float3 Lh = normalize(Li + V);
-			float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
+	//float visibility = shadowBuffer[coord].r;
+	float visibility = 1.0;
+	float lightIntensity = 1.0;
+	float3 N = normal;
+	float3 V = normalize(perFrameData.cameraPosition - position);
+	float3 R = reflect(-V, N);
+	float NdotV = clamp(dot(N, V), 0.0, 1.0);
+	float3 irradiance = perFrameData.solarIrradiance;
+	float3 Li = -perFrameData.sunDirection;
+	float cosLi = clamp(dot(N, Li), 0.0, 1.0);
+	// {
+	// 	// if(cosLi > 0.0)
+	// 	{
+	// 		float3 Lh = normalize(Li + V);
+	// 		float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
 
-			float3 F = FresnelSchlick(F0, NdotV);
-			float D = D_GGX(cosLh, roughness);
-			float G = SchlickGGX(cosLi, NdotV, roughness);
-			float3 Kd = (1.0 - F) * (1.0 - metallic);
+	// 		float3 F = FresnelSchlick(F0, NdotV);
+	// 		float D = D_GGX(cosLh, roughness);
+	// 		float G = SchlickGGX(cosLi, NdotV, roughness);
+	// 		float3 Kd = (1.0 - F) * (1.0 - metallic);
 
-			float3 diffuse = Kd * baseColor.rgb / PI;
-			float3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
-			float3 radiance = irradiance * lightIntensity;
+	// 		float3 diffuse = Kd * baseColor.rgb / PI;
+	// 		float3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
+	// 		float3 radiance = irradiance * lightIntensity;
 
-			finalColor += (diffuse + specular) * radiance * cosLi * visibility;
-		}
-	}
+	// 		finalColor += (diffuse + specular) * radiance * cosLi * visibility;
+	// 	}
+	// }
 
 	// IBL
 	{
@@ -143,7 +143,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		
 		uint w; uint h; uint numMipLevels;
 		filteredEnvironmentMap.GetDimensions(0, w, h, numMipLevels);
-		float lod = roughness * numMipLevels;
+		float lod = roughness * (numMipLevels - 1);
 		float3 specularIrradiance = filteredEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, R, lod).rgb;
 
 		// @note When loading the texture, use CLAMP_TO_EDGE to ensure that values are read correctly.

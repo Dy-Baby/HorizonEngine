@@ -78,15 +78,11 @@ namespace HE
 				Material& material = mesh->materials.emplace_back();
 				material.name = aiMaterial->GetName().C_Str();
 
-				Vector4 baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+				Vector4 baseColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 				aiMaterial->Get(AI_MATKEY_BASE_COLOR, baseColor);
 				material.baseColor = baseColor;
 
-				Vector4 emission = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
-				material.emission = emission;
-
-				float metallic = 1.0f;
+				float metallic = 0.0f;
 				aiMaterial->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
 				material.metallic = metallic;
 
@@ -94,13 +90,18 @@ namespace HE
 				aiMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
 				material.roughness = roughness;
 
+				Vector4 emission = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+				aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
+				material.emission = emission;
+
+
 				aiString aiTexPath;
 
 				aiReturn result = aiMaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &aiTexPath);
 				if (result == aiReturn_SUCCESS)
 				{
 					material.baseColorMap = dir + '/' + aiTexPath.C_Str();
-					// material.baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+					material.flags |= MATERIAL_FLAGS_USE_BASE_COLOR_MAP;
 				}
 				else
 				{
@@ -111,7 +112,7 @@ namespace HE
 				if (result == aiReturn_SUCCESS)
 				{
 					material.normalMap = dir + '/' + aiTexPath.C_Str();
-					material.flags &= MATERIAL_FLAGS_USE_NORMAL_MAP;
+					// material.flags |= MATERIAL_FLAGS_USE_NORMAL_MAP;
 				}
 				else
 				{
@@ -122,26 +123,22 @@ namespace HE
 				if (result == aiReturn_SUCCESS)
 				{
 					material.metallicRoughnessMap = dir + '/' + aiTexPath.C_Str();
-					material.metallic = 1.0f;
-					material.roughness = 1.0f;
+					material.flags |= MATERIAL_FLAGS_USE_METALLIC_ROUGHNESS_MAP;
 				}
 				else
 				{
 					material.metallicRoughnessMap = "";
-					material.metallic = 0.0f;
-					material.roughness = 1.0f;
 				}
 
 				result = aiMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &aiTexPath);
 				if (result == aiReturn_SUCCESS)
 				{
 					material.emissiveMap = dir + '/' + aiTexPath.C_Str();
-					material.emission = Vector4(1.0);
+					material.flags |= MATERIAL_FLAGS_USE_EMISSIVE_MAP;
 				}
 				else
 				{
 					material.emissiveMap = "";
-					material.emission = Vector4(0.0);
 				}
 			}
 		}
