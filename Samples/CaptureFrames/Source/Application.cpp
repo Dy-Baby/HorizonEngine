@@ -252,7 +252,7 @@ namespace HE
 		{
 			sceneView->camera.aspectRatio = (float)swapChainWidth / (float)swapChainHeight;
 		}
-		static Quaternion zUpQuat = glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(0.0, 1.0, 0.0)) * glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(0.0, 0.0, 1.0));
+		static Quaternion zUpQuat = glm::rotate(glm::quat(), Math::DegreesToRadians(90.0), Vector3(1.0, 0.0, 0.0));
 		sceneView->camera.invViewMatrix = Math::Compose(sceneView->camera.position, Quaternion(Math::DegreesToRadians(sceneView->camera.euler)) * zUpQuat, Vector3(1.0f, 1.0f, 1.0f));
 		sceneView->camera.viewMatrix = Math::Inverse(sceneView->camera.invViewMatrix);
 		sceneView->camera.projectionMatrix = glm::perspectiveRH_ZO(Math::DegreesToRadians(sceneView->camera.fieldOfView), sceneView->camera.aspectRatio, sceneView->camera.zNear, sceneView->camera.zFar);

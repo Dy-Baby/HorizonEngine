@@ -62,8 +62,8 @@ void SimpleFirstPersonCameraController::Update(float deltaTime, Vector3& outCame
     const float finalCameraSpeed = cameraSpeed * cameraBoost;
 
     Vector3 localSpaceTranslationVelocity = Vector3(
-        -moveForwardBackward,  // roll
         moveRightLeft,         // pitch
+        moveForwardBackward,   // roll
         moveUpDown             // yaw
     );
 
@@ -83,8 +83,8 @@ void SimpleFirstPersonCameraController::Update(float deltaTime, Vector3& outCame
     outCameraPosition += translationVelocity * deltaTime;
 
     Vector3 rotationVelocityEuler = Vector3(
-        rotateRoll,     // roll
         rotatePitch,    // pitch
+        rotateRoll,     // roll
         rotateYaw       // yaw
     );
 
