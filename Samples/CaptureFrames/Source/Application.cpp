@@ -136,7 +136,7 @@ namespace HE
 
 		auto skyLight = entityManager->CreateEntity("SkyLight");
 		SkyLightComponent skyLightComponent;
-		skyLightComponent.cubemapResolution = 128;
+		skyLightComponent.cubemapResolution = 512;
 		//skyLightComponent.SetCubemap("../../../Assets/HDRIs/PaperMill_E_3k.hdr");
 		skyLightComponent.SetCubemap("../../../Assets/HDRIs/HDR_029_Sky_Cloudy_Ref.hdr");
 		entityManager->AddComponent<SkyLightComponent>(skyLight, skyLightComponent);
@@ -145,7 +145,10 @@ namespace HE
 		
 		auto mesh = entityManager->CreateEntity("Mesh");
 		StaticMeshComponent staticMeshComponent;
-		staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf"; 
+		//staticMeshComponent.meshSource = "../../../Assets/Models/Sponza/glTF/Sponza.gltf"; 
+		staticMeshComponent.meshSource = "../../../Assets/Models/EnvironmentTest/glTF-IBL/EnvironmentTest.gltf";
+		//staticMeshComponent.meshSource = "D:/D/Programming/Projects/LinkedHorizon/Assets/Models/glTF/2.0/NormalTangentTest/glTF/NormalTangentTest.gltf";
+
 		//staticMeshComponent.meshSource = "../../../Assets/Models/SciFiHelmet/glTF/SciFiHelmet.gltf";
 		//staticMeshComponent.meshSource = "../../../Assets/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
 		//staticMeshComponent.meshSource = "../../../Assets/Models/SunTemple_v4/SunTemple.gltf";
@@ -179,7 +182,6 @@ namespace HE
 		sl->proxy = new SkyLightRenderProxy(sl);
 		renderScene->SetSkyLight(sl->proxy);
 		renderScene->UploadResources(activeScene);
-		//system("pause");
 
 		renderContext = new RenderContext();
 		renderContext->arena = arena;

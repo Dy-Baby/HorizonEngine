@@ -27,7 +27,7 @@ void DownsampleCubemapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 
     uint3 coord = GlobalInvocationID;
     float2 uv = (coord.xy + 0.5) / float2(width, height);
-	float3 uvw = CalculateTextureCubeUVW(uv, coord.z);
+	float3 uvw = CalculateCubemapVector(uv, coord.z);
     uint sourceMipLevel = (uint)SHADER_ARGUMENTS_DATA(0);
     
     TextureCube cubemap = GetCubemapSRV();

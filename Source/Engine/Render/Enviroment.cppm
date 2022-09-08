@@ -60,6 +60,7 @@ export namespace HE
 		ShaderArguments shaderArguments = {};
 		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(enviromentMap));
 		shaderArguments.BindTextureUAV(1, RenderBackendTextureUAVDesc::Create(irradianceEnviromentMap, 0));
+		shaderArguments.PushConstants(0, (float)mipLevel);
 
 		commandList.Dispatch(
 			computeShader,

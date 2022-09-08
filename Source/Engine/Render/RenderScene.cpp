@@ -117,7 +117,7 @@ namespace HE
 
 		uint32 dispatchX = CEIL_DIV(cubemapSize, 8);
 		uint32 dispatchY = CEIL_DIV(cubemapSize, 8);
-		uint32 dispatchZ = 6;
+		uint32 dispatchZ = 1;
 
 		ShaderArguments shaderArguments = {};
 		shaderArguments.BindTextureSRV(0, RenderBackendTextureSRVDesc::Create(equirectangular));

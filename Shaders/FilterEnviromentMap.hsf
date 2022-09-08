@@ -18,9 +18,9 @@ RWTexture2DArray<float4> GetFilteredEnviromentMapUAV()
 float3 FilterEnviromentMap(TextureCube enviromentMap, float3 N, float roughness, uint numSamples)
 {
 	float3 T; float3 B;
-	GenerateTangentBasis(T, B, N);
+	CreateOrthonormalBasis(T, B, N);
 
-	float3 V = N; 
+	float3 V = N;
 	float3 color = 0.0;
 	float weight = 0.0;
 
@@ -53,6 +53,7 @@ float3 FilterEnviromentMap(TextureCube enviromentMap, float3 N, float roughness,
 		}
 	}
 	color /= weight;
+
 	return color;
 }
 
@@ -71,13 +72,15 @@ void FilterEnviromentMapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
     float2 uv = (coord.xy + 0.5) / float2(width, height);
 	
 	TextureCube enviromentMap = GetEnviromentMapSRV();
-	float3 N = CalculateTextureCubeUVW(uv, coord.z);
 	float roughness = SHADER_ARGUMENTS_DATA(0);
 	
 	//const uint NumSamples = 1024;
-	const uint numSamples = roughness < 0.1 ? 32 : 64;
+	const uint NumSamples = roughness < 0.1 ? 32 : 64;
 
-	float3 result = FilterEnviromentMap(enviromentMap, N, roughness, numSamples);
+	float3 N = CalculateCubemapVector(uv, coord.z);
+
+	// float3 result = FilterEnviromentMap(enviromentMap, N, roughness, NumSamples);
+	float3 result =  enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, N, 0).rgb;
 
 	filteredEnviromentMap[coord] = float4(result, 1.0);
 }

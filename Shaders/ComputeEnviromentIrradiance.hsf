@@ -31,13 +31,13 @@ void ComputeEnviromentIrradianceCS(uint3 GlobalInvocationID : SV_DispatchThreadI
 	uint3 coord = GlobalInvocationID;
     float2 uv = (coord.xy + 0.5) / float2(width, height);
 
-	float3 N = CalculateTextureCubeUVW(uv, coord.z);
+	float3 N = CalculateCubemapVector(uv, coord.z);
 	float3 T;
 	float3 B;
-	GenerateTangentBasis(T, B, N);
+	CreateOrthonormalBasis(T, B, N);
 
 	TextureCube enviromentMap = GetEnviromentMapSRV();
-	uint enviromentMapMipLevel = 0;
+	uint enviromentMapMipLevel = (uint)SHADER_ARGUMENTS_DATA(0);
 
 	// Monte carlo integration of hemispherical irradiance
 	float3 irradiance = 0;

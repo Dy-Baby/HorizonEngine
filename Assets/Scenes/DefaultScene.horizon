@@ -47,7 +47,7 @@ Entities:
       Prev: 4294967295
     SkyLightComponent:
       Cubemap: ../../../Assets/HDRIs/HDR_029_Sky_Cloudy_Ref.hdr
-      Cubemap Resolution: 128
+      Cubemap Resolution: 512
   - Entity: Mesh
     TransformComponent:
       Position: [0, 0, 0]
@@ -61,4 +61,4 @@ Entities:
       Next: 4294967295
       Prev: 4294967295
     StaticMeshComponent:
-      Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf
+      Mesh Source: ../../../Assets/Models/EnvironmentTest/glTF-IBL/EnvironmentTest.gltf

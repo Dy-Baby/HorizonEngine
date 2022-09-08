@@ -109,25 +109,24 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 irradiance = perFrameData.solarIrradiance;
 	float3 Li = -perFrameData.sunDirection;
 	float cosLi = clamp(dot(N, Li), 0.0, 1.0);
-	// {
-	// 	// if(cosLi > 0.0)
-	// 	{
-	// 		float3 Lh = normalize(Li + V);
-	// 		float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
+	{
+		// // if(cosLi > 0.0)
+		// {
+		// 	float3 Lh = normalize(Li + V);
+		// 	float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
 
-	// 		float3 F = FresnelSchlick(F0, NdotV);
-	// 		float D = D_GGX(cosLh, roughness);
-	// 		float G = SchlickGGX(cosLi, NdotV, roughness);
-	// 		float3 Kd = (1.0 - F) * (1.0 - metallic);
+		// 	float3 F = FresnelSchlick(F0, NdotV);
+		// 	float D = D_GGX(cosLh, roughness);
+		// 	float G = SchlickGGX(cosLi, NdotV, roughness);
+		// 	float3 Kd = (1.0 - F) * (1.0 - metallic);
 
-	// 		float3 diffuse = Kd * baseColor.rgb / PI;
-	// 		float3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
-	// 		float3 radiance = irradiance * lightIntensity;
+		// 	float3 diffuse = Kd * baseColor.rgb / PI;
+		// 	float3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
+		// 	float3 radiance = irradiance * lightIntensity;
 
-	// 		finalColor += (diffuse + specular) * radiance * cosLi * visibility;
-	// 	}
-	// }
-
+		// 	finalColor += (diffuse + specular) * radiance * cosLi * visibility;
+		// }
+	}
 	// IBL
 	{
 		Texture2D brdfLut = GetBRDFLutSRV();

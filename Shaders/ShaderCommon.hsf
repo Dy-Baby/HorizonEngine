@@ -53,31 +53,45 @@ float Luminance(float4 linearColor)
     return Luminance(linearColor.rgb);
 }
 
-void GenerateTangentBasis(inout float3 T, inout float3 B, float3 N)
+void CreateOrthonormalBasis(inout float3 T, inout float3 B, float3 N)
 {
     float3 up = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
     T = normalize(cross(up, N));
     B = normalize(cross(N, T));
 }
 
-// case 0: return normalize(float3(  1.0, uv.y, -uv.x)); break;
-// case 1: return normalize(float3( -1.0, uv.y,  uv.x)); break;
-// case 2: return normalize(float3( uv.x,  1.0, -uv.y)); break;
-// case 3: return normalize(float3( uv.x, -1.0,  uv.y)); break;
-// case 4: return normalize(float3( uv.x, uv.y,   1.0)); break;
-// case 5: return normalize(float3(-uv.x, uv.y,  -1.0)); break;
+static const float3x3 CUBE_ROTATIONS[6] = {
+    float3x3(float3(0.0, 0.0, -1.0), float3(0.0, -1.0, 0.0), float3(-1.0, 0.0, 0.0)),
+    float3x3(float3(0.0, 0.0, 1.0),  float3(0.0, -1.0, 0.0), float3(1.0, 0.0, 0.0)),
+    float3x3(float3(1.0, 0.0, 0.0),  float3(0.0, 0.0, 1.0),  float3(0.0, -1.0, 0.0)),
+    float3x3(float3(1.0, 0.0, 0.0),  float3(0.0, 0.0, -1.0), float3(0.0, 1.0, 0.0)),
+    float3x3(float3(1.0, 0.0, 0.0),  float3(0.0, -1.0, 0.0), float3(0.0, 0.0, -1.0)),
+    float3x3(float3(-1.0, 0.0, 0.0), float3(0.0, -1.0, 0.0), float3(0.0, 0.0, 1.0))
+};
 
-float3 CalculateTextureCubeUVW(float2 uv, uint faceIndex)
+float3 CalculateCubemapVector(float2 uv, uint face)
 {
+    //return normalize(mul(float3(uv * 2.0 - 1.0, 1.0), CUBE_ROTATIONS[face]));
     uv = 2.0 * float2(uv.x, uv.y) - 1.0;
-    switch (faceIndex)
+    switch (face)
     {
-    case 0: return normalize(float3(  1.0, -uv.x,  uv.y)); break;
-    case 1: return normalize(float3( -1.0,  uv.x,  uv.y)); break;
-    case 2: return normalize(float3( uv.x,   1.0,  uv.y)); break;
-    case 3: return normalize(float3(-uv.x,  -1.0,  uv.y)); break;
-    case 4: return normalize(float3( uv.y,  uv.x,   1.0)); break;
-    case 5: return normalize(float3(-uv.y,  uv.x,  -1.0)); break;
-    default: return 0; break;
+    // case 0: return normalize(float3(  1.0, uv.y, -uv.x));
+    // case 1: return normalize(float3( -1.0, uv.y,  uv.x));
+    // case 2: return normalize(float3( uv.x,  1.0, -uv.y));
+    // case 3: return normalize(float3( uv.x, -1.0,  uv.y));
+    // case 4: return normalize(float3( uv.x, uv.y,   1.0));
+    // case 5: return normalize(float3(-uv.x, uv.y,  -1.0));
+    case 0: return normalize(float3(  1.0, -uv.y, -uv.x));
+    case 1: return normalize(float3( -1.0, -uv.y,  uv.x));
+    case 2: return normalize(float3( uv.x,   1.0,  uv.y));
+    case 3: return normalize(float3( uv.x,  -1.0, -uv.y));
+    case 4: return normalize(float3( uv.x, -uv.y,   1.0));
+    case 5: return normalize(float3(-uv.x, -uv.y,  -1.0));
     }
+    return 0;
+}
+
+float3 TangentToWorld(const float3 vec, const float3 T, const float3 B, const float3 N)
+{
+    return normalize(T * vec.x + B * vec.y + N * vec.z);
 }

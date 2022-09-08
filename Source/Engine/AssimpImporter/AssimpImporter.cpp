@@ -78,7 +78,7 @@ namespace HE
 				Material& material = mesh->materials.emplace_back();
 				material.name = aiMaterial->GetName().C_Str();
 
-				Vector4 baseColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+				Vector4 baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 				aiMaterial->Get(AI_MATKEY_BASE_COLOR, baseColor);
 				material.baseColor = baseColor;
 
@@ -93,7 +93,6 @@ namespace HE
 				Vector4 emission = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 				aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
 				material.emission = emission;
-
 
 				aiString aiTexPath;
 

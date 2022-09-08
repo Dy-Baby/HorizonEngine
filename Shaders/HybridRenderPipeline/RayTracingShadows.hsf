@@ -82,7 +82,7 @@ void RayTracingShadowsRayGen()
     float3 T = cross(B, N);
 
     // float3 T; float3 B;
-    // GenerateTangentBasis(T, B, N);
+    // CreateOrthonormalBasis(T, B, N);
 
     float3x3 TBN = float3x3(T, B, N);
     randDirection = mul(randDirection, TBN);

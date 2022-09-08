@@ -162,6 +162,7 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
         Texture2D baseColorMap = GetBaseColorMap(material.baseColorMapIndex);
         baseColor = SRGBToLinear(baseColorMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
     }
+    
     if (baseColor.a < 0.2)
 	{
 		discard;
@@ -190,7 +191,7 @@ void GBufferPS(GBufferVSToPS input, out GBufferData gbufferData)
     if (material.flags & MATERIAL_FLAGS_USE_EMISSIVE_MAP)
     {
         Texture2D emissiveMap = GetEmissiveMap(material.emissiveMapIndex);
-        float4 emission = SRGBToLinear(emissiveMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
+        emission = SRGBToLinear(emissiveMap.Sample(SAMPLER_LINEAR_WARP, texCoord0), gamma);
     }
 
     float4 clipPosition = input.clipPosition;

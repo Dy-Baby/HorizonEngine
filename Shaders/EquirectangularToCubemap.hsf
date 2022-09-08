@@ -14,7 +14,7 @@ RWTexture2DArray<float4> GetCubemapUAV()
 	return BindlessRWTexture2DArrays[SHADER_ARGUMENTS_INDEX(EQUIRECTANGULAR_TO_CUBEMAP_SHADER_CUBEMAP_UAV_SLOT)];
 }
 
-[numthreads(8, 8, 1)]
+[numthreads(8, 8, 6)]
 void EquirectangularToCubemapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 {
 	RWTexture2DArray<float4> cubemap = GetCubemapUAV();
@@ -28,13 +28,15 @@ void EquirectangularToCubemapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	uint3 coord = GlobalInvocationID;
     float2 uv = (coord.xy + 0.5) / float2(width, height);
 
-	float3 uvw = CalculateTextureCubeUVW(uv, coord.z);
+	float3 uvw = CalculateCubemapVector(uv, coord.z);
     
     // Calculate sampling coord for equirectangular texture.
 	// https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
-	float phi = atan2(uvw.x, uvw.y);
-	float theta = atan2(sqrt(uvw.x * uvw.x + uvw.y * uvw.y), uvw.z);
-    float2 equirectangularMapUV = float2(phi / (2.0 * PI) + 0.5, theta / PI + 0.5);
+	// float theta = atan2(uvw.z, uvw.y);
+	// float phi = atan2(sqrt(uvw.x * uvw.x + uvw.y * uvw.y), uvw.z);
+	float theta = atan2(uvw.x, uvw.y); // [-PI, PI]
+	float phi = -atan2(uvw.z, sqrt(uvw.x * uvw.x + uvw.y * uvw.y)); // [-PI/2, PI/2]
+    float2 equirectangularMapUV = float2(theta / (2.0 * PI) + 0.5, phi / PI + 0.5);
 
 	Texture2D equirectangularMap = GetEquirectangularMapSRV();
 	float4 color = equirectangularMap.SampleLevel(SAMPLER_LINEAR_WARP, equirectangularMapUV, 0);
