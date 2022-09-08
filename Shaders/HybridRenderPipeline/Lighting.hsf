@@ -109,6 +109,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	float3 irradiance = perFrameData.solarIrradiance;
 	float3 Li = -perFrameData.sunDirection;
 	float cosLi = clamp(dot(N, Li), 0.0, 1.0);
+
 	{
 		// // if(cosLi > 0.0)
 		// {
@@ -127,6 +128,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		// 	finalColor += (diffuse + specular) * radiance * cosLi * visibility;
 		// }
 	}
+
 	// IBL
 	{
 		Texture2D brdfLut = GetBRDFLutSRV();
@@ -149,6 +151,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		float2 specularBRDF = brdfLut.SampleLevel(SAMPLER_LINEAR_CLAMP, float2(NdotV, roughness), 0).rg;
 		// Specular reflection
 		float3 specularIBL = (F * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+		
 		finalColor += (diffuseIBL + specularIBL);
 	}
 
