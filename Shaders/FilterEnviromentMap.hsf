@@ -21,40 +21,42 @@ float3 FilterEnviromentMap(TextureCube enviromentMap, float3 N, float roughness,
 	CreateOrthonormalBasis(T, B, N);
 
 	float3 V = N;
-	float3 color = 0.0;
-	float weight = 0.0;
-
-	uint width, height;
-	enviromentMap.GetDimensions(width, height);
+	
+	// Solid angle of 1 pixel across all cube faces
+	uint cubemapSize = 32;
+	float omegaP = 4.0 * PI / (6.0 * cubemapSize * cubemapSize);
 
 	// Convolve environment map using GGX NDF importance sampling
+	float3 radiance = 0.0;
+	float weight = 0.0;
 	for (uint i = 0; i < numSamples; i++)
 	{
 		float2 Xi = Hammersley2D(i, numSamples);
+
 		float3 H = TangentToWorld(ImportanceSampleGGX(Xi, roughness), T, B, N);
-		float3 L = 2.0 * dot(V, H) * H - V;
-		float NdotL = clamp(dot(N, L), 0.0, 1.0);
-		if (NdotL > 0.0)
+		float3 L = normalize(2.0 * dot(V, H) * H - V);
+
+		float NoL = saturate(dot(N, L));
+		if (NoL > 0.0)
 		{
-			// Vectors to evaluate pdf
-			float NdotH = clamp(dot(N, H), 0.0, 1.0);
-			float VdotH = clamp(dot(V, H), 0.0, 1.0);
+			float NoH = saturate(dot(N, H));
+			float VoH = saturate(dot(V, H));
+			
 			// Probability Distribution Function
-			float pdf = D_GGX(NdotH, roughness) * NdotH / (4.0 * VdotH);
+			float pdf = D_GGX(NoH, roughness) * NoH / (4.0 * VoH);
+
 			// Slid angle of current smple
 			float omegaS = 1.0 / (float(numSamples) * pdf);
-			// Solid angle of 1 pixel across all cube faces
-			float omegaP = 4.0 * PI / (6.0 * width * height);
-			// Biased (+1.0) mip level for better result
-			float mipBias = 1.0;
-			float mipLevel = (roughness == 0.0) ? 0.0 : max(0.5 * log2(omegaS / omegaP) + mipBias, 0.0);
-			color += enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, L, mipLevel).rgb * NdotL;
-			weight += NdotL;
+			float mipLevel = 0.5 * log2(omegaS / omegaP); 
+
+			float3 color = enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, L, mipLevel).rgb;
+
+			radiance += color * NoL;
+			weight += NoL;
 		}
 	}
-	color /= weight;
 
-	return color;
+	return radiance / weight;
 }
 
 [numthreads(8, 8, 6)]
@@ -70,14 +72,19 @@ void FilterEnviromentMapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 
 	uint3 coord = GlobalInvocationID;
     float2 uv = (coord.xy + 0.5) / float2(width, height);
-	
+	float3 N = CalculateCubemapVector(uv, coord.z);
+
 	TextureCube enviromentMap = GetEnviromentMapSRV();
 	float roughness = SHADER_ARGUMENTS_DATA(0);
-	
+
+	if (roughness < 0.01)
+	{
+		filteredEnviromentMap[coord] = enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, N, 0);
+		return;
+	}
+
 	const uint NumSamples = 1024;
 	//const uint NumSamples = roughness < 0.1 ? 32 : 64;
-
-	float3 N = CalculateCubemapVector(uv, coord.z);
 
 	float3 result = FilterEnviromentMap(enviromentMap, N, roughness, NumSamples);
 

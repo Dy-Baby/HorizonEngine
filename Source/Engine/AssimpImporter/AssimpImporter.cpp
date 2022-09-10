@@ -79,8 +79,11 @@ namespace HE
 				material.name = aiMaterial->GetName().C_Str();
 
 				Vector4 baseColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				aiMaterial->Get(AI_MATKEY_BASE_COLOR, baseColor);
-				material.baseColor = baseColor;
+				aiColor3D aiColor;
+				if (aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor) == AI_SUCCESS)
+				{
+					material.baseColor = { aiColor.r, aiColor.g, aiColor.b, 1.0f };
+				}
 
 				float metallic = 0.0f;
 				aiMaterial->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
@@ -91,8 +94,10 @@ namespace HE
 				material.roughness = roughness;
 
 				Vector4 emission = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-				aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
-				material.emission = emission;
+				if (aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, aiColor) == AI_SUCCESS)
+				{
+					material.emission = { aiColor.r, aiColor.g, aiColor.b, 0.0f };
+				}
 
 				aiString aiTexPath;
 

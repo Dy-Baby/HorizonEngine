@@ -32,11 +32,9 @@ void EquirectangularToCubemapCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
     
     // Calculate sampling coord for equirectangular texture.
 	// https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
-	// float theta = atan2(uvw.z, uvw.y);
-	// float phi = atan2(sqrt(uvw.x * uvw.x + uvw.y * uvw.y), uvw.z);
-	float theta = atan2(uvw.x, uvw.y); // [-PI, PI]
-	float phi = -atan2(uvw.z, sqrt(uvw.x * uvw.x + uvw.y * uvw.y)); // [-PI/2, PI/2]
-    float2 equirectangularMapUV = float2(theta / (2.0 * PI) + 0.5, phi / PI + 0.5);
+	float theta = atan2(uvw.x, uvw.y);
+	float phi = -atan2(uvw.z, sqrt(uvw.x * uvw.x + uvw.y * uvw.y));
+    float2 equirectangularMapUV = float2(theta / (2.0 * PI) + 0.25, phi / PI + 0.5);
 
 	Texture2D equirectangularMap = GetEquirectangularMapSRV();
 	float4 color = equirectangularMap.SampleLevel(SAMPLER_LINEAR_WARP, equirectangularMapUV, 0);

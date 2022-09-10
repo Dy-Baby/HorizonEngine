@@ -1,5 +1,5 @@
 #include "HybridRenderPipelineCommon.h"
-#include "PostProcessCommon.h"
+#include "PostProcessingCommon.h"
 #include "DepthOfField.h"
 
 namespace HE

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PostProcessCommon.h"
+#include "PostProcessingCommon.h"
 
 namespace HE
 {

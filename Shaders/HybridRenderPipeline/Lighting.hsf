@@ -138,21 +138,21 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		float3 F = FresnelSchlickRoughness(F0, NdotV, roughness);
 		float3 Kd = (1.0 - F) * (1.0 - metallic);
 
-		float3 diffuseIrradiance = irradianceEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, N, 0).rgb;
+		float3 irradiance = irradianceEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, N, 0).rgb;
 		// Diffuse based on irradiance
-		float3 diffuseIBL = Kd * baseColor.rgb * diffuseIrradiance;
+		float3 diffuse = Kd * baseColor.rgb * irradiance;
 		
 		uint w; uint h; uint numMipLevels;
 		filteredEnvironmentMap.GetDimensions(0, w, h, numMipLevels);
 		float lod = roughness * (numMipLevels - 1);
-		float3 specularIrradiance = filteredEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, R, lod).rgb;
+		float3 prefilteredColor = filteredEnvironmentMap.SampleLevel(SAMPLER_LINEAR_WARP, R, lod).rgb;
 
 		// @note When loading the texture, use CLAMP_TO_EDGE to ensure that values are read correctly.
-		float2 specularBRDF = brdfLut.SampleLevel(SAMPLER_LINEAR_CLAMP, float2(NdotV, roughness), 0).rg;
+		float2 brdf = brdfLut.SampleLevel(SAMPLER_LINEAR_CLAMP, float2(NdotV, roughness), 0).rg;
 		// Specular reflection
-		float3 specularIBL = (F * specularBRDF.x + specularBRDF.y) * specularIrradiance;
+		float3 specular = (F0 * brdf.x + brdf.y) * prefilteredColor;
 		
-		finalColor += (diffuseIBL + specularIBL);
+		finalColor += (diffuse + specular);
 	}
 
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();

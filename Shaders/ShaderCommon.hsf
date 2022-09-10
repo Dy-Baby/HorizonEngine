@@ -11,6 +11,8 @@ SamplerState BindlessSamplerStates[];
 [[vk::binding(2, 0)]]
 RWTexture1D<float4> BindlessRWTexture1Ds[];
 [[vk::binding(2, 0)]]
+RWTexture2D<float> BindlessTexturesRWTexture2DFloat[];
+[[vk::binding(2, 0)]]
 RWTexture2D<float4> BindlessRWTexture2Ds[];
 [[vk::binding(2, 0)]]
 RWTexture3D<float4> BindlessRWTexture3Ds[];
@@ -75,12 +77,6 @@ float3 CalculateCubemapVector(float2 uv, uint face)
     uv = 2.0 * float2(uv.x, uv.y) - 1.0;
     switch (face)
     {
-    // case 0: return normalize(float3(  1.0, uv.y, -uv.x));
-    // case 1: return normalize(float3( -1.0, uv.y,  uv.x));
-    // case 2: return normalize(float3( uv.x,  1.0, -uv.y));
-    // case 3: return normalize(float3( uv.x, -1.0,  uv.y));
-    // case 4: return normalize(float3( uv.x, uv.y,   1.0));
-    // case 5: return normalize(float3(-uv.x, uv.y,  -1.0));
     case 0: return normalize(float3(  1.0, -uv.y, -uv.x));
     case 1: return normalize(float3( -1.0, -uv.y,  uv.x));
     case 2: return normalize(float3( uv.x,   1.0,  uv.y));
@@ -94,4 +90,11 @@ float3 CalculateCubemapVector(float2 uv, uint face)
 float3 TangentToWorld(const float3 vec, const float3 T, const float3 B, const float3 N)
 {
     return normalize(T * vec.x + B * vec.y + N * vec.z);
+}
+
+float3 ScreenSpaceToViewSpacePosition(float2 uv, float depth, float4x4 invProjectionMatrix)
+{
+    float4 clipSpacePosition = float4(uv * 2.0 - 1.0, depth, 1.0);
+    float4 viewSpacePosition = mul(clipSpacePosition, invProjectionMatrix);
+    return viewSpacePosition.xyz;
 }

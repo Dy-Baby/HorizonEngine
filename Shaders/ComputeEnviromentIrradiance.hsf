@@ -44,9 +44,12 @@ void ComputeEnviromentIrradianceCS(uint3 GlobalInvocationID : SV_DispatchThreadI
 	for (uint i = 0; i < NumSamples; i++)
 	{
 		float2 Xi = Hammersley2D(i, NumSamples);
-		float3 Li = TangentToWorld(HemisphereSampleUniform(Xi), T, B, N);
-		float cosLi = clamp(dot(N, Li), 0.0, 1.0);
-		irradiance += enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, Li, enviromentMapMipLevel).rgb * cosLi;
+		float3 L = TangentToWorld(UniformSampleHemisphere(Xi), T, B, N);
+		float NdotL = dot(N, L);
+		if (NdotL > 0.0)
+		{
+			irradiance += enviromentMap.SampleLevel(SAMPLER_LINEAR_WARP, L, enviromentMapMipLevel).rgb * NdotL;
+		}
 	}
 	// pdf = 1.0 / (2.0 * PI)
 	// There is no PI here because we do not divide by PI in lighting pass

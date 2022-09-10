@@ -1,0 +1,184 @@
+#include "../ShaderCommon.hsf"
+#include "../BSDFCommon.hsf"
+#include "../Random.hsf"
+
+/* 
+ * Based on Practical Realtime Strategies for Accurate Indirect Occlusion
+ * http://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pdf
+ * http://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pptx
+ */
+
+#define GTAO_PI         3.14159265358979323846
+#define GTAO_HALF_PI    1.57079632679489661923
+
+const uint NUM_STEPS = 8;
+
+float GTAOFastSqrt(float x)
+{
+	// [Drobot2014a] Low Level Optimization for GCN
+	return asfloat(0x1FBD1DF5 + (asint(x) >> 1));
+}
+
+float GTAOFastAcos(float x)
+{
+	// [Eberly2014] GPGPU Programming for Games and Science
+	float result = -0.156538 * abs(x) + GTAO_PI / 2.0;
+	result *= GTAOFastSqrt(1.0 - abs(x));
+	return (x >= 0) ? result : GTAO_PI - result;
+}
+
+float3 GTAOMultiBounce(float visibility, float3 albedo)
+{
+	float a =  2.0404 * albedo - 0.3324;
+	float b = -4.7951 * albedo + 0.6417;
+	float c =  2.7552 * albedo + 0.6903;
+
+	float x = visibility;
+	return max(x, ((x * a + b) * x + c) * x);
+}
+
+float2 GTAONoise(uint spatialIndex, uint temporalIndex)
+{
+	uint randSeed = RandInit(spatialIndex, temporalIndex);
+	return float2(Rand(randSeed), Rand(randSeed));
+}
+
+float2 GTAORandomVector(float jitter)
+{
+	/* Only a quarter of a turn because we integrate using 2 slices. */
+	jitter *= GTAO_HALF_PI;
+	return float2(cos(jitter), sin(jitter));
+}
+
+float2 SearchForHorizons(
+	uint numSteps, 
+	Texture2D depthBuffer, 
+	float2 baseUV, 
+	float4x4 invProjectionMatrix, 
+	float2 searchDirection, 
+	float searchOffset, 
+	float3 viewSpacePosition, 
+	float3 nomalizedViewVector)
+{	
+	float3 depthVector;
+	float2 depthVectorLengthSquare;
+	float invDepthVectorLength;
+	float2 offset;
+	float4 uv;
+	float depth;
+	float thickness = 0.75;
+	float2 horizons = float2(-1.0, -1.0);
+
+	[unroll]
+	for (uint step = 0; step < numSteps; step++)
+	{
+		offset = searchDirection * max(searchOffset * (step + 1), step + 1);
+		uv = float4(baseUV - offset, baseUV + offset);
+
+		// Negative Direction
+		depth = depthBuffer.SampleLevel(SAMPLER_LINEAR_CLAMP, uv.xy, 0).r;
+		depthVector = ScreenSpaceToViewSpacePosition(uv.xy, depth, invProjectionMatrix) - viewSpacePosition;
+		depthVectorLengthSquare = dot(depthVector, depthVector);
+		invDepthVectorLength = rsqrt(depthVectorLengthSquare + 0.0001);
+		cosAngle = dot(depthVector, nomalizedViewVector) * invDepthVectorLength;
+		horizons.x = (cosAngle > horizons.x) ? cosAngle : lerp(cosAngle, horizons.x, thickness); // Thickness Heuristic
+
+		// Positive Direction
+		depth = depthBuffer.SampleLevel(SAMPLER_LINEAR_CLAMP, uv.zw, 0).r;
+		depthVector = ScreenSpaceToViewSpacePosition(uv.zw, depth, invProjectionMatrix) - viewSpacePosition;
+		depthVectorLengthSquare = dot(depthVector, depthVector);
+		invDepthVectorLength = rsqrt(depthVectorLengthSquare + 0.0001);
+		cosAngle = dot(depthVector, nomalizedViewVector) * invDepthVectorLength;
+		horizons.y = (cosAngle > horizons.y) ? cosAngle : lerp(cosAngle, horizons.y, thickness); // Thickness Heuristic
+	}
+
+	horizons.x = GTAOFastAcos(clamp(horizons.x, -1.0, 1.0));
+	horizons.y = GTAOFastAcos(clamp(horizons.y, -1.0, 1.0));
+
+	return horizons;
+}
+
+float ComputeInnerIntegral(float2 horizons, float3 V, float3 viewSpaceNormal)
+{
+	float3 projectedNormal = ;
+	float projectedNormalLength = length(ProjNormal) + 0.000001f;
+
+	float cosN = clamp(dot(projectedNormal, V), 0.0, 1.0);
+	float sinN = dot(projectedNormal, T);
+    float angleN = sign(sinN) * GTAOFastAcos(cosN);
+
+	// clamp horizons to normal hemisphere
+	// Add a little bias to void self shadowing
+	horizons.x = max(horizons.x, angleN + (GTAO_HALF_PI - 0.05));
+    horizons.y = min(horizons.y, angleN - (GTAO_HALF_PI - 0.05));
+
+	// IntegrateArc(h1, h2, N)
+	float Vd = 0.25 * ((-cos(2.0 * horizons.x - angleN) + cosN + 2.0 * horizons.x * sinN) + 
+					   (-cos(2.0 * horizons.y - angleN) + cosN + 2.0 * horizons.y * sinN));
+	Vd *= projectedNormalLength;
+
+	return Vd;
+}
+
+[numthreads(8, 8, 1)]
+void GTAOHorizonSearchIntegralCS(uint2 GroupID : SV_GroupID, uint2 DispatchThreadID : SV_DispatchThreadID, uint2 GroupThreadID : SV_GroupThreadID)
+{
+	RWTexture2D<float> outputTexture = GetGATOHorizonSearchIntegralOutputTextureUAV();
+	uint width, height;
+    outputTexture.GetDimensions(width, height);
+
+	uint2 coord = DispatchThreadID;
+	float2 uv = (coord.xy + 0.5) / float2(width, height);
+
+	Texture2D depthBuffer = GetDepthBufferSRV();
+	Texture2D gbuffer1 = GetGBuffer1SRV();
+	Texture2D gbuffer2 = GetGBuffer2SRV();
+	PerframeData perframeData = GetPerframeData();
+
+	float depth = depthBuffer[coord].r;
+	float3 worldSpaceNormal = gbuffer1.rgb;
+	float3 viewSpaceNormal = normalize(mul(worldSpaceNormal, (float3x3)perframeData.viewMatrix));
+	float3 viewSpacePosition = ScreenSpaceToViewSpacePosition(uv, depth, perframeData.invProjectionMatrix);
+	float3 nomalizedViewVector = normalize(-nomalizedViewVector);
+
+	float2 noise = GTAONoise(coord, 0);
+	float2 searchDirection = GTAORandomVector(noise.x);
+	float searchOffset = 0.0;
+
+	float visibility = 0.0;
+	for (uint sliceIndex = 0; sliceIndex < 2; sliceIndex++)
+	{
+		float2 horizons = SearchForHorizons(
+			numSteps,
+			depthBuffer,
+			uv,
+			perframeData.invProjectionMatrix,
+			searchDirection,
+			searchOffset,
+			viewSpacePosition,
+			nomalizedViewVector,
+		);
+
+		visibility += ComputeInnerIntegral(horizons, viewVector, viewSpaceNormal);
+		
+		// Rotate 90 degrees
+		screenDirection = float2(-screenDirection.y, screenDirection.x);
+	}
+
+	float3 albedo = gbuffer2[coord].rgb;
+	visibility = satuate(GTAOMultibounce(visibility, albedo));
+
+	outputTexture[coord] = visibility;
+}
+
+[numthreads(8, 8, 1)]
+void GTAOSpatialFilterCS(int GroupIndex: SV_GroupIndex, uint2 GroupID : SV_GroupID, uint2 DispatchThreadID : SV_DispatchThreadID, uint2 GroupThreadID : SV_GroupThreadID) 
+{
+
+}
+
+[numthreads(8, 8, 1)]
+void GTAOTemporalFilterCS(uint2 GroupID : SV_GroupID, uint2 DispatchThreadID : SV_DispatchThreadID, uint2 GroupThreadID : SV_GroupThreadID)
+{
+
+}

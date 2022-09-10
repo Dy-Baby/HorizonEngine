@@ -29,7 +29,7 @@ float2 Hammersley2D(uint index, uint samples)
 //     return float2(float(index) / float(numSamples), radicalInverse_VdC);
 // }
 
-float3 HemisphereSampleUniform(float2 Xi)
+float3 UniformSampleHemisphere(float2 Xi)
 {
     float phi = Xi.y * 2.0 * PI;
     float cosTheta = 1.0 - Xi.x;

@@ -1,4 +1,4 @@
-#include "PostProcessCommon.h"
+#include "PostProcessingCommon.h"
 #include "ECS/ECS.h"
 #include "HybridRenderPipeline.h"
 
@@ -827,6 +827,53 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		};
 	});
 #else
+
+#if GTAO
+	// GTAO
+	// AddGTAOPasses();
+	renderGraph->AddPass("GTAOHorizonSearchIntegralPass", RenderGraphPassFlags::Compute,
+	[&](RenderGraphBuilder& builder)
+	{
+		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
+		const auto& gbufferData = blackboard.Get<RenderGraphGBuffer>();
+		// const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
+		auto& sceneColorData = blackboard.Get<RenderGraphSceneColor>();
+		auto gbuffer0 = builder.ReadTexture(gbufferData.gbuffer0, RenderBackendResourceState::ShaderResource);
+		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
+		auto gbuffer2 = builder.ReadTexture(gbufferData.gbuffer2, RenderBackendResourceState::ShaderResource);
+		auto gbuffer3 = builder.ReadTexture(gbufferData.gbuffer3, RenderBackendResourceState::ShaderResource);
+		// shadowMask = builder.ReadTexture(shadowMask, RenderBackendResourceState::ShaderResource);
+		// auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::DepthStencilReadOnly);
+
+		auto sceneColor = sceneColorData.sceneColor = builder.WriteTexture(sceneColorData.sceneColor, RenderBackendResourceState::UnorderedAccess);
+
+		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
+		{
+			uint32 dispatchWidth = CEIL_DIV(perFrameData.data.renderResolutionWidth, 8);
+			uint32 dispatchHeight = CEIL_DIV(perFrameData.data.renderResolutionHeight, 8);
+
+			ShaderArguments shaderArguments = {};
+			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
+			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer0)));
+			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
+			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer2)));
+			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer3)));
+			//shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowMask)));
+			shaderArguments.BindTextureUAV(6, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(sceneColor), 0));
+			// shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
+			shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(brdfLut));
+			shaderArguments.BindTextureSRV(8, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->irradianceEnvironmentMap));
+			shaderArguments.BindTextureSRV(9, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->filteredEnvironmentMap));
+
+			commandList.Dispatch2D(
+				lightingShader,
+				shaderArguments,
+				dispatchWidth,
+				dispatchHeight);
+		};
+	});
+#endif
+
 	renderGraph->AddPass("LightingPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
