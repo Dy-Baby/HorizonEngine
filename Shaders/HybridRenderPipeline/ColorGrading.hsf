@@ -117,6 +117,5 @@ float3 ColorAP1 = mul( sRGB_2_AP1, BalancedColor );
 	// Convert from AP1 to sRGB and clip out-of-gamut values
 	float3 FilmColor = max(0, mul( AP1_2_sRGB, ColorAP1 ));
 
-
 	outputTexture[pixelCoord] = outColor;
 }
