@@ -49,6 +49,7 @@ private:
 	RenderBackendShaderHandle dofShader;
 	RenderBackendShaderHandle tonemappingShader;
 	RenderBackendShaderHandle fxaaShader;
+	RenderBackendShaderHandle gtaoMainShader;
 
 #if DEBUG_ONLY_RAY_TRACING_ENBALE
 	RenderBackendRayTracingPipelineStateHandle rayTracingShadowsPipelineState;

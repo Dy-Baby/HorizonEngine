@@ -7,7 +7,8 @@
 #define LIGHTING_SHADER_GBUFFER1_SRV_SLOT                                2
 #define LIGHTING_SHADER_GBUFFER2_SRV_SLOT                                3
 #define LIGHTING_SHADER_GBUFFER3_SRV_SLOT                                4
-#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT                          5
+#define LIGHTING_SHADER_AMBIENT_OCCLUSION_TEXTURE_SRV_SLOT               5
+//#define LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT                          5
 #define LIGHTING_SHADER_SCENE_COLOR_UAV_SLOT                             6
 #define LIGHTING_SHADER_BRDF_LUT_SRV_SLOT                                7
 #define LIGHTING_SHADER_SKY_LIGHT_IRRADIANCE_ENVIRONMENT_MAP_SRV_SLOT    8
@@ -39,9 +40,9 @@ Texture2D GetGBuffer3SRV()
     return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_GBUFFER3_SRV_SLOT)];
 }
 
-Texture2D GetShadowBufferSRV()
+Texture2D GetAmbientOcclusionTextureSRV()
 {
-    return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_SHADOW_BUFFFER_SRV_SLOT)];
+    return BindlessTexture2Ds[SHADER_ARGUMENTS_INDEX(LIGHTING_SHADER_AMBIENT_OCCLUSION_TEXTURE_SRV_SLOT)];
 }
 
 RWTexture2D<float4> GetSceneColorUAV()
@@ -82,7 +83,7 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	Texture2D gbuffer2 = GetGBuffer2SRV();
 	Texture2D gbuffer3 = GetGBuffer3SRV();
 
-	Texture2D shadowBuffer = GetShadowBufferSRV();
+	//Texture2D shadowBuffer = GetShadowBufferSRV();
 
 	float4 gbuffer0Data = gbuffer0[coord];
 	float4 gbuffer1Data = gbuffer1[coord];
@@ -129,6 +130,8 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 		// }
 	}
 
+	Texture2D ambientOcclusionTexture = GetAmbientOcclusionTextureSRV();
+	float ambientOcclusion = ambientOcclusionTexture[coord].r;
 	// IBL
 	{
 		Texture2D brdfLut = GetBRDFLutSRV();
@@ -158,114 +161,3 @@ void LightingCS(uint3 GlobalInvocationID : SV_DispatchThreadID)
 	RWTexture2D<float4> sceneColor = GetSceneColorUAV();
 	sceneColor[coord] = float4(finalColor, 1.0);
 }
-
-// Material material = BindlessBuffers[5].Load<Material>(0);
-// float2 texCoord0 = input.texCoord0.xy;
-
-// SamplerState defaultSampler;
-// Texture2D baseColorMap = BindlessTexture2Ds[uint(material.useBaseColorMap)];
-// Texture2D metallicRoughnessMap = BindlessTexture2Ds[uint(material.useMetallicRoughnessMap)];
-// Texture2D emissiveMap = BindlessTexture2Ds[uint(material.useEmissiveMap)];
-// float gamma = 2.2;
-
-// float3 baseColor = SRGBToLinear(baseColorMap.Sample(defaultSampler, texCoord0), gamma).rgb;
-// float alpha = SRGBToLinear(baseColorMap.Sample(defaultSampler, texCoord0), gamma).a;
-// if (alpha < 0.2)
-// {
-// 	discard;
-// }
-
-// FrameData frameData = BindlessBuffers[1].Load<FrameData>(0);
-// float3 tangentNormal = normalize(texture(u_NormalMap, in_TexCoord0, u_MipLodBias).xyz * 2.0 - vec3(1.0));
-// float3 N = normalize(in_NormalW);
-// float3 T = normalize(in_TangentW.xyz);
-// float3 B = normalize(cross(N, T) * in_TangentW.w);
-// float3x3 TBN = float3x3(T, B, N);
-// return normalize(TBN * tangentNormal);
-// float3 N = GetNormalFromNormalMap();
-// float3 V = normalize(frameData.cameraPosition.xyz - input.position);
-// float3 R = reflect(-V, N); 
-// float NdotV = clamp(dot(N, V), 0.0, 1.0);
-
-// float metallic = useMetallicMap * metallicRoughnessMap.Sample(defaultSampler, texCoord0).b + (1.0 - useMetallicMap) * metallic;
-// float roughness = useRoughnessMap * metallicRoughnessMap.Sample(defaultSampler, texCoord0).g + (1.0 - useRoughnessMap) * roughness;
-// float3 emission = useEmissiveMap * SRGBToLinear(emissiveMap.Sample(defaultSampler, texCoord0), gamma).rgb + (1.0 - useEmissiveMap) * vec3(0.0);
-
-// // Fresnel reflectance
-// float3 F0 = mix(Fdielectric, baseColor, metallic);
-// float3 output = emission;
-
-// // Direct Lighting
-// float intensity = u_DirectionalLight.color.a;
-// float3 Li = -u_DirectionalLight.direction.xyz;
-// float cosLi = clamp(dot(N, Li), 0.0, 1.0);
-// if(cosLi > 0.0)
-// {
-// 	float3 Lh = normalize(Li + V);
-// 	float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
-// 	float3 F = FresnelSchlick(F0, NdotV);
-// 	float D = D_GGX(cosLh, roughness);
-// 	float G = SchlickGGX(cosLi, NdotV, roughness);
-// 	float3 Kd = (vec3(1.0) - F) * (1.0 - metallic);
-// 	float3 diffuse = Kd * baseColor.rgb / PI;
-// 	float3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
-// 	float3 radiance = u_DirectionalLight.color.rgb * intensity;
-// 	output += (diffuse + specular) * radiance * cosLi * visibility;
-// }
-// float linearDepth01 = input.position.z;
-// return output;
-
-// float4 albedo = ;
-// float4 position = ;
-// float4 normal = ;
-// uint materialID = ;
-
-// float metallic = u_Metallic;
-// float roughness = u_Roughness;
-// float occlusion = 1.0;
-// float3 emissive = u_UseEmissiveMap * SRGBToLinear(texture(u_EmissiveMap, in_TexCoord0, u_MipLodBias), u_Gamma).rgb + (1.0 - u_UseEmissiveMap) * vec3(0.0);
-
-// // vec4 shadowMapCoord =  u_LightViewProjectionMatrix * vec4(in_PositionW, 1.0);
-// // shadowMapCoord /= shadowMapCoord.w;
-// // shadowMapCoord.x = (1.0 + shadowMapCoord.x) * 0.5;
-// // shadowMapCoord.y = (1.0 - shadowMapCoord.y) * 0.5;
-// // float visibility = PCF(u_ShadowMap, shadowMapCoord.xyz);
-
-// // Fresnel reflectance
-// vec3 F0 = mix(Fdielectric, baseColor.rgb, metallic);
-
-// Direct Lighting
-// float intensity = u_DirectionalLight.color.a;
-// vec3 Li = -u_DirectionalLight.direction.xyz;
-// float cosLi = clamp(dot(N, Li), 0.0, 1.0);
-// if(cosLi > 0.0)
-// {
-// 	vec3 Lh = normalize(Li + V);
-// 	float cosLh = clamp(dot(N, Lh), 0.0, 1.0);
-
-// 	vec3 F = FresnelSchlick(F0, NdotV);
-// 	float D = D_GGX(cosLh, roughness);
-// 	float G = SchlickGGX(cosLi, NdotV, roughness);
-// 	vec3 Kd = (vec3(1.0) - F) * (1.0 - metallic);
-
-// 	vec3 diffuse = Kd * baseColor.rgb / PI;
-// 	vec3 specular = (F * D * G) / max(0.001, 4.0 * cosLi * NdotV);
-// 	vec3 radiance = u_DirectionalLight.color.rgb * intensity;
-
-// 	color += (diffuse + specular) * radiance * cosLi * visibility;
-// }
-
-// // IBL
-// {
-// 	float3 F = FresnelSchlickRoughness(F0, NdotV, roughness);
-// 	float3 Kd = (1.0 - F) * (1.0 - metallic);
-// 	float3 diffuseIrradiance = texture(u_IrradianceEnvCubemap, N).rgb;
-// 	float3 diffuseIBL = Kd * baseColor.rgb * diffuseIrradiance;
-// 	int prefilteredEnvCubemapLevels = textureQueryLevels(u_PrefilteredEnvCubemap);
-// 	float lod = roughness * prefilteredEnvCubemapLevels;
-// 	float3 specularIrradiance = textureLod(u_PrefilteredEnvCubemap, R, lod).rgb;
-// 	// @note When loading the texture, use CLAMP_TO_EDGE to ensure that values are read correctly.
-// 	float2 specularBRDF = brdfLUT.Sample(, float2(NdotV, roughness)).rg;
-// 	float3 specularIBL = (F * specularBRDF.x + specularBRDF.y) * specularIrradiance;
-// 	color += u_IblFactor * (diffuseIBL + specularIBL);
-// }

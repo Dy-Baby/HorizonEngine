@@ -141,6 +141,21 @@ void HybridRenderPipeline::Init()
 	fxaaShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "FxaaCS";
 	fxaaShader = RenderBackendCreateShader(renderBackend, deviceMask, &fxaaShaderDesc, "fxaaShader");
 
+	RenderBackendShaderDesc gtaoMainShaderDesc;
+	LoadShaderSourceFromFile("../../../Shaders/HybridRenderPipeline/AmbientOcclusion.hsf", source);
+	CompileShader(
+		shaderCompiler,
+		source,
+		HE_TEXT("GTAOHorizonSearchIntegralCS"),
+		RenderBackendShaderStage::Compute,
+		ShaderRepresentation::SPIRV,
+		includeDirs,
+		defines,
+		&gtaoMainShaderDesc.stages[(uint32)RenderBackendShaderStage::Compute]);
+	gtaoMainShaderDesc.entryPoints[(uint32)RenderBackendShaderStage::Compute] = "GTAOHorizonSearchIntegralCS";
+	gtaoMainShader = RenderBackendCreateShader(renderBackend, deviceMask, &gtaoMainShaderDesc, "GTAOHorizonSearchIntegralCS");
+
+
 #if DEBUG_ONLY_RAY_TRACING_ENBALE
 	RenderBackendRayTracingPipelineStateDesc rayTracingShadowsPipelineStateDesc = {
 		.maxRayRecursionDepth = 1,
@@ -828,24 +843,29 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 	});
 #else
 
-#if GTAO
+#if 1
 	// GTAO
 	// AddGTAOPasses();
+
+	RenderGraphTextureDesc horizonSearchIntergralOutputTextureDesc = RenderGraphTextureDesc::Create2D(
+		perFrameData.data.renderResolutionWidth,
+		perFrameData.data.renderResolutionHeight,
+		PixelFormat::R32Float,
+		TextureCreateFlags::ShaderResource | TextureCreateFlags::UnorderedAccess);
+	RenderGraphTextureHandle horizonSearchIntergralOutputTexture = renderGraph->CreateTexture(horizonSearchIntergralOutputTextureDesc, "GTAOHorizonSearchIntergralOutputTexture");
+
 	renderGraph->AddPass("GTAOHorizonSearchIntegralPass", RenderGraphPassFlags::Compute,
 	[&](RenderGraphBuilder& builder)
 	{
 		const auto& perFrameData = blackboard.Get<RenderGraphPerFrameData>();
 		const auto& gbufferData = blackboard.Get<RenderGraphGBuffer>();
-		// const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
-		auto& sceneColorData = blackboard.Get<RenderGraphSceneColor>();
-		auto gbuffer0 = builder.ReadTexture(gbufferData.gbuffer0, RenderBackendResourceState::ShaderResource);
+		const auto& depthBufferData = blackboard.Get<RenderGraphDepthBuffer>();
+
 		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
 		auto gbuffer2 = builder.ReadTexture(gbufferData.gbuffer2, RenderBackendResourceState::ShaderResource);
-		auto gbuffer3 = builder.ReadTexture(gbufferData.gbuffer3, RenderBackendResourceState::ShaderResource);
-		// shadowMask = builder.ReadTexture(shadowMask, RenderBackendResourceState::ShaderResource);
-		// auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::DepthStencilReadOnly);
-
-		auto sceneColor = sceneColorData.sceneColor = builder.WriteTexture(sceneColorData.sceneColor, RenderBackendResourceState::UnorderedAccess);
+		auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::ShaderResource);
+		
+		horizonSearchIntergralOutputTexture = builder.WriteTexture(horizonSearchIntergralOutputTexture, RenderBackendResourceState::UnorderedAccess);
 
 		return [=](RenderGraphRegistry& registry, RenderCommandList& commandList)
 		{
@@ -854,19 +874,14 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 
 			ShaderArguments shaderArguments = {};
 			shaderArguments.BindBuffer(0, perFrameDataBuffer, 0);
-			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer0)));
+			shaderArguments.BindTextureSRV(1, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
 			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
 			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer2)));
-			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer3)));
-			//shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowMask)));
-			shaderArguments.BindTextureUAV(6, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(sceneColor), 0));
-			// shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
-			shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(brdfLut));
-			shaderArguments.BindTextureSRV(8, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->irradianceEnvironmentMap));
-			shaderArguments.BindTextureSRV(9, RenderBackendTextureSRVDesc::Create(view->scene->skyLight->filteredEnvironmentMap));
+			shaderArguments.BindTextureUAV(4, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(horizonSearchIntergralOutputTexture), 0));
 
+			RenderBackendShaderHandle computeShader = gtaoMainShader;
 			commandList.Dispatch2D(
-				lightingShader,
+				computeShader,
 				shaderArguments,
 				dispatchWidth,
 				dispatchHeight);
@@ -885,6 +900,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 		auto gbuffer1 = builder.ReadTexture(gbufferData.gbuffer1, RenderBackendResourceState::ShaderResource);
 		auto gbuffer2 = builder.ReadTexture(gbufferData.gbuffer2, RenderBackendResourceState::ShaderResource);
 		auto gbuffer3 = builder.ReadTexture(gbufferData.gbuffer3, RenderBackendResourceState::ShaderResource);
+		horizonSearchIntergralOutputTexture = builder.ReadTexture(horizonSearchIntergralOutputTexture, RenderBackendResourceState::ShaderResource);
 		// shadowMask = builder.ReadTexture(shadowMask, RenderBackendResourceState::ShaderResource);
 		// auto depthBuffer = builder.ReadTexture(depthBufferData.depthBuffer, RenderBackendResourceState::DepthStencilReadOnly);
 
@@ -901,7 +917,7 @@ void HybridRenderPipeline::SetupRenderGraph(SceneView* view, RenderGraph* render
 			shaderArguments.BindTextureSRV(2, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer1)));
 			shaderArguments.BindTextureSRV(3, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer2)));
 			shaderArguments.BindTextureSRV(4, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(gbuffer3)));
-			//shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(shadowMask)));
+			shaderArguments.BindTextureSRV(5, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(horizonSearchIntergralOutputTexture)));
 			shaderArguments.BindTextureUAV(6, RenderBackendTextureUAVDesc::Create(registry.GetRenderBackendTexture(sceneColor), 0));
 			// shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(registry.GetRenderBackendTexture(depthBuffer)));
 			shaderArguments.BindTextureSRV(7, RenderBackendTextureSRVDesc::Create(brdfLut));

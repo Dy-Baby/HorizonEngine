@@ -707,7 +707,7 @@ export namespace HE
 				*outNewLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			}
 			*outDstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-			*outDstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;;
+			*outDstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
 			break;
 		case RenderBackendResourceState::Present:
 			if (outNewLayout)
@@ -732,6 +732,14 @@ export namespace HE
 			}
 			*outDstStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
 			*outDstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+		case RenderBackendResourceState::DepthStencilReadOnly:
+			if (outNewLayout)
+			{
+				*outNewLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			}
+			*outDstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+			*outDstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
 			break;
 		case RenderBackendResourceState::CopySrc:
 			if (outNewLayout)

@@ -61,4 +61,4 @@ Entities:
       Next: 4294967295
       Prev: 4294967295
     StaticMeshComponent:
-      Mesh Source: ../../../Assets/Models/EnvironmentTest/glTF-IBL/EnvironmentTest.gltf
+      Mesh Source: ../../../Assets/Models/Sponza/glTF/Sponza.gltf
