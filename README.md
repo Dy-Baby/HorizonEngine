@@ -97,6 +97,8 @@ Particles
 * [LLVM](https://github.com/llvm/llvm-project)
 * [MPMCQueue](https://github.com/rigtorp/MPMCQueue)
 * [PhysX](https://github.com/NVIDIAGameWorks/PhysX)
+* [OptiX](https://developer.nvidia.com/rtx/ray-tracing/optix)
+* [CUDA](https://developer.nvidia.com/cuda-toolkit)
 * [premake](https://github.com/premake/premake-core)
 
 ## Documentation
