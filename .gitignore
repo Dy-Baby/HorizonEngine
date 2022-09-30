@@ -1,6 +1,9 @@
 *
 !*/
 
+# Configuration files
+!*.ini
+
 # C/C++ source files
 !*.c
 !*.cc
@@ -10,6 +13,7 @@
 !*.hpp
 !*.inl
 !*.inc
+!*.cu
 
 # Shader files
 !*.hsf
@@ -43,6 +47,7 @@
 !*.jpg
 !*.tga
 !*.hdr
+
 !*.horizon
 
 !README

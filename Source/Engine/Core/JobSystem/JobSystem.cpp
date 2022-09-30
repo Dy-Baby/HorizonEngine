@@ -270,6 +270,7 @@ namespace HE
                 }
             }
 
+            // Last in first out (LIFO)
             if (gJobQueue.try_pop(job))
             {
                 if (job.decl.jobFunc)
