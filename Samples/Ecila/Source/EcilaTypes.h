@@ -1,5 +1,7 @@
 #pragma once
 
+#include "EcilaDefinitions.h"
+
 namespace Ecila
 {
     using uint32 = unsigned int;

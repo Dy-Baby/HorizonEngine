@@ -2,6 +2,7 @@
 
 #include "EcilaCommon.h"
 #include "Optix/OptixDevice.h"
+#include "Integrator/PathTracingIntegratorLaunchParams.h"
 
 namespace Ecila
 {
@@ -10,13 +11,21 @@ namespace Ecila
     public:
         PathTracingIntegrator(OptixDevice* device);
         ~PathTracingIntegrator();
-        void Launch(uchar4* device_pixels, uint32 width, uint32 height);
+        void Launch(const PathTracingIntegratorLaunchParams& params, uint32 width, uint32 height);
     protected:
         OptixDevice* device;
+        
         OptixPipeline pipeline;
         OptixModule ptxModule;
-        OptixProgramGroup raygen_prog_group;
-        OptixProgramGroup miss_prog_group;
+        
+        OptixProgramGroup raygenGroup;
+        OptixProgramGroup missGroup;
+        OptixProgramGroup shadowRayMissGroup;
+        OptixProgramGroup primaryRayAndSecondaryRayHitGroup;
+        OptixProgramGroup shadowRayHitGroup;
+        
         OptixShaderBindingTable sbt;
+
+        OptixTraversableHandle instanceAS;
     };
 }

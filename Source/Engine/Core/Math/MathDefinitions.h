@@ -14,10 +14,11 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #define M_PI 				  (3.1415926535897932f)	
-#define INV_PI			      (0.31830988618f)
-#define HALF_PI			      (1.57079632679f)
-#define TWO_PI			      (6.28318530717f)
-#define PI_SQUARED		      (9.86960440108f)
+#define M_INV_PI			  (0.3183098861837067f)
+#define M_HALF_PI			  (1.5707963267948966f)
+#define M_TWO_PI			  (6.2831853071795864f)
+#define M_PI_SQUARED		  (9.8696044010893580f)
+#define M_SQRT_PI	      	  (1.4142135623730950f)
 #define SMALL_NUMBER		  (1.e-8f)
 #define KINDA_SMALL_NUMBER    (1.e-4f)
 #define BIG_NUMBER			  (3.4e+38f)

@@ -11,6 +11,14 @@
 #include <exception>
 #include <stdexcept>
 
+class OptixDevice;
+class OptixAccelerationStructure
+{
+public:
+    OptixDevice* device;
+    OptixTraversableHandle traversableHandle;
+};
+
 class Exception : public std::runtime_error
 {
 public:
